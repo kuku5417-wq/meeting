@@ -30,7 +30,7 @@
 | `docs/07_기능_업무흐름_기획서.md` | 목적·역할·업무 흐름·기능 F1~F23·결과물·사용자 논의 결정 | 기능 범위를 정할 때 |
 | `docs/08_벤치마킹_샘플2.md` | 외부 샘플(`docs/v2_sample_2_light.html`, 참고 전용)과 우리 시안 비교 — 가져올 것·안 되는 것 | 시안을 고칠 때 |
 | `design/mockups/*.html` | 확정된 화면 시안 (브라우저로 열기) | UI 구현 시 그대로 참고 |
-| `design/tokens.css` | 색·글꼴 토큰 (라이트/다크) | 모든 CSS의 출발점 |
+| `design/tokens.css` · `docs/디자인_규칙.md` | **토큰 정본**(원시 → 의미 → 옛 이름 3층, 라이트/다크) · 색 쓰는 규칙·컴포넌트 방식 | 모든 CSS의 출발점, 화면 작업 전 |
 | `schema/extraction.schema.json` | AI 추출 결과 JSON 스키마 | LLM 출력 검증 |
 | `data/samples/` | 예시 메모, Mock AI 결과, 기준정보 CSV(`masters/`) | 개발용 시드 데이터 |
 | `.claude/commands/` | `/next` 다음 작업 진행, `/check-mockup` 시안 비교 | 반복 작업 |
@@ -45,7 +45,7 @@
 - 화면: **Jinja2 템플릿 + 바닐라 JS(ES modules)**, CSS는 `design/tokens.css` 기반
   - 기획서 초안의 Streamlit은 쓰지 않는다. 3단 편집기·사진 편집기·회의 모드가 Streamlit 구조와 맞지 않기 때문.
 - 글꼴: **로컬 서브셋** `app/static/fonts/`(Meeting Sans KR · Meeting Mono = IBM Plex 서브셋, OFL). 외부 글꼴 CDN 을 쓰지 않는다. 2026-10-22 본문 글꼴 하나로 통일 — 제목도 Meeting Sans KR(굵기 600), Gothic A1 은 쓰지 않는다. PPT 는 맑은 고딕
-- 글자 크기 5단계 `--fs-1`~`--fs-5`(12·14·16·20·26), 화면 최소 12px. 화면 주 색·회의자료(PPT·발표·보기) 모두 네이비(`--accent` #2C4566, `--slide-*`), 공유정보는 청록
+- 글자 크기 5단계 `--fs-1`~`--fs-5`(12·14·16·20·26), 화면 최소 12px. 색은 **`design/tokens.css` 정본**(앱 사본 `app/static/css/tokens.css` 와 같아야 함) — 상태 3색(회색·파랑 #0963c4·빨강) + 분류 5색, 흰 사이드바(2026-11-13 결정 ⑥⑧). 규칙은 `docs/디자인_규칙.md`
 - 사진 편집기: **Konva.js 9.3.6** — `app/static/vendor/konva.min.js` 사본(출처·sha256 은 그 폴더 README). 합성은 **Pillow**
 - 차트: 직접 SVG (시안과 동일 방식). 필요 시 Chart.js vendor
 - PPT 출력: **python-pptx**, 템플릿 `.pptx`는 `app/export/templates/`

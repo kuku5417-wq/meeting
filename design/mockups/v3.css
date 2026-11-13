@@ -1,0 +1,45 @@
+/* v3 시안 덮개 (2026-11-13) — v2b.css(B안 틀) 위에 ../tokens.css(정본)를 읽고, 그 다음 이 파일.
+   하는 일: ① v2b 전용 변수 이름을 정본 토큰에 잇기 ② 결정 ⑥ 흰 사이드바 ③ 결정 ⑧ 상태 3색 — 유형 라벨은 회색 테두리, 문제점만 빨강,
+   완료·결정은 회색·굵기, 확인할 것(근거·변경·사실 칸)은 연한 파랑, 일정 임박은 빨강, 매핑 빈칸은 회색.
+   글자 크기는 v2m 시안 값(13·14·15·19·28)을 유지한다 — 정본(12·14·16·20·26)과의 차이는 docs/디자인_규칙.md 「정할 것」. */
+:root,:root:not(#v3){
+  --sep:var(--line); --fill-2:var(--surface-2); --field:var(--surface-2);
+  --t-issue:var(--muted); --t-problem:var(--danger); --t-share:var(--muted); --t-decide:var(--fg); --t-ok:var(--muted); --on-t:var(--fg);
+  --warn-soft:var(--accent-soft); --bad-soft:var(--danger-soft);
+  --fs-1:13px; --fs-2:14px; --fs-3:15px; --fs-4:19px; --fs-5:28px;
+}
+/* 사이드바 — 흰색, 오른쪽 선, 지금 메뉴 = 연한 파랑 + 왼쪽 막대 */
+.top{background:var(--side-bg);color:var(--side-fg);box-shadow:inset -1px 0 0 var(--side-line)}
+.top .brand{color:var(--side-fg)}
+.nav a{color:var(--side-fg)}
+.nav a:hover{background:var(--surface-2)}
+.nav a[aria-current="page"]{background:var(--side-on);color:var(--side-on-fg);font-weight:600;box-shadow:inset 3px 0 0 var(--side-bar)}
+.top .right a{color:var(--accent-ink)}
+h1{color:var(--fg)}
+.sec-h{color:var(--muted)}
+.page a:not(.btn):not(.cell){color:var(--accent-ink)}
+.btn:not(.primary):not(.gray):not(.quiet){color:var(--accent-ink)}
+.cell.on{background:var(--accent-soft)!important;box-shadow:inset 3px 0 0 var(--accent)}
+.it.on,.cd:has(input:checked){box-shadow:inset 3px 0 0 var(--accent)}
+.actbar{background:var(--surface);box-shadow:0 -1px 0 var(--line)}
+.canvas{background:#2b2d31}
+.tb{background:var(--surface)}
+/* 유형 라벨 — 색 채움 대신 테두리 글자. 문제점만 빨강 */
+.tl{background:transparent!important;color:var(--fg);box-shadow:inset 0 0 0 1.5px var(--field-line);font-weight:700}
+.tl.problem{color:var(--danger);box-shadow:inset 0 0 0 1.5px var(--danger)}
+/* 상태 — 진행은 파랑 점, 완료·종결 요청은 회색, 늦음은 빨강 */
+.st.req,.st.done{color:var(--muted)} .st.late{color:var(--danger)}
+/* 일정 임박 = 빨강, 매핑 빈칸 = 회색 굵게 */
+.dd.soon{color:var(--danger)} .map.gap{color:var(--fg);font-weight:700}
+/* 분류 칩 — 선종·유종·장비 계통 (늘 글자와 함께) */
+.cat{display:inline-flex;align-items:center;font-size:var(--fs-1);font-weight:600;padding:0 8px;border-radius:999px;line-height:1.7;white-space:nowrap}
+.cat.c1{background:var(--cat-1-soft);color:var(--cat-1-ink)} .cat.c2{background:var(--cat-2-soft);color:var(--cat-2-ink)}
+.cat.c3{background:var(--cat-3-soft);color:var(--cat-3-ink)} .cat.c4{background:var(--cat-4-soft);color:var(--cat-4-ink)}
+.cat.c5{background:var(--cat-5-soft);color:var(--cat-5-ink)} .cat.c0{background:var(--surface-2);color:var(--muted)}
+/* 발표 슬라이드 — 결정·목록 막대도 세 색 */
+.stage .decide{background:var(--slide-soft)!important;border-left-color:var(--fg)!important}
+.stage .li{border-left-color:var(--muted)} .stage .li.problem{border-left-color:var(--danger)}
+/* 고른 행(파랑 채움) 안의 라벨은 글자색을 따라 흰 테두리 */
+.lyr.on .tl,.lyr.on .tl.problem{color:inherit;box-shadow:inset 0 0 0 1.5px currentColor}
+/* 스튜디오 사실 칸 — 이슈를 바꾸는 곳이라 파랑(확인할 것) */
+.fact{background:var(--accent-soft)!important} .fact .lbl{color:var(--accent-ink)!important}

@@ -1,54 +1,96 @@
-/* 디자인 토큰 — 회의자료 시스템 공통
-   시안(design/mockups/*.html)과 동일 값. 색은 이 변수만 쓴다.
-   글꼴(2026-10-22): 본문 글꼴 하나로 통일 — IBM Plex Sans KR(앱 로컬 서브셋 이름 Meeting Sans KR) + 숫자·ID 는 Meeting Mono.
-     --display 는 --body 와 같은 글꼴(굵기만 다르게). Gothic A1 은 쓰지 않는다. 앱 서브셋은 400·500·600 이라 제목 굵기는 600(--fw-strong).
-   글자 크기(2026-10-22): 5단계 --fs-1 12 · --fs-2 14(본문) · --fs-3 16 · --fs-4 20 · --fs-5 26. 화면 최소 12px. 슬라이드 미리보기 안쪽은 축소 표시라 예외.
-   의미 색: --share 공유정보 / --danger 문제점·빈 필수 / --signal 이슈·확인 필요 / --accent 주 색·대기 중인 일 / --ok 종결·완료 /
-     --decide 결정 필요(2026-10-22 신설) / --anno 시안 설명 전용(운영 화면에 쓰지 않음).
-     회의 종류(공유회·월간 현안·팀장 정보회의·호선별·리뷰)는 의미 색을 쓰지 않고 테두리 배지로 구분한다.
-   대비(2026-10-22 계산): 라이트·다크 모두 글자 4.5:1 이상, --field-line 3:1 이상. --ok 를 진하게 바꿈(옅은 바탕 위 4.44 → 5.29).
-   앱 화면(2026-10-23 최종 시안 v2m 반영): 바탕 연한 청회색 #eef1f5 · 카드 흰색 · 주 색 Figma 파랑 #0963c4(흰 글자 5.8:1, 연한 파랑 위 5.2:1) · 사이드바 네이비 --side-bg.
-     연한 파랑 위 글자는 --accent-ink #0857b0(6.1:1). 의미 색·슬라이드 색은 바꾸지 않았다.
-   슬라이드(PPT·발표 화면·회의자료 보기) = A안 네이비(2026-10-22 확정): 지금 부서 PPT 의 남색 띠 · 구역 막대 · 주황 태그를 정리.
-     슬라이드는 라이트·다크 화면에서 모두 흰 바탕(인쇄·빔프로젝터와 같게). app/export/pptx_builder.py 색표와 같은 값. */
+/* 디자인 토큰 — 회의자료 시스템 정본 (2026-11-13 재정리)
+   정본은 이 파일 하나. app/static/css/tokens.css 는 이 파일의 사본(같아야 한다 — _smoke 「토큰 사본 일치」).
+   시안(design/mockups/v3-*)도 이 파일을 읽는다. 값을 바꿀 때는 docs/디자인_규칙.md 의 변경 이력에 적는다.
+
+   층 3개
+   1) 원시 색      --gray-*, --blue-*, --red-*, --cat-*        값은 여기에만 있다
+   2) 의미 색      --bg, --fg, --accent, --danger …           화면 코드는 이 이름만 쓴다
+   3) 옛 이름      --signal, --ok, --share, --decide …        2026-11-13 결정 ⑧로 세 색에 연결(화면 코드 바꾸지 않고 색만 바뀜)
+
+   결정
+   ⑥ 사이드바는 흰색(오른쪽 선), 지금 메뉴 = 연한 파랑 바탕 + 왼쪽 파란 막대, 큰 제목은 --fg. 주 색 #0963c4.
+   ⑧ 상태·동작 색은 세 가지 — 회색 단계 · 파랑(주 동작·선택·지금 위치·확인할 것) · 빨강(문제점·빈 필수 칸·일정 임박·넘침).
+      나머지 구분은 글자·아이콘·굵기. 분류 색(--cat-1~5, 밝은 파스텔)은 선종·유종·장비 계통에만, 늘 글자와 함께.
+   대비(2026-11-13 계산): 라이트 --fg/--bg 16.6 · --muted/흰 9.1(--bg 위 8.0) · 흰 글자/--accent 5.8 · --accent-ink/--accent-soft 6.1
+     · --danger/흰 5.7 · --field-line/흰 3.7 · 분류 칩 글자/칩 바탕 7.1~7.7.
+     다크 --fg/--surface 13.5 · --muted 7.5 · --accent/--surface 6.3 · --accent-fg/--accent 6.7 · --danger 6.0 · --field-line 3.5 · 분류 칩 8.8~9.0.
+   글꼴(2026-10-22): 본문 하나 — Meeting Sans KR(IBM Plex Sans KR 서브셋) + 숫자·ID Meeting Mono. 제목 굵기 600.
+   슬라이드(PPT·발표)는 화면 테마와 관계없이 흰 바탕. 머리띠 색은 정할 것(네이비 유지 / 파랑 / 회색 — v3-tokens.html 비교). */
 :root{
-  --bg:#eef1f5; --surface:#ffffff; --surface-2:#f3f5f8; --fg:#111114; --muted:#48484d; --line:#dfe4ea; --field-line:#7d8693; --on-danger:#ffffff;
-  --accent:#0963c4; --accent-soft:#e5f0fd; --accent-fg:#ffffff; --accent-ink:#0857b0;
-  --side-bg:#1c2f4f; --side-fg:#dbe3ee; --side-muted:#a9b6c8; --side-on:rgba(255,255,255,.14); --side-bar:#4c9bff;
+  /* 1) 원시 색 */
+  --gray-0:#ffffff; --gray-50:#f3f5f8; --gray-100:#eef1f5; --gray-150:#e6e9ef; --gray-200:#dfe4ea;
+  --gray-500:#7d8693; --gray-700:#48484d; --gray-900:#111114;
+  --blue-50:#e5f0fd; --blue-600:#0963c4; --blue-700:#0857b0;
+  --red-50:#f8e3df; --red-600:#b83a26;
+  --navy-700:#26344a;
+  --cat-1:#80ae67; --cat-1-soft:#e8f5e1; --cat-1-ink:#375822;
+  --cat-2:#ae8cd5; --cat-2-soft:#f5ecff; --cat-2-ink:#593f74;
+  --cat-3:#42b59a; --cat-3-soft:#dcf7ef; --cat-3-ink:#005c4a;
+  --cat-4:#bb9a46; --cat-4-soft:#f9f0da; --cat-4-ink:#614900;
+  --cat-5:#d281a8; --cat-5-soft:#ffe8f3; --cat-5-ink:#713654;
+
+  /* 2) 의미 색 */
+  --bg:var(--gray-100); --surface:var(--gray-0); --surface-2:var(--gray-50); --fill:var(--gray-150);
+  --fg:var(--gray-900); --muted:var(--gray-700); --line:var(--gray-200); --field-line:var(--gray-500);
+  --accent:var(--blue-600); --accent-soft:var(--blue-50); --accent-fg:#ffffff; --accent-ink:var(--blue-700); --focus:var(--blue-600);
+  --danger:var(--red-600); --danger-soft:var(--red-50); --on-danger:#ffffff;
+  --side-bg:var(--gray-0); --side-fg:var(--gray-900); --side-muted:var(--gray-700); --side-line:var(--gray-200);
+  --side-on:var(--blue-50); --side-on-fg:var(--blue-700); --side-bar:var(--blue-600);
   --shadow:0 1px 2px rgba(16,24,40,.06),0 0 0 1px rgba(16,24,40,.04);
-  --signal:#9a5a00; --signal-soft:#fbefd9;
-  --danger:#b83a26; --danger-soft:#f8e3df;
-  --ok:#276d43; --ok-soft:#dff0e5;
-  --share:#35589c; --share-soft:#e2e9f6;
-  --decide:#6a3fb5; --decide-soft:#ece4f8;
-  --anno:#6a3fb5; --anno-soft:#ece4f8;
+
+  /* 3) 옛 이름 → 세 색 (결정 ⑧). 유형 라벨(이슈·공유)·완료·결정은 회색, 문제점은 빨강 */
+  --signal:var(--gray-700); --signal-soft:var(--gray-50);
+  --ok:var(--gray-700); --ok-soft:var(--gray-50);
+  --share:var(--gray-700); --share-soft:var(--gray-50);
+  --decide:var(--gray-900); --decide-soft:var(--gray-50);
+  --anno:#6a3fb5; --anno-soft:#ece4f8;   /* 시안 설명 전용 — 앱에 쓰지 않는다 */
   --photo-bg:#c9d3d8; --photo-metal:#8d9ba3; --photo-dark:#56646c;
-  --slide:#ffffff; --slide-fg:#14212b; --slide-muted:#566570; --slide-line:#cfd8dd; --slide-soft:#eef2f6; --slide-photo:#c9d3d8;
-  --slide-band:#26344a; --slide-band-fg:#ffffff; --slide-sec:#3b5a7a; --slide-sec-fg:#ffffff;
-  --slide-tag:#f0a63c; --slide-tag-fg:#1a2433;
-  --slide-issue:#9a5a00; --slide-problem:#b83a26; --slide-share:#35589c; --slide-ok:#276d43; --slide-ok-soft:#dff0e5; --slide-issue-soft:#fbefd9; --slide-decide:#6a3fb5; --slide-decide-soft:#f3eefb;
+
+  /* 슬라이드 — 흰 바탕 고정 */
+  --slide:#ffffff; --slide-fg:var(--gray-900); --slide-muted:var(--gray-700); --slide-line:#cfd8dd; --slide-soft:var(--gray-50); --slide-photo:#c9d3d8;
+  --slide-band:var(--navy-700); --slide-band-fg:#ffffff; --slide-sec:var(--navy-700); --slide-sec-fg:#ffffff;
+  --slide-tag:var(--blue-50); --slide-tag-fg:var(--blue-700);
+  --slide-issue:var(--gray-700); --slide-problem:var(--red-600); --slide-share:var(--gray-700);
+  --slide-ok:var(--gray-700); --slide-ok-soft:var(--gray-50); --slide-issue-soft:var(--gray-50);
+  --slide-decide:var(--gray-900); --slide-decide-soft:var(--gray-50);
+
+  /* 테마와 관계없이 고정 — 편집 캔버스(어둡게, 장이 돋보이게)·알림·발표 */
+  --canvas:#2b2d31; --canvas-fg:#c7c9ce; --canvas-strong:#ffffff; --canvas-muted:#9da1a8; --canvas-sel:#4c9bff; --canvas-hover:#8bbcff;
+  --mini:#ffffff; --mini-line:#c8d0db; --mini-block:#e3e8ef;
+  --toast-bg:#1c1c1e; --toast-fg:#ffffff; --toast-action:#7db4ff; --present-bg:#000000;
+
+  /* 글꼴·크기 */
   --body:"Meeting Sans KR","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --display:var(--body);
   --mono:"Meeting Mono","IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
   --fs-1:12px; --fs-2:14px; --fs-3:16px; --fs-4:20px; --fs-5:26px;
   --fw-strong:600;
 }
+/* 다크 — 같은 이름, 다크 바탕에 맞춘 값. 주 색은 다크에서도 파랑(예전 청록 #4fb3bc 는 결정 ⑧로 버림) */
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
-  --accent-ink:#8fc2ff; --side-bg:#0f1a2b; --side-fg:#dbe3ee; --side-muted:#a9b6c8; --side-on:rgba(255,255,255,.12); --side-bar:#4c9bff; --shadow:none;
-  --bg:#0e161b; --surface:#152128; --surface-2:#1c2b33; --fg:#e2eaee; --muted:#95a5af; --line:#2a3b44; --field-line:#627782; --on-danger:#1a0d0a;
-  --accent:#4fb3bc; --accent-soft:#163a3e; --accent-fg:#06262a;
-  --signal:#f0a830; --signal-soft:#3a2c12; --danger:#ef7a64; --danger-soft:#3a1f1a;
-  --ok:#5cb87f; --ok-soft:#173222; --share:#8fa9e0; --share-soft:#1e2a44;
-  --decide:#b9a0ec; --decide-soft:#2c2342;
+  --bg:#0e161b; --surface:#152128; --surface-2:#1c2b33; --fill:#22333c; --fg:#e2eaee; --muted:#a3b2bb; --line:#2a3b44; --field-line:#627782;
+  --accent:#5ea2ff; --accent-soft:#11284a; --accent-fg:#001a3d; --accent-ink:#8fc2ff; --focus:#5ea2ff;
+  --danger:#ef7a64; --danger-soft:#3a1f1a; --on-danger:#1a0d0a;
+  --side-bg:#152128; --side-fg:#e2eaee; --side-muted:#a3b2bb; --side-line:#2a3b44; --side-on:#11284a; --side-on-fg:#8fc2ff; --side-bar:#5ea2ff;
+  --signal:#a3b2bb; --signal-soft:#1c2b33; --ok:#a3b2bb; --ok-soft:#1c2b33; --share:#a3b2bb; --share-soft:#1c2b33; --decide:#e2eaee; --decide-soft:#1c2b33;
+  --cat-1:#6e9b55; --cat-1-soft:#233319; --cat-1-ink:#bedcae;
+  --cat-2:#9c7ac2; --cat-2-soft:#342742; --cat-2-ink:#dbc6f7;
+  --cat-3:#29a288; --cat-3-soft:#0a362c; --cat-3-ink:#a0e1ce;
+  --cat-4:#a88831; --cat-4-soft:#382c0c; --cat-4-ink:#e4cf9d;
+  --cat-5:#be6f96; --cat-5-soft:#412331; --cat-5-ink:#f6bfd7;
   --anno:#b9a0ec; --anno-soft:#2c2342;
-  --photo-bg:#2b383f; --photo-metal:#56656d; --photo-dark:#8a99a1; color-scheme:dark;}}
+  --photo-bg:#2b383f; --photo-metal:#56656d; --photo-dark:#8a99a1; --shadow:none; color-scheme:dark;}}
 :root[data-theme="dark"]{
-  --accent-ink:#8fc2ff; --side-bg:#0f1a2b; --side-fg:#dbe3ee; --side-muted:#a9b6c8; --side-on:rgba(255,255,255,.12); --side-bar:#4c9bff; --shadow:none;
-  --bg:#0e161b; --surface:#152128; --surface-2:#1c2b33; --fg:#e2eaee; --muted:#95a5af; --line:#2a3b44; --field-line:#627782; --on-danger:#1a0d0a;
-  --accent:#4fb3bc; --accent-soft:#163a3e; --accent-fg:#06262a;
-  --signal:#f0a830; --signal-soft:#3a2c12; --danger:#ef7a64; --danger-soft:#3a1f1a;
-  --ok:#5cb87f; --ok-soft:#173222; --share:#8fa9e0; --share-soft:#1e2a44;
-  --decide:#b9a0ec; --decide-soft:#2c2342;
+  --bg:#0e161b; --surface:#152128; --surface-2:#1c2b33; --fill:#22333c; --fg:#e2eaee; --muted:#a3b2bb; --line:#2a3b44; --field-line:#627782;
+  --accent:#5ea2ff; --accent-soft:#11284a; --accent-fg:#001a3d; --accent-ink:#8fc2ff; --focus:#5ea2ff;
+  --danger:#ef7a64; --danger-soft:#3a1f1a; --on-danger:#1a0d0a;
+  --side-bg:#152128; --side-fg:#e2eaee; --side-muted:#a3b2bb; --side-line:#2a3b44; --side-on:#11284a; --side-on-fg:#8fc2ff; --side-bar:#5ea2ff;
+  --signal:#a3b2bb; --signal-soft:#1c2b33; --ok:#a3b2bb; --ok-soft:#1c2b33; --share:#a3b2bb; --share-soft:#1c2b33; --decide:#e2eaee; --decide-soft:#1c2b33;
+  --cat-1:#6e9b55; --cat-1-soft:#233319; --cat-1-ink:#bedcae;
+  --cat-2:#9c7ac2; --cat-2-soft:#342742; --cat-2-ink:#dbc6f7;
+  --cat-3:#29a288; --cat-3-soft:#0a362c; --cat-3-ink:#a0e1ce;
+  --cat-4:#a88831; --cat-4-soft:#382c0c; --cat-4-ink:#e4cf9d;
+  --cat-5:#be6f96; --cat-5-soft:#412331; --cat-5-ink:#f6bfd7;
   --anno:#b9a0ec; --anno-soft:#2c2342;
-  --photo-bg:#2b383f; --photo-metal:#56656d; --photo-dark:#8a99a1; color-scheme:dark;}
+  --photo-bg:#2b383f; --photo-metal:#56656d; --photo-dark:#8a99a1; --shadow:none; color-scheme:dark;}
 body{background:var(--bg);color:var(--fg);font-family:var(--body)}

@@ -54,6 +54,12 @@ def t_paths() -> None:
     check("DB 파일이 데이터 폴더 안", pc.db_path().parent == Path(_TMP))
 
 
+def t_tokens() -> None:
+    root = Path(__file__).resolve().parent
+    a, b = root / "design" / "tokens.css", root / "app" / "static" / "css" / "tokens.css"
+    check("토큰 사본 일치 (design/tokens.css = app/static/css/tokens.css)", a.read_bytes() == b.read_bytes())
+
+
 def t_weeks() -> None:
     from datetime import date
 
@@ -2260,7 +2266,7 @@ def t_m11(c) -> None:
 
 
 def main() -> int:
-    for fn in (t_paths, t_weeks, t_sn, t_app):
+    for fn in (t_paths, t_tokens, t_weeks, t_sn, t_app):
         try:
             fn()
         except Exception as e:  # noqa: BLE001 — 한 묶음이 죽어도 나머지는 돌린다

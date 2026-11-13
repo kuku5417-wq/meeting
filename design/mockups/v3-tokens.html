@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v3 디자인 토큰 — 정본 한눈에 보기</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="v3.css">
+<style>
+body{padding-left:0}
+.wrap{max-width:1180px;margin:0 auto;padding:24px 20px 60px;display:grid;gap:16px}
+.card{background:var(--surface);border-radius:12px;padding:16px 18px;box-shadow:var(--shadow)}
+.card h2{font-size:var(--fs-4);margin-bottom:4px}
+.card p.d{color:var(--muted);font-size:var(--fs-2);margin:0 0 12px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.sw{display:grid;gap:4px;width:150px;font-size:var(--fs-1)}
+.sw i{display:block;height:44px;border-radius:8px;box-shadow:inset 0 0 0 1px var(--line)}
+.sw b{font-family:var(--mono);font-weight:500;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+table{border-collapse:collapse;width:100%;font-size:var(--fs-2)}
+td,th{text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600}
+.btnp{display:inline-flex;align-items:center;min-height:36px;padding:0 14px;border-radius:9px;font-weight:600;border:0}
+.b-primary{background:var(--accent);color:var(--accent-fg)} .b-soft{background:var(--accent-soft);color:var(--accent-ink)} .b-gray{background:var(--fill);color:var(--fg)} .b-danger{background:var(--danger);color:var(--on-danger)}
+.side-demo{display:grid;grid-template-columns:200px 1fr;border-radius:12px;overflow:hidden;box-shadow:var(--shadow);min-height:220px}
+.side-demo .s{background:var(--side-bg);box-shadow:inset -1px 0 0 var(--side-line);padding:12px 8px;display:grid;align-content:start;gap:2px}
+.side-demo .s b{padding:2px 10px 8px;font-size:var(--fs-4)}
+.side-demo .s a{display:flex;align-items:center;min-height:36px;padding:0 10px;border-radius:8px;color:var(--side-fg)}
+.side-demo .s a.on{background:var(--side-on);color:var(--side-on-fg);font-weight:600;box-shadow:inset 3px 0 0 var(--side-bar)}
+.side-demo .m{background:var(--bg);padding:16px}
+.side-demo .m h1{font-size:var(--fs-5)}
+.irow{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;background:var(--surface);border-radius:10px;padding:10px 12px;margin-top:8px}
+.irow .t{font-weight:600} .irow .meta{display:flex;gap:8px;align-items:center;font-size:var(--fs-2);color:var(--muted);flex-wrap:wrap}
+.slides{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sl{background:var(--slide);border-radius:8px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.15);color:var(--slide-fg)}
+.sl .band{display:flex;justify-content:space-between;padding:6px 10px;font-size:12px;font-weight:600}
+.sl .bd{padding:12px;font-size:13px;display:grid;gap:6px;min-height:110px}
+.sl .tag{display:inline-block;background:var(--slide-tag);color:var(--slide-tag-fg);border-radius:6px;padding:0 6px;font-weight:700}
+.sl .li{border-left:5px solid var(--slide-issue);padding-left:8px} .sl .li.p{border-color:var(--slide-problem)}
+.legend{display:flex;gap:6px;flex-wrap:wrap}
+.toolbar{position:sticky;top:0;z-index:5;background:var(--bg);padding:10px 0;display:flex;gap:8px;align-items:center}
+@media (max-width:760px){.grid2,.slides{grid-template-columns:1fr}.side-demo{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="toolbar"><h1 style="font-size:var(--fs-5)">디자인 토큰 정본</h1><span class="muted small">design/tokens.css · 2026-11-13 결정 ⑥⑧</span><span style="flex:1"></span>
+    <div class="seg" role="group" aria-label="테마"><button type="button" data-t="light" aria-pressed="true">라이트</button><button type="button" data-t="dark" aria-pressed="false">다크</button></div></div>
+
+  <section class="card"><h2>1. 상태·동작 색 — 세 가지</h2>
+    <p class="d">회색 단계 · 파랑(주 동작·선택·지금 위치·확인할 것) · 빨강(문제점·빈 필수 칸·일정 임박·넘침). 나머지 구분은 글자·아이콘·굵기.</p>
+    <div class="row">
+      <div class="sw"><i style="background:var(--bg)"></i>--bg<b>바탕</b></div>
+      <div class="sw"><i style="background:var(--surface)"></i>--surface<b>카드</b></div>
+      <div class="sw"><i style="background:var(--surface-2)"></i>--surface-2<b>옅은 칸</b></div>
+      <div class="sw"><i style="background:var(--line)"></i>--line<b>선</b></div>
+      <div class="sw"><i style="background:var(--muted)"></i>--muted<b>보조 글자</b></div>
+      <div class="sw"><i style="background:var(--fg)"></i>--fg<b>본문 글자</b></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div class="sw"><i style="background:var(--accent)"></i>--accent<b>주 색</b></div>
+      <div class="sw"><i style="background:var(--accent-soft)"></i>--accent-soft<b>선택·확인할 것</b></div>
+      <div class="sw"><i style="background:var(--danger)"></i>--danger<b>문제·임박</b></div>
+      <div class="sw"><i style="background:var(--danger-soft)"></i>--danger-soft<b>빈 필수 칸</b></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <span class="btnp b-primary">종결 승인</span><span class="btnp b-soft">초안 열기</span><span class="btnp b-gray">변동 없음</span><span class="btnp b-danger">삭제 확정</span>
+      <span class="tl issue">이슈</span><span class="tl problem">문제점</span><span class="tl share">공유</span>
+      <span class="st go">진행</span><span class="st req">종결 요청</span><span class="st done">초안</span><span class="st late">한 줄 없음</span>
+      <span class="dd soon">G/T 10/27 · D-5</span><span class="map gap">매핑 1/5</span><span class="map">매핑 5/5</span>
+    </div>
+  </section>
+
+  <section class="card"><h2>2. 분류 색 — 밝은 파스텔 5색</h2>
+    <p class="d">선종·유종·장비 계통에만. 값마다 색 고정, 6번째부터 회색 「기타」, 늘 글자와 함께(칠 색만으로는 흰 바탕 대비 2.5~2.8).</p>
+    <div class="row">
+      <div class="sw"><i style="background:var(--cat-1)"></i>--cat-1<b>연두</b></div>
+      <div class="sw"><i style="background:var(--cat-2)"></i>--cat-2<b>연보라</b></div>
+      <div class="sw"><i style="background:var(--cat-3)"></i>--cat-3<b>민트</b></div>
+      <div class="sw"><i style="background:var(--cat-4)"></i>--cat-4<b>겨자</b></div>
+      <div class="sw"><i style="background:var(--cat-5)"></i>--cat-5<b>분홍</b></div>
+    </div>
+    <div class="grid2" style="margin-top:12px">
+      <div><div class="sec-h">선종 (예시 배정)</div><div class="legend"><span class="cat c1">LNG선</span><span class="cat c2">컨테이너선</span><span class="cat c3">탱커</span><span class="cat c4">LPG선</span><span class="cat c5">FLNG</span><span class="cat c0">기타</span></div></div>
+      <div><div class="sec-h">유종 (예시 배정)</div><div class="legend"><span class="cat c3">LNG</span><span class="cat c4">HFO</span><span class="cat c1">MGO</span><span class="cat c2">VLSFO</span><span class="cat c5">메탄올</span></div></div>
+    </div>
+    <div class="irow"><span class="tl issue">이슈</span><div><div class="t">SN2511 발전기 No.2 배기온도 편차</div><div class="meta"><span class="id">ISS-2026-0001</span><span class="cat c1">LNG선</span><span class="cat c3">기관 계통</span><span class="dd soon">S/T 11/03 · D-12</span><span class="map">매핑 4/5</span></div></div><span class="st go">진행</span></div>
+    <div class="irow"><span class="tl problem">문제점</span><div><div class="t">SN2514 카고펌프 No.3 메카니컬씰 누유</div><div class="meta"><span class="id">PRB-2026-0001</span><span class="cat c2">컨테이너선</span><span class="cat c4">화물 계통</span><span class="dd">G/T 10/27 · D-5</span><span class="map gap">매핑 2/5</span></div></div><span class="st req">종결 요청</span></div>
+  </section>
+
+  <section class="card"><h2>3. 사이드바 — 흰색 (결정 ⑥)</h2>
+    <p class="d">오른쪽 선, 지금 메뉴는 연한 파랑 + 왼쪽 막대, 큰 제목은 본문 글자색.</p>
+    <div class="side-demo"><div class="s"><b>회의·지식</b><a>홈</a><a class="on">이슈</a><a>회의</a><a>지표</a><a>지식창고</a><a>장비 허브</a></div>
+      <div class="m"><h1>이슈</h1><div class="irow"><span class="tl share">공유</span><div><div class="t">SN2511 조타기 선급 검사 10/21 → 10/23</div><div class="meta"><span class="id">SHR-2026-0001</span><span class="cat c1">LNG선</span></div></div><span class="st done">초안</span></div></div></div>
+  </section>
+
+  <section class="card"><h2>4. 슬라이드 머리띠 — 정할 것</h2>
+    <p class="d">슬라이드는 늘 흰 바탕. 머리띠 색만 고르면 된다(지금 PPT와 같은 네이비 / 주 색 파랑 / 회색).</p>
+    <div class="slides">
+      <div class="sl"><div class="band" style="background:#26344a;color:#fff"><span>W43 시운전1부</span><span>A 네이비(지금)</span></div><div class="bd"><div><span class="tag">[결정필요]</span> 부하시험 장소</div><div class="li">SN2511 발전기 배기온도 편차</div><div class="li p">SN2514 카고펌프 씰 누유</div></div></div>
+      <div class="sl"><div class="band" style="background:var(--blue-600);color:#fff"><span>W43 시운전1부</span><span>B 파랑</span></div><div class="bd"><div><span class="tag">[결정필요]</span> 부하시험 장소</div><div class="li">SN2511 발전기 배기온도 편차</div><div class="li p">SN2514 카고펌프 씰 누유</div></div></div>
+      <div class="sl"><div class="band" style="background:#e6e9ef;color:#111114"><span>W43 시운전1부</span><span>C 회색</span></div><div class="bd"><div><span class="tag">[결정필요]</span> 부하시험 장소</div><div class="li">SN2511 발전기 배기온도 편차</div><div class="li p">SN2514 카고펌프 씰 누유</div></div></div>
+    </div>
+  </section>
+
+  <section class="card"><h2>5. 옛 이름 → 세 색 (화면 코드는 그대로, 값만 바뀜)</h2>
+    <table><tr><th>옛 이름</th><th>예전 뜻·색</th><th>지금</th></tr>
+      <tr><td class="mono">--signal</td><td>이슈·확인 필요 (주황)</td><td>회색 <span class="tl issue">이슈</span> — 「확인 필요·변경」 표시는 앱 CSS에서 --accent-soft로 바꿀 것</td></tr>
+      <tr><td class="mono">--share</td><td>공유정보 (청록)</td><td>회색 <span class="tl share">공유</span></td></tr>
+      <tr><td class="mono">--ok</td><td>종결·완료 (초록)</td><td>회색 + 체크 아이콘 <span class="st done">초안</span></td></tr>
+      <tr><td class="mono">--decide</td><td>결정 필요 (보라)</td><td>본문 글자 + 굵게 <b>결정 필요</b></td></tr>
+      <tr><td class="mono">--danger</td><td>문제점·빈 필수 (빨강)</td><td>그대로 <span class="tl problem">문제점</span></td></tr>
+    </table>
+  </section>
+</div>
+<script>
+for (const b of document.querySelectorAll('[data-t]')) b.onclick = () => {
+  document.documentElement.dataset.theme = b.dataset.t;
+  for (const x of document.querySelectorAll('[data-t]')) x.setAttribute('aria-pressed', String(x === b));
+};
+const t = new URLSearchParams(location.search).get('theme'); if (t) document.querySelector(`[data-t="${t}"]`)?.click();
+</script>
+</body>
+</html>
