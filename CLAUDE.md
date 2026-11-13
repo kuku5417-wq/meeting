@@ -3,6 +3,11 @@
 이 파일은 Claude Code가 이 저장소에서 작업할 때 먼저 읽는 안내서다.
 작업 전에 이 파일과 `docs/05_개발로드맵.md`의 현재 마일스톤을 확인하고 시작한다.
 
+> **`trans` 브랜치 = 사내망 전환 작업본(2026-11-13~).** `main`은 원본 그대로 두고 여기서만 고친다.
+> - `requirements.md` 5장 **결정 ①~⑧이 아래 옛 규칙보다 우선**한다. 특히 ② 테스트는 pytest로 옮긴다, ③ 메일·DRM은 1차에서 끈다, ④ LLM은 `sola,openai`(Mock은 테스트 전용), ⑤ `app_config.py`·`_netcheck.py`는 shi 전환 지점으로 대신한다, ⑦ 캔버스 편집은 자료에만·사실은 사실 칸/「사실로 채택」.
+> - **이어서 할 일: `workinglog.md` 맨 아래 「남은 일 전체 계획」 표**(단계 0~13). 옮기기 전까지 아래 옛 규칙(`_smoke.py`, `app_config.py` 등)은 지금 코드 기준이다.
+> - 결정 근거·검토 문서: GitHub `kuku5417-wq/agent_trans`의 `사례/meeting*.md`.
+
 ## 1. 무엇을 만드는가
 
 커미셔닝팀 8개 부서가 매주 쓰는 주간 회의자료(현재 PPT)를 **웹 입력 → 자동 보고서 생성** 방식으로 바꾸고,
@@ -50,7 +55,7 @@
 - 차트: 직접 SVG (시안과 동일 방식). 필요 시 Chart.js vendor
 - PPT 출력: **python-pptx**, 템플릿 `.pptx`는 `app/export/templates/`
 - LLM: 사내 LLM/챗봇 API (OpenAI 호환 가정), 어댑터 뒤에 숨긴다 (`app/llm/`)
-- 테스트: **`_smoke.py`** (공통지침 — pytest 는 쓰지 않는다). HTTP는 FastAPI `TestClient`
+- 테스트: 지금은 **`_smoke.py`**(HTTP는 FastAPI `TestClient`). trans 브랜치는 결정 ②로 pytest로 옮긴다(계획 1단계, 통과 개수 일치가 완료 기준)
 
 ## 4. 환경 규칙
 
