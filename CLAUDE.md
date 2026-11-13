@@ -7,6 +7,7 @@
 > - `requirements.md` 5장 **결정 ①~⑧이 아래 옛 규칙보다 우선**한다. 특히 ② 테스트는 pytest로 옮긴다, ③ 메일·DRM은 1차에서 끈다, ④ LLM은 `sola,openai`(Mock은 테스트 전용), ⑤ `app_config.py`·`_netcheck.py`는 shi 전환 지점으로 대신한다, ⑦ 캔버스 편집은 자료에만·사실은 사실 칸/「사실로 채택」.
 > - **이어서 할 일: `workinglog.md` 맨 아래 「남은 일 전체 계획」 표**(단계 0~13). 옮기기 전까지 아래 옛 규칙(`_smoke.py`, `app_config.py` 등)은 지금 코드 기준이다.
 > - 결정 근거·검토 문서: GitHub `kuku5417-wq/agent_trans`의 `사례/meeting*.md`.
+> - 다른 PC에서 받아 이어가는 방법: `이어서_하기.md`.
 
 ## 1. 무엇을 만드는가
 
