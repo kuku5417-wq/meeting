@@ -30,7 +30,7 @@ h1{color:var(--fg)}
 /* 상태 — 진행은 파랑 점, 완료·종결 요청은 회색, 늦음은 빨강 */
 .st.req,.st.done{color:var(--muted)} .st.late{color:var(--danger)}
 /* 일정 임박 = 빨강, 매핑 빈칸 = 회색 굵게 */
-.dd.soon{color:var(--danger)} .map.gap{color:var(--fg);font-weight:700}
+.dd{color:var(--muted)} .dd.soon{color:var(--danger)} .map.gap{color:var(--fg);font-weight:700}
 /* 분류 칩 — 선종·유종·장비 계통 (늘 글자와 함께) */
 .cat{display:inline-flex;align-items:center;font-size:var(--fs-1);font-weight:600;padding:0 8px;border-radius:999px;line-height:1.7;white-space:nowrap}
 .cat.c1{background:var(--cat-1-soft);color:var(--cat-1-ink)} .cat.c2{background:var(--cat-2-soft);color:var(--cat-2-ink)}

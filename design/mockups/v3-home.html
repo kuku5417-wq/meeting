@@ -87,7 +87,7 @@ function render() {
   all.forEach((it, i) => { if (!groups.length || groups.at(-1).g !== it.g) groups.push({g: it.g, rows: []}); groups.at(-1).rows.push([it, i]); });
   $('#queue').innerHTML = groups.map(({g, rows}) => `<div class="sec-h">${esc(g)}</div><div class="group">` + rows.map(([it, i]) => {
     const d = it.d, isDone = done.has(key(it));
-    const what = d ? `<div class="what"><span class="t"><span class="tl ${d.t}">${KIND[d.t]}</span> ${esc(d.title)}</span><span class="meta"><span class="id">${d.id}</span><span>${d.hull}</span><span class="dd ${d.dd !== null && d.dd <= 14 ? 'soon' : ''}">${esc(d.ev)}${d.dd !== null ? ' · D-' + d.dd : ''}</span><span>지난주: ${esc(d.last)}</span></span></div>`
+    const what = d ? `<div class="what"><span class="t"><span class="tl ${d.t}">${KIND[d.t]}</span> ${esc(d.title)}</span><span class="meta"><span class="id">${d.id}</span><span>${d.hull}</span><span class="dd">${esc(d.ev)}</span>${d.dd !== null ? `<span class="dd ${d.dd <= 14 ? 'soon' : ''}">D-${d.dd}</span>` : ''}<span>지난주: ${esc(d.last)}</span></span></div>`
       : `<div class="what"><span class="t">${esc(it.title)}</span><span class="meta">${esc(it.sub)}</span></div>`;
     let act = '', line = '';
     if (it.k === 'line') line = `<div class="line"><label class="sr" for="ln${i}">${d.id} 이번 주 한 줄</label><input id="ln${i}" type="text" data-line="${i}" placeholder="이번 주 진행 한 줄 — Enter 로 저장하고 다음"><button class="btn sm primary" type="button" data-save="${i}">저장</button><button class="btn sm gray" type="button" data-same="${i}">변동 없음</button></div>`;

@@ -135,7 +135,7 @@ function renderList() {
   $('#rows').innerHTML = vis().map((d) => `<div class="cell tap r ${d.id === cur ? 'on' : ''}" data-id="${d.id}">
     <input type="checkbox" data-sel="${d.id}" ${sel.has(d.id) ? 'checked' : ''} aria-label="${d.id} 고르기">
     <div style="min-width:0;display:grid;gap:2px"><span class="t"><span class="tl ${d.t}">${KIND[d.t]}</span> ${esc(d.title)}</span>
-      <span class="meta"><span class="id">${d.id}</span><span class="dd ${d.dd !== null && d.dd <= 14 ? 'soon' : ''}">${d.hull} · ${esc(d.ev)}${d.dd !== null ? ' D-' + d.dd : ''}</span>${d.wk ? '' : '<span class="st late">한 줄 없음</span>'}</span></div>
+      <span class="meta"><span class="id">${d.id}</span><span class="dd">${d.hull} · ${esc(d.ev)}</span>${d.dd !== null ? `<span class="dd ${d.dd <= 14 ? 'soon' : ''}">D-${d.dd}</span>` : ''}${d.wk ? '' : '<span class="st late">한 줄 없음</span>'}</span></div>
     <div class="right"><span class="st ${ST[d.st][0]}">${ST[d.st][1]}</span><span class="map ${d.map < 5 ? 'gap' : ''}">매핑 ${d.map}/5</span>${d.draft === 'ok' ? '<span class="st done">초안</span>' : '<span class="small muted">초안 ' + (d.draft === 'wip' ? '작성 중' : '없음') + '</span>'}</div></div>`).join('')
     || '<div class="empty">조건에 맞는 이슈가 없습니다 — 거르기를 풀어 보세요</div>';
   $('#bulk').hidden = !sel.size; $('#bN').textContent = `고른 이슈 ${sel.size}건`;

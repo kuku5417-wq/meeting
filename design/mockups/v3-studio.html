@@ -173,7 +173,7 @@ function renderProps() {
   const d = byId(it.id), p = ptag(d);
   if (it.ids) { $('#props').innerHTML = `<div class="prop"><span class="small muted">${sel + 2}장 · 요약</span><b>이슈 ${it.ids.length}건 묶음</b><span class="meta">${it.ids.map((x) => `<a href="v3-issue-desk.html?id=${x}">${x}</a>`).join(' ')}</span></div><div class="sec-h">요약 문장</div><div class="prop"><span class="expr">이 자료에만 — 각 이슈는 그대로</span><input type="text" id="ln" value="${esc(it.line)}"></div><div class="row"><button class="btn sm gray" type="button" id="unsum">요약 풀기</button><button class="btn sm gray" type="button" id="drop">이 장 빼기</button></div>` + KEYS; return; }
   $('#props').innerHTML = `
-    <div class="prop"><span class="small muted">${sel + 2}장 · ${d.id}${it.src ? ' · ' + esc(it.src) : ''}</span><b>${esc(d.title)}</b><span class="meta"><span>${d.dept}</span><span class="dd ${d.dd !== null && d.dd <= 14 ? 'soon' : ''}">${d.hull} · ${esc(d.ev)}${d.dd !== null ? ' D-' + d.dd : ''}</span>${d.draft !== 'ok' ? '<span class="st late">초안 작성 중</span>' : ''}</span></div>
+    <div class="prop"><span class="small muted">${sel + 2}장 · ${d.id}${it.src ? ' · ' + esc(it.src) : ''}</span><b>${esc(d.title)}</b><span class="meta"><span>${d.dept}</span><span class="dd">${d.hull} · ${esc(d.ev)}</span>${d.dd !== null ? `<span class="dd ${d.dd <= 14 ? 'soon' : ''}">D-${d.dd}</span>` : ''}${d.draft !== 'ok' ? '<span class="st late">초안 작성 중</span>' : ''}</span></div>
     <div class="sec-h">형태 — 캔버스 옆 변형을 눌러도 됩니다</div>
     <div class="vgrid">${Object.entries(FORMS).map(([k, v], n) => `<button type="button" data-form="${k}" aria-pressed="${k === it.form}"><span class="mini">${mini(k)}</span>${n + 1}. ${v}</button>`).join('')}</div>
     <div class="sec-h">회의용 한 줄</div>
