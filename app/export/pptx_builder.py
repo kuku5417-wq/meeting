@@ -31,12 +31,12 @@ W, H = Inches(13.333), Inches(7.5)
 MARGIN = Inches(0.4)
 BAND_H = Inches(0.6)
 KPI_H = Inches(0.55)
-# design/tokens.css 의 --slide-* 값 (A안 네이비, 2026-10-22). 출력물은 인쇄·화면 공유용이라 라이트 고정
+# design/tokens.css 의 --slide-* 값 (2026-11-13 결정 ⑧ — 회색 머리띠·세 색). 출력물은 인쇄·화면 공유용이라 라이트 고정
 C = {k: RGBColor.from_string(v) for k, v in {
-    "band": "26344A", "sec": "3B5A7A", "tag": "F0A63C", "tag_fg": "1A2433",
-    "fg": "14212B", "muted": "566570", "line": "CFD8DD", "bg": "EEF2F6", "white": "FFFFFF",
-    "issue": "9A5A00", "problem": "B83A26", "share": "0B6E78", "ok": "276D43", "signal": "9A5A00", "danger": "B83A26",
-    "decide": "6A3FB5", "accent": "3B5A7A", "soft": "EEF2F6"}.items()}
+    "band": "E6E9EF", "band_fg": "111114", "sec": "E6E9EF", "tag": "E5F0FD", "tag_fg": "0857B0",
+    "fg": "111114", "muted": "48484D", "line": "CFD8DD", "bg": "EEF1F5", "white": "FFFFFF",
+    "issue": "48484D", "problem": "B83A26", "share": "48484D", "ok": "48484D", "signal": "48484D", "danger": "B83A26",
+    "decide": "111114", "accent": "0963C4", "soft": "F3F5F8"}.items()}
 CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳"
 
 
@@ -99,8 +99,8 @@ def _blank(prs):
 
 def _band(slide, left: str, right: str, state: str = "") -> None:
     _rect(slide, 0, 0, W, BAND_H, "band")
-    _text(slide, MARGIN, 0, Inches(9), BAND_H, left, 20, True, "white", anchor=MSO_ANCHOR.MIDDLE)
-    _text(slide, W - MARGIN - Inches(3), 0, Inches(3), BAND_H, right, 16, True, "white", PP_ALIGN.RIGHT, MSO_ANCHOR.MIDDLE)
+    _text(slide, MARGIN, 0, Inches(9), BAND_H, left, 20, True, "band_fg", anchor=MSO_ANCHOR.MIDDLE)
+    _text(slide, W - MARGIN - Inches(3), 0, Inches(3), BAND_H, right, 16, True, "band_fg", PP_ALIGN.RIGHT, MSO_ANCHOR.MIDDLE)
     if state and state != "확정":
         tag = _rect(slide, W - MARGIN - Inches(4.6), Inches(0.13), Inches(1.4), Inches(0.34), "white")
         tf = tag.text_frame
@@ -218,7 +218,7 @@ def _m_metric(slide, d: dict, it: dict, n: int, total: int) -> None:
             cell.text = ""
             r = cell.text_frame.paragraphs[0].add_run()
             r.text = head
-            _font(r, 12, True, "white")
+            _font(r, 12, True, "band_fg")
             cell.fill.solid()
             cell.fill.fore_color.rgb = C["band"]
         for i, mv in enumerate(ms, 1):
@@ -278,7 +278,7 @@ def _m_table(slide, d: dict, it: dict, n: int, total: int) -> None:
         cell.text = ""
         r = cell.text_frame.paragraphs[0].add_run()
         r.text = head
-        _font(r, 11, True, "white")
+        _font(r, 11, True, "band_fg")
         cell.fill.solid()
         cell.fill.fore_color.rgb = C["band"]
     for i, vals in enumerate(body, 1):

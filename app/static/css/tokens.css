@@ -15,14 +15,14 @@
      · --danger/흰 5.7 · --field-line/흰 3.7 · 분류 칩 글자/칩 바탕 7.1~7.7.
      다크 --fg/--surface 13.5 · --muted 7.5 · --accent/--surface 6.3 · --accent-fg/--accent 6.7 · --danger 6.0 · --field-line 3.5 · 분류 칩 8.8~9.0.
    글꼴(2026-10-22): 본문 하나 — Meeting Sans KR(IBM Plex Sans KR 서브셋) + 숫자·ID Meeting Mono. 제목 굵기 600.
-   슬라이드(PPT·발표)는 화면 테마와 관계없이 흰 바탕. 머리띠 색은 정할 것(네이비 유지 / 파랑 / 회색 — v3-tokens.html 비교). */
+   슬라이드(PPT·발표)는 화면 테마와 관계없이 흰 바탕, 머리띠는 회색 + 본문색 글자(2026-11-13 결정 — 네이비 버림). PPT 색표 app/export/pptx_builder.py C 와 같은 값.
+   글자 크기(2026-11-13 결정): v2m 시안 단계 13·14·15·19·28 — 화면 최소 13px. 슬라이드 미리보기 안쪽(축소 표시)·1920 기준 발표 좌표는 예외. */
 :root{
   /* 1) 원시 색 */
   --gray-0:#ffffff; --gray-50:#f3f5f8; --gray-100:#eef1f5; --gray-150:#e6e9ef; --gray-200:#dfe4ea;
   --gray-500:#7d8693; --gray-700:#48484d; --gray-900:#111114;
   --blue-50:#e5f0fd; --blue-600:#0963c4; --blue-700:#0857b0;
   --red-50:#f8e3df; --red-600:#b83a26;
-  --navy-700:#26344a;
   --cat-1:#80ae67; --cat-1-soft:#e8f5e1; --cat-1-ink:#375822;
   --cat-2:#ae8cd5; --cat-2-soft:#f5ecff; --cat-2-ink:#593f74;
   --cat-3:#42b59a; --cat-3-soft:#dcf7ef; --cat-3-ink:#005c4a;
@@ -48,7 +48,7 @@
 
   /* 슬라이드 — 흰 바탕 고정 */
   --slide:#ffffff; --slide-fg:var(--gray-900); --slide-muted:var(--gray-700); --slide-line:#cfd8dd; --slide-soft:var(--gray-50); --slide-photo:#c9d3d8;
-  --slide-band:var(--navy-700); --slide-band-fg:#ffffff; --slide-sec:var(--navy-700); --slide-sec-fg:#ffffff;
+  --slide-band:var(--gray-150); --slide-band-fg:var(--gray-900); --slide-sec:var(--gray-150); --slide-sec-fg:var(--gray-900);
   --slide-tag:var(--blue-50); --slide-tag-fg:var(--blue-700);
   --slide-issue:var(--gray-700); --slide-problem:var(--red-600); --slide-share:var(--gray-700);
   --slide-ok:var(--gray-700); --slide-ok-soft:var(--gray-50); --slide-issue-soft:var(--gray-50);
@@ -63,7 +63,7 @@
   --body:"Meeting Sans KR","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
   --display:var(--body);
   --mono:"Meeting Mono","IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
-  --fs-1:12px; --fs-2:14px; --fs-3:16px; --fs-4:20px; --fs-5:26px;
+  --fs-1:13px; --fs-2:14px; --fs-3:15px; --fs-4:19px; --fs-5:28px;
   --fw-strong:600;
 }
 /* 다크 — 같은 이름, 다크 바탕에 맞춘 값. 주 색은 다크에서도 파랑(예전 청록 #4fb3bc 는 결정 ⑧로 버림) */

@@ -45,7 +45,7 @@
 - 화면: **Jinja2 템플릿 + 바닐라 JS(ES modules)**, CSS는 `design/tokens.css` 기반
   - 기획서 초안의 Streamlit은 쓰지 않는다. 3단 편집기·사진 편집기·회의 모드가 Streamlit 구조와 맞지 않기 때문.
 - 글꼴: **로컬 서브셋** `app/static/fonts/`(Meeting Sans KR · Meeting Mono = IBM Plex 서브셋, OFL). 외부 글꼴 CDN 을 쓰지 않는다. 2026-10-22 본문 글꼴 하나로 통일 — 제목도 Meeting Sans KR(굵기 600), Gothic A1 은 쓰지 않는다. PPT 는 맑은 고딕
-- 글자 크기 5단계 `--fs-1`~`--fs-5`(12·14·16·20·26), 화면 최소 12px. 색은 **`design/tokens.css` 정본**(앱 사본 `app/static/css/tokens.css` 와 같아야 함) — 상태 3색(회색·파랑 #0963c4·빨강) + 분류 5색, 흰 사이드바(2026-11-13 결정 ⑥⑧). 규칙은 `docs/디자인_규칙.md`
+- 글자 크기 5단계 `--fs-1`~`--fs-5`(13·14·15·19·28, 2026-11-13 v2m 시안 값으로 통일), 화면 최소 13px — CSS 에 px 글자 크기를 직접 쓰지 않는다(슬라이드 미리보기·발표 좌표 예외). 색은 **`design/tokens.css` 정본**(앱 사본 `app/static/css/tokens.css` 와 같아야 함) — 상태 3색(회색·파랑 #0963c4·빨강) + 분류 5색, 흰 사이드바(2026-11-13 결정 ⑥⑧). 규칙은 `docs/디자인_규칙.md`
 - 사진 편집기: **Konva.js 9.3.6** — `app/static/vendor/konva.min.js` 사본(출처·sha256 은 그 폴더 README). 합성은 **Pillow**
 - 차트: 직접 SVG (시안과 동일 방식). 필요 시 Chart.js vendor
 - PPT 출력: **python-pptx**, 템플릿 `.pptx`는 `app/export/templates/`
