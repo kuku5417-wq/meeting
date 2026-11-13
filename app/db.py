@@ -40,6 +40,16 @@ engine = _make_engine(settings.database_url())
 SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False)
 
 
+def lock_path():
+    import path_config as pc
+    return pc.get_data_dir() / "meeting.lock"
+
+
+if settings.DB_LOCK and settings.database_url().startswith("sqlite"):
+    from app.services import nas_lock as _nas_lock
+    _nas_lock.install(SessionLocal, lock_path)      # 결정 ① 4-b — 쓰기 트랜잭션은 NAS 잠금 파일을 잡고
+
+
 def init_db() -> None:
     """모든 모델 테이블 생성(없는 것만)."""
     from app import models  # noqa: F401  — 모델 등록 부수효과

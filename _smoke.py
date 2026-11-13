@@ -2341,6 +2341,52 @@ def t_storage(c) -> None:
     left = sorted(p.name for p in bdir.glob("meeting-*.db"))
     check(f"결정① — 백업은 최근 {_settings.DB_BACKUP_KEEP}개만", len(left) == _settings.DB_BACKUP_KEEP and left[-1] == "meeting-20300103.db", f"{len(left)}")
     check("결정① — 반쯤 쓴 백업(.tmp) 남지 않음", not list(bdir.glob("*.tmp")))
+    # 4-b 잠금 파일 — 쓰기 트랜잭션 동안만, 끝나면 없음
+    import os as _os
+    import time as _time
+    from sqlalchemy import select
+    from app import models as m
+    from app.db import lock_path
+    from app.services import nas_lock
+    lp = lock_path()
+    bid = None
+    from app.db import SessionLocal
+    with SessionLocal() as s:
+        bid = s.scalar(select(m.Block.id).where(m.Block.block_type.in_(("issue", "problem"))).limit(1))
+    r = c.post(f"/api/issues/{bid}/field", json={"field": "action_text", "value": "잠금 시험 조치"})
+    check("결정① 4-b — 저장은 잠금을 잡았다 풀어 잠금 파일이 남지 않음", r.status_code == 200 and not lp.exists(), r.text[:120])
+    lp.write_text("다른PC pid=1 2026-11-13 15:50:00", encoding="utf-8")       # 다른 PC 가 쓰는 중
+    saved_wait = _settings.DB_LOCK_WAIT_SEC
+    _settings.DB_LOCK_WAIT_SEC = 0
+    try:
+        r = c.post(f"/api/issues/{bid}/field", json={"field": "action_text", "value": "잠금 중 저장"})
+        check("결정① 4-b — 다른 PC 가 잠금 중이면 503 + 누가 쓰는지 안내", r.status_code == 503 and "다른 PC 가 저장하는 중" in r.text and "다른PC" in r.text, r.text[:160])
+        with SessionLocal() as s:
+            check("결정① 4-b — 잠금 중 저장은 반영 안 됨", s.get(m.Block, bid).action_text == "잠금 시험 조치")
+        old = _time.time() - _settings.DB_LOCK_STALE_SEC - 5                     # 오래된 잠금 → 정리하고 저장
+        _os.utime(lp, (old, old))
+        r = c.post(f"/api/issues/{bid}/field", json={"field": "action_text", "value": "주인 없는 잠금 정리 뒤 저장"})
+        check("결정① 4-b — 주인 없는(오래된) 잠금은 정리하고 저장", r.status_code == 200 and not lp.exists(), r.text[:120])
+    finally:
+        _settings.DB_LOCK_WAIT_SEC = saved_wait
+        nas_lock.release(lp)
+    nas_lock.acquire(lp)
+    try:
+        nas_lock.acquire(lp, wait_sec=0.2)
+        ok = False
+    except nas_lock.LockBusy:
+        ok = True
+    nas_lock.release(lp)
+    check("결정① 4-b — 같은 잠금을 두 번 잡을 수 없음(기다림 한도 뒤 LockBusy)", ok and not lp.exists())
+    from app.main import app as _app
+    keep = getattr(_app.state, "db_guard", None)
+    _app.state.db_guard = {"integrity": "*** in database main ***\nPage 3 is never used"}
+    try:
+        r = c.post(f"/api/issues/{bid}/field", json={"field": "action_text", "value": "깨진 DB 에 저장"})
+        check("결정① 4-b — 무결성 실패면 읽기 전용(쓰기 503 + 백업으로 되돌리는 법)", r.status_code == 503 and "backups/" in r.text, r.text[:120])
+        check("결정① 4-b — 읽기 전용이어도 화면은 열림", c.get("/home").status_code == 200)
+    finally:
+        _app.state.db_guard = keep
 
 
 def t_llm_c(c) -> None:

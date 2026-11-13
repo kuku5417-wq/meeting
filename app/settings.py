@@ -41,6 +41,9 @@ def database_url() -> str:
 # ── 저장(결정 ①) ─
 DB_BUSY_TIMEOUT_MS = _int("MEETING_DB_BUSY_TIMEOUT_MS", 5000)   # 다른 PC 가 쓰는 중일 때 기다리는 시간
 DB_BACKUP_KEEP = _int("MEETING_DB_BACKUP_KEEP", 14)             # 매일 백업 몇 개를 남기나
+DB_LOCK = os.getenv("MEETING_DB_LOCK", "on").strip().lower() not in ("off", "0", "false", "no")   # NAS 잠금 파일(4-b)
+DB_LOCK_WAIT_SEC = _int("MEETING_DB_LOCK_WAIT_SEC", 30)         # 다른 PC 가 저장 중일 때 기다리는 최대 초
+DB_LOCK_STALE_SEC = _int("MEETING_DB_LOCK_STALE_SEC", 120)      # 이보다 오래된 잠금은 주인 없는 것으로 보고 정리
 
 # ── LLM ─────────────────────────────────────────────────
 # 앞에서부터 시도하는 공급자 목록 — 결정 ④(2026-11-13): SOLA·GPT 두 개. Upstage 뺌, Mock 은 테스트 전용(사용자 체인에 넣지 않음).

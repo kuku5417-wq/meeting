@@ -98,6 +98,32 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(title=settings.APP_TITLE, lifespan=_lifespan)
+
+
+from app.services.nas_lock import LockBusy  # noqa: E402
+
+
+@app.exception_handler(LockBusy)
+async def _lock_busy(request: Request, exc: LockBusy):
+    """결정 ① 4-b — 다른 PC 가 저장 중. 화면 요청이면 글로, API 면 JSON 으로 알린다."""
+    from fastapi.responses import JSONResponse, PlainTextResponse
+    if request.url.path.startswith("/api/"):
+        return JSONResponse({"ok": False, "err": str(exc)}, status_code=503)
+    return PlainTextResponse(str(exc), status_code=503)
+
+
+@app.middleware("http")
+async def _read_only_when_broken(request: Request, call_next):
+    """결정 ① 4-b — 오늘 무결성 점검이 실패했으면 읽기 전용: 쓰기 요청을 받지 않고 되돌리는 법을 알린다."""
+    g = getattr(request.app.state, "db_guard", None)
+    if g and g.get("integrity", "ok") != "ok" and request.method not in ("GET", "HEAD", "OPTIONS"):
+        from fastapi.responses import JSONResponse, PlainTextResponse
+        msg = ("DB 점검에서 문제가 발견되어 지금은 읽기만 됩니다. 기획 담당에게 알려주세요 — "
+               "데이터 폴더 backups/ 의 어제 백업으로 되돌린 뒤 앱을 다시 켜면 저장할 수 있습니다.")
+        if request.url.path.startswith("/api/"):
+            return JSONResponse({"ok": False, "err": msg}, status_code=503)
+        return PlainTextResponse(msg, status_code=503)
+    return await call_next(request)
 app.mount("/static", StaticFiles(directory=str(APP_DIR / "static")), name="static")
 
 
