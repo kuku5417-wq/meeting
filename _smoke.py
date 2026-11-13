@@ -72,13 +72,27 @@ def t_weeks() -> None:
 
 def t_app() -> None:
     from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    with TestClient(app) as c:      # with → lifespan(init_db) 실행
+        t_base(c)
+        for fn in GROUPS:             # 한 묶음이 죽어도 다음 묶음은 돌린다(앞 묶음이 만든 데이터에 기대는 검사는 그 자리에서 FAIL)
+            try:
+                fn(c)
+            except Exception as e:  # noqa: BLE001 — 묶음 단위 실패를 결과로 남긴다
+                import traceback
+                traceback.print_exc()
+                check(f"{getattr(fn, '__name__', 'llm')} 실행", False, repr(e))
+
+
+def t_base(c) -> None:
+    """앱 공통 — 표 생성·화면 탭·기준정보 시드·글꼴. 뒤 묶음들이 이 데이터를 쓴다(tests/test_01_base.py)."""
     from sqlalchemy import inspect
 
     from app.db import engine
-    from app.main import app
     from app.services import weeks
-
-    with TestClient(app) as c:      # with → lifespan(init_db) 실행
+    if True:
         tables = set(inspect(engine).get_table_names())
         missing = EXPECTED_TABLES - tables
         check(f"create_all — docs/03 테이블 {len(EXPECTED_TABLES)}개 생성", not missing, f"누락 {sorted(missing)}")
@@ -126,16 +140,6 @@ def t_app() -> None:
         check("base.html 이 fonts.css 를 불러온다", "css/fonts.css" in c.get("/knowledge").text)
         check("외부 글꼴 CDN 미사용", "fonts.googleapis.com" not in c.get("/knowledge").text)
 
-        groups = (t_masters_api, t_hub, lambda _c: t_llm(), t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
-                  t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-                  t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events)
-        for fn in groups:             # 한 묶음이 죽어도 다음 묶음은 돌린다(앞 묶음이 만든 데이터에 기대는 검사는 그 자리에서 FAIL)
-            try:
-                fn(c)
-            except Exception as e:  # noqa: BLE001 — 묶음 단위 실패를 결과로 남긴다
-                import traceback
-                traceback.print_exc()
-                check(f"{getattr(fn, '__name__', 'llm')} 실행", False, repr(e))
 
 
 def t_save_and_extract(c) -> None:
@@ -2298,6 +2302,17 @@ def t_events(c) -> None:
         s.rollback()
     page = c.get(f"/issues?id={bid}").text
     check("결정⑦ — 이슈 화면 「변경 기록」에 보임", "변경 기록" in page and "결정7 원인 B" in page)
+
+
+
+def t_llm_c(c) -> None:
+    t_llm()
+
+
+# 묶음 순서 = 실행 순서. 앞 묶음이 만든 데이터를 뒤 묶음이 쓴다. tests/test_NN_*.py 도 이 순서를 따른다
+GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
+          t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
+          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events)
 
 
 def main() -> int:

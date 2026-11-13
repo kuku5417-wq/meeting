@@ -164,7 +164,10 @@
 3. 단계 2부터 「남은 일 전체 계획」 표대로
 
 ## 2026-11-13 이어서 (15:35~, 끝에 전부 커밋)
-- [~] A. shi 0.5.0 판 올리기 — 「에이전트 8」 표기, plugin.json 0.5.0, guard-test·install_local 시험, agent_new zip 시험
-- [ ] B. 단계 1-b — t_app 를 영역별 pytest 파일로 쪼개기(검사 수 ≥ 432 유지, _smoke 그대로 통과)
+- [x] A. shi 0.5.0 판 올리기 — 「에이전트 8」 표기, plugin.json 0.5.0, guard-test·install_local 시험, agent_new zip 시험
+- [x] B. 단계 1-b — t_app 를 영역별 pytest 파일로 쪼개기(검사 수 ≥ 432 유지, _smoke 그대로 통과)
 - [ ] C. 마감 — 로그, 이어서_하기, PC 폴더 맞추기, 전부 push
 (단계 0 미니맵 옮기기는 PC의 docs/05 가 있어야 해서 PC 세션에서)
+- A 결과: shi 0.5.0(1079375) — 판·에이전트 9개·store-reviewer 「SQLite 하나 + 잠금」 예외(결정 ①과 맞춤), guard-test 0/50, 설치 시험, agent_new zip 0.5.0. v0.5.0 태그는 원격 push 실패(PC에서)
+- B 결과: _smoke 를 t_base + GROUPS 로 정리, tests/ 영역별 12파일(test_00~10, 99) 29 passed, _smoke 432/432. 계획 단계 1 완료
+- 다음 세션 시작점: 단계 0(PC 미니맵 문서) → 단계 2 전환 지점 4곳

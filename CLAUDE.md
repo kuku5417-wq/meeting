@@ -56,7 +56,7 @@
 - 차트: 직접 SVG (시안과 동일 방식). 필요 시 Chart.js vendor
 - PPT 출력: **python-pptx**, 템플릿 `.pptx`는 `app/export/templates/`
 - LLM: 사내 LLM/챗봇 API (OpenAI 호환 가정), 어댑터 뒤에 숨긴다 (`app/llm/`)
-- 테스트: **`uv run pytest -q tests`**(1-a: _smoke 묶음을 pytest 로, 2026-11-13) 또는 `uv run python _smoke.py` — 둘 다 통과해야 끝난 것. 1-b 에서 검사를 영역별 파일로 쪼갠다(통과 개수 일치가 완료 기준)
+- 테스트: **`uv run pytest -q tests`**(영역별 파일 test_00~test_10 + 검사 수 확인 test_99, 세션 하나로 순서대로 — 2026-11-13) · `uv run python _smoke.py`(같은 검사). 검사 함수 정본은 아직 `_smoke.py`, 새 검사는 그 묶음에 더하고 `tests/test_99_count.py` 의 개수를 올린다
 
 ## 4. 환경 규칙
 
