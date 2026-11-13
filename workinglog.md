@@ -151,8 +151,14 @@
 | 시각 | 할 일 | 끝 기준 |
 |---|---|---|
 | 15:30~15:55 | [x] 단계 1-a pytest 도입 — tests/conftest.py(환경 주입), 기존 _smoke 묶음을 pytest 테스트로(묶음마다 실패한 검사 이름 표시) | `pytest` 통과, _smoke 그대로도 통과 |
-| 15:55~16:10 | [ ] shi 0.5.0 일부 — ux-reviewer 에이전트(오늘 한 방식), 디자인 규칙 틀에 색 규칙 | shi_dev 커밋 |
-| 16:10~16:20 | [ ] 정리 — workinglog·이어서_하기 갱신, agent_trans 기록, PC 폴더 맞추기 | 모두 push |
+| 15:55~16:10 | [x] shi 0.5.0 일부 — ux-reviewer 에이전트(오늘 한 방식), 디자인 규칙 틀에 색 규칙 | shi_dev 커밋 |
+| 16:10~16:20 | [x] 정리 — workinglog·이어서_하기 갱신, agent_trans 기록, PC 폴더 맞추기 | 모두 push |
 | 16:20~16:30 | (사람) `C:\work\_sync.bundle` 지우기, PC 끄기 | — |
 단계 1-b(검사 432개를 영역별 파일로 쪼개기)는 다음 세션.
 - 1-a 결과: tests/conftest.py·tests/test_smoke_groups.py(6개 — 묶음 4 + t_app 전체 + 검사 수 ≥432), pyproject dev 그룹 pytest·uv.lock 갱신(지우는 줄 없음). `pytest -q tests` 6 passed
+- shi 0.5.0: ux-reviewer·색 규칙·UI 사전(다크 패턴·별명·AI 화면)·사용자 작업 표·slice 검토 — 판 올리기만 남음(shi_dev workinglog)
+
+## 다음 세션 시작점 (2026-11-13 마감)
+1. 단계 0 — PC의 미니맵 문서(docs 01·02·05·07) trans로 옮기기 + 고칠 것 6건
+2. 단계 1-b — tests/test_smoke_groups.py 의 t_app 를 영역별 파일로 쪼개기(검사 수 ≥ 432 유지)
+3. 단계 2부터 「남은 일 전체 계획」 표대로
