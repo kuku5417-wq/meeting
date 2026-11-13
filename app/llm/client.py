@@ -174,7 +174,13 @@ def _log(session, task: str, provider: str, model: str | None, started: float, o
 
 def complete_json(task: str, system: str, user: str, schema: dict, *, session=None,
                   chain: list[str] | None = None, timeout: float | None = None) -> LLMResult:
-    """체인 순서로 시도해 스키마를 통과한 첫 응답을 돌려준다. 전부 실패하면 data=None + 사유 목록."""
+    """체인 순서로 시도해 스키마를 통과한 첫 응답을 돌려준다. 전부 실패하면 data=None + 사유 목록.
+
+    결정 ① 4-b: AI 응답을 기다리는 동안 NAS 잠금을 쥐지 않는다 — 세션에 쓰기 대기(잠금 보유·새/바뀐 행)가 있으면
+    먼저 commit 해 잠금을 풀고 부른다. 그래서 메모 같은 앞 단계 저장은 AI 가 실패해도 남는다.
+    호출 로그(llm_call_log)는 add 만 하고 flush 하지 않으므로 응답 대기 중 잠금을 다시 잡지 않는다."""
+    if session is not None and (session.info.get("nas_lock") or session.new or session.dirty or session.deleted):
+        session.commit()
     errors: list[str] = []
     for name in chain or settings.LLM_CHAIN:
         fn = PROVIDERS.get(name)

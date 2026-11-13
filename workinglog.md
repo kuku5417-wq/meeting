@@ -197,5 +197,9 @@
 ## 다음 세션 시작점 (2026-11-13 마지막 갱신)
 1. 단계 0 — PC 미니맵 문서(docs 01·02·05·07) trans 로 + 고칠 것 6건 (PC에서)
 2. 단계 2 — 전환 지점 4곳(config/paths.py·settings.py·llm_client·nas.py) + ⑤ 망 감지 제거(app_config·_netcheck)
-3. 후속: 메모 저장과 AI 정리를 다른 트랜잭션으로(AI 응답 동안 잠금 쥐지 않게)
+3. ~~후속: 메모 저장과 AI 정리를 다른 트랜잭션으로~~ — 완료(2026-11-13, complete_json 이 AI 호출 전 commit)
 4. 단계 5 NAS 접속 → 6~10 M15 자유 편집 → 11 실행 파일 → 12 사내망 시험 (단계 1·3·4 끝)
+
+## 2026-11-13 더 하기 3 (15:50~)
+- [x] 후속-1 AI 응답 동안 잠금 쥐지 않기: complete_json 시작 때 쓰기 대기가 있으면 먼저 commit(잠금 풀림) → AI 호출. 메모는 AI 실패해도 남음. 검사 2개(smoke 456/456, pytest 30 passed)
+- [ ] 단계 2-a 전환 지점: config/paths.py(path_config 감싸기)·config/settings.py 자리, shi.json net — 큰 구조 변경은 PC 세션 전에 범위 확인

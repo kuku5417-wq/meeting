@@ -2344,7 +2344,7 @@ def t_storage(c) -> None:
     # 4-b 잠금 파일 — 쓰기 트랜잭션 동안만, 끝나면 없음
     import os as _os
     import time as _time
-    from sqlalchemy import select
+    from sqlalchemy import func, select
     from app import models as m
     from app.db import lock_path
     from app.services import nas_lock
@@ -2378,6 +2378,31 @@ def t_storage(c) -> None:
         ok = True
     nas_lock.release(lp)
     check("결정① 4-b — 같은 잠금을 두 번 잡을 수 없음(기다림 한도 뒤 LockBusy)", ok and not lp.exists())
+    # 4-b AI 응답 대기 동안 잠금을 쥐지 않음 — 앞 단계 저장은 먼저 확정, 호출 로그는 끝에 한 번
+    from app.llm import client as _llm
+    seen: list[bool] = []
+
+    def _probe(task, system, user, timeout):
+        seen.append(lp.exists())
+        raise _llm.ProviderError("시험 실패")
+    _llm.PROVIDERS["probe"] = _probe
+    try:
+        with SessionLocal() as s:
+            b = s.get(m.Block, bid)
+            b.action_text = "AI 앞 단계 저장"
+            s.flush()                                              # 잠금 잡힘
+            held = lp.exists()
+            res = _llm.complete_json("probe", "s", "u", {"type": "object"}, session=s, chain=["probe", "probe"])
+            mid_lock = lp.exists()
+            s.commit()
+        with SessionLocal() as s:
+            kept = s.get(m.Block, bid).action_text
+            logs = s.scalar(select(func.count()).select_from(m.LlmCallLog).where(m.LlmCallLog.task == "probe"))
+    finally:
+        _llm.PROVIDERS.pop("probe", None)
+    check("결정① 4-b — AI 호출 전 잠금을 풀어 응답 대기 중 잠금 파일 없음",
+          held and seen == [False, False] and not mid_lock and res.data is None, f"held={held} seen={seen} mid={mid_lock}")
+    check("결정① 4-b — AI 가 실패해도 앞 단계 저장은 남고 호출 로그 2건 기록", kept == "AI 앞 단계 저장" and logs == 2 and not lp.exists(), f"{kept} {logs}")
     # 4-b 판 번호 — 화면이 본 판으로 저장, 그 사이 남이 고쳤으면 409
     with SessionLocal() as s:
         v0 = s.get(m.Block, bid).row_version or 0
