@@ -2378,6 +2378,18 @@ def t_storage(c) -> None:
         ok = True
     nas_lock.release(lp)
     check("결정① 4-b — 같은 잠금을 두 번 잡을 수 없음(기다림 한도 뒤 LockBusy)", ok and not lp.exists())
+    # 4-b 판 번호 — 화면이 본 판으로 저장, 그 사이 남이 고쳤으면 409
+    with SessionLocal() as s:
+        v0 = s.get(m.Block, bid).row_version or 0
+    r = c.post(f"/api/issues/{bid}/field", json={"field": "action_text", "value": "판 번호 시험 1", "base_version": v0})
+    check("결정① 판 번호 — 맞는 판으로 저장하면 +1 돌려줌", r.status_code == 200 and r.json().get("row_version") == v0 + 1, r.text[:120])
+    r = c.post(f"/api/issues/{bid}/field", json={"field": "action_text", "value": "남이 본 옛 판으로 저장", "base_version": v0})
+    check("결정① 판 번호 — 옛 판으로 저장하면 409 충돌 + 새로 불러오라는 안내", r.status_code == 409 and r.json().get("conflict")
+          and "다른 사람이 먼저 고쳤습니다" in r.json().get("err", "") and r.json().get("row_version") == v0 + 1, r.text[:160])
+    with SessionLocal() as s:
+        check("결정① 판 번호 — 충돌한 저장은 반영 안 됨", s.get(m.Block, bid).action_text == "판 번호 시험 1")
+    page = c.get(f"/issues?id={bid}").text
+    check("결정① 판 번호 — 이슈 화면이 지금 판 번호를 들고 있음", f'data-ver="{v0 + 1}"' in page)
     from app.main import app as _app
     keep = getattr(_app.state, "db_guard", None)
     _app.state.db_guard = {"integrity": "*** in database main ***\nPage 3 is never used"}

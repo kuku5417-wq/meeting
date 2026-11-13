@@ -18,14 +18,18 @@ function preview(field, value) {
   if (field === 'action_text' && $('#closeAct')) $('#closeAct').value = value;
 }
 
-// 자동 저장
+// 자동 저장 — 한 번에 하나씩(판 번호가 꼬이지 않게), 화면이 본 판 번호를 같이 보낸다(결정 ①)
 const timers = new Map();
-async function save(el) {
+const verEl = $('#rowVer');
+let rowVer = verEl ? Number(verEl.dataset.ver) : null, chain = Promise.resolve();
+function save(el) { chain = chain.then(() => saveNow(el)); return chain; }
+async function saveNow(el) {
   say('저장 중…');
   try {
-    const r = await fetch(`/api/issues/${el.dataset.id}/field`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({field: el.dataset.field, value: el.value})});
+    const r = await fetch(`/api/issues/${el.dataset.id}/field`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({field: el.dataset.field, value: el.value, base_version: rowVer})});
     const j = await r.json();
     if (!j.ok) { say(j.err, true); return; }
+    if (j.row_version != null) rowVer = j.row_version;
     say('저장됨 · 방금');
     if ($('#draftState')) $('#draftState').textContent = j.draft_label;
   } catch (e) { say('저장하지 못했습니다 — 네트워크를 확인하고 다시 고쳐주세요', true); }

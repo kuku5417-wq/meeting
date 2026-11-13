@@ -46,14 +46,19 @@ async def api_field(block_id: str, request: Request, s: Session = Depends(get_se
     data = await request.json()
     b = _block(s, block_id)
     try:
-        mid = data.get("meeting_id")
+        mid, bv = data.get("meeting_id"), data.get("base_version")
         changed = iss.save_field(s, b, str(data.get("field", "")), str(data.get("value", "")),
-                                 meeting_id=int(mid) if str(mid or "").isdigit() else None)
+                                 meeting_id=int(mid) if str(mid or "").isdigit() else None,
+                                 base_version=int(bv) if str(bv if bv is not None else "").lstrip("-").isdigit() else None)
         s.commit()
+    except w.VersionConflict as e:
+        s.rollback()
+        return JSONResponse({"ok": False, "conflict": True, "err": str(e), "row_version": b.row_version or 0}, status_code=409)
     except w.WriteError as e:
         s.rollback()
         return JSONResponse({"ok": False, "err": str(e)}, status_code=400)
-    return {"ok": True, "changed": changed, "draft_state": b.draft_state, "draft_label": iss.DRAFT_LABEL[b.draft_state]}
+    return {"ok": True, "changed": changed, "draft_state": b.draft_state, "draft_label": iss.DRAFT_LABEL[b.draft_state],
+            "row_version": b.row_version or 0}
 
 
 @router.post("/api/issues/{block_id}/line")

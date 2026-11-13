@@ -69,6 +69,7 @@ _LATER_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("hull", "ship_class", "VARCHAR(32)"),
     ("hull", "source", "VARCHAR(16)"),
     ("block", "draft_state", "VARCHAR(8) NOT NULL DEFAULT 'none'"),   # 2026-10-23 M9 이슈 원장
+    ("block", "row_version", "INTEGER NOT NULL DEFAULT 0"),          # 2026-11-13 결정 ① 판 번호
     ("block", "cause_text", "TEXT NOT NULL DEFAULT ''"),
     ("block", "action_text", "TEXT NOT NULL DEFAULT ''"),
     ("block", "decision_needed", "TEXT NOT NULL DEFAULT ''"),

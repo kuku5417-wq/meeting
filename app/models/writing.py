@@ -57,6 +57,7 @@ class Block(Base):
     title: Mapped[str] = mapped_column(String(256), default="")
     body: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[str] = mapped_column(String(16), default="신규")
+    row_version: Mapped[int] = mapped_column(Integer, default=0)   # 결정 ① 판 번호 — 고칠 때마다 +1
     owner_department_id: Mapped[str] = mapped_column(ForeignKey("department.id"))   # 이관 시 이것만 변경
     created_week_id: Mapped[str] = mapped_column(ForeignKey("week.id"))
     valid_until: Mapped[date | None] = mapped_column(Date)           # 공유정보 만료일

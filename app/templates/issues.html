@@ -50,7 +50,7 @@
     <div class="v-head">
       <div class="row"><span class="v-tl {{ cur.block_type }}">{{ type_label[cur.block_type] }}</span><span class="mono small">{{ cur.id }}</span><span class="small">{{ cur.status }}</span><span class="small muted" id="draftState">{{ draft_label[cur.draft_state] }}</span><span class="small muted">· {{ view.dept_name }}</span>
         {% if r.hull %}{{ ms.ms_chip(r.hull) }}{% endif %}</div>
-      <label class="sr" for="dTitleLbl">제목</label><input id="dTitleLbl" class="v-title" type="text" value="{{ cur.title }}" data-field="title" data-id="{{ cur.id }}"{% if locked %} disabled{% endif %}>
+      <span id="rowVer" data-ver="{{ cur.row_version or 0 }}" hidden></span><label class="sr" for="dTitleLbl">제목</label><input id="dTitleLbl" class="v-title" type="text" value="{{ cur.title }}" data-field="title" data-id="{{ cur.id }}"{% if locked %} disabled{% endif %}>
     </div>
 
     <h2 class="v-sec">기본</h2>

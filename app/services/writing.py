@@ -37,6 +37,10 @@ TEXT_FIELDS = ("body", "cause_text", "action_text", "decision_needed")   # 자�
 TEXT_MAX = 2000
 
 
+class VersionConflict(ValueError):
+    """결정 ① — 화면이 본 판 번호와 지금 판 번호가 다르다(그 사이 다른 사람이 고침)."""
+
+
 class WriteError(ValueError):
     """화면에 그대로 보여줄 한국어 사유."""
 
@@ -171,6 +175,7 @@ def update_block(s: Session, block: m.Block, field: str, value: str) -> bool:
         elif value not in TRACKED:
             block.status = POSTED
     s.add(m.AiFieldLog(block_id=block.id, field=field, ai_value=_ai_value(s, block.id, field), human_value=value))
+    block.row_version = (block.row_version or 0) + 1     # 결정 ① 판 번호 — 동시에 고친 사람을 알아챈다
     s.flush()
     return True
 

@@ -100,12 +100,15 @@ def chip_counts(s: Session, week_id: str, dept: str) -> dict[str, int]:
 FACT_FIELDS = ("title", "body", "cause_text", "action_text", "decision_needed", "status", "block_type")
 
 
-def save_field(s: Session, b: m.Block, field_name: str, value: str, meeting_id: int | None = None) -> bool:
+def save_field(s: Session, b: m.Block, field_name: str, value: str, meeting_id: int | None = None,
+               base_version: int | None = None) -> bool:
     """자동 저장 — 칸 하나(이슈 작업대, 또는 스튜디오 사실 칸이면 meeting_id). 초안 칸을 처음 고치면 「작성 중」.
     사실 칸이 실제로 바뀌면 block_event 에 이전→이후·어디서를 남긴다(결정 ⑦)."""
     from app.services import events
     if field_name not in FIELDS:
         raise w.WriteError(f"고칠 수 없는 항목입니다: {field_name}")
+    if base_version is not None and (b.row_version or 0) != base_version:
+        raise w.VersionConflict("다른 사람이 먼저 고쳤습니다 — 화면을 새로 불러온 뒤 다시 고쳐주세요(내가 쓴 글은 복사해 두세요).")
     before = getattr(b, field_name, "") or ""
     changed = w.update_block(s, b, field_name, value)
     if changed and field_name in FACT_FIELDS:

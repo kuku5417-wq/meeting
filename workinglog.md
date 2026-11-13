@@ -189,6 +189,13 @@
 ## 2026-11-13 더 하기 2 (15:45~16:15, 끝에 전부 커밋)
 - [x] 4-b-1 NAS 잠금 파일: services/nas_lock.py(단독 생성·PC·시각, 2분 넘은 잠금 정리, 기다림 한도), 쓰기 트랜잭션(첫 flush~commit/rollback)에 자동 적용(SQLAlchemy 이벤트), 검사
 - [x] 4-b-2 무결성 실패면 읽기 전용(쓰기 요청 거절 + 안내), 검사
-- [ ] 4-b-3 판 번호 충돌 알림(block.row_version, 작업대·스튜디오 저장에 base_version) — 시간 되면
+- [x] 4-b-3 판 번호 충돌 알림(block.row_version, 작업대·스튜디오 저장에 base_version) — 시간 되면
 - [ ] 마감 — 로그·push·PC 폴더
 - 4-b 결과: nas_lock(쓰기 트랜잭션 첫 flush~끝, 503 안내), 읽기 전용 미들웨어. _smoke 450/450, pytest 30. 남은 점: AI 정리가 메모 저장과 같은 트랜잭션이라 LLM 응답 동안 잠금을 쥠 — 메모 commit 뒤 AI 정리로 나누기(후속)
+- 4-b-3 결과: block.row_version(+1, 옛 DB 는 열 자동 보강), API base_version → 409, 작업대·스튜디오 저장을 한 줄로 세워 보냄(빠른 연속 저장도 충돌 없음 — 브라우저 확인). _smoke 454/454, pytest 30. **단계 4 끝**(결정 ① 보강 전부)
+
+## 다음 세션 시작점 (2026-11-13 마지막 갱신)
+1. 단계 0 — PC 미니맵 문서(docs 01·02·05·07) trans 로 + 고칠 것 6건 (PC에서)
+2. 단계 2 — 전환 지점 4곳(config/paths.py·settings.py·llm_client·nas.py) + ⑤ 망 감지 제거(app_config·_netcheck)
+3. 후속: 메모 저장과 AI 정리를 다른 트랜잭션으로(AI 응답 동안 잠금 쥐지 않게)
+4. 단계 5 NAS 접속 → 6~10 M15 자유 편집 → 11 실행 파일 → 12 사내망 시험 (단계 1·3·4 끝)

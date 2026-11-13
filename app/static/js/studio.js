@@ -201,17 +201,18 @@ document.addEventListener('click', async (e) => {
   if (e.target.id === 'addTable') { const j = await api(`/api/studio/${mid}/table-item`, {table_id: Number($('#ptSel').value)}); if (j) { pick(S.items.findIndex((x) => x.id === j.item_id)); toast('기간 표 장을 넣었습니다 — 값은 지표 화면에서'); } return; }
   if (e.target.id === 'addMetric') { const j = await api(`/api/studio/${mid}/metric-item`); if (j) { pick(S.items.findIndex((x) => x.id === j.item_id)); toast('지표 요약 장을 넣었습니다 — 값은 지표 화면에서'); } return; }
 });
-let lt;
+let lt, factChain = Promise.resolve();
 document.addEventListener('input', (e) => {
   if (e.target.id === 'ln') { const it = S.items[sel], v = e.target.value; it.line = v; renderCanvas(); clearTimeout(lt); lt = setTimeout(async () => { await api(`/api/studio/items/${it.id}`, {field: 'line', value: v}); renderBar(); renderLeft(); }, 500); }
   if (e.target.dataset.fact) {
     const el = e.target, b = S.items[sel].blocks[0], key = {cause_text: 'cause', action_text: 'act', decision_needed: 'dec'}[el.dataset.fact];
     b[key] = el.value; renderCanvas();
-    clearTimeout(el._t); el._t = setTimeout(async () => {
-      const r = await fetch(`/api/issues/${el.dataset.id}/field`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({field: el.dataset.fact, value: el.value, meeting_id: mid})});
-      const j = await r.json(); toast(j.ok ? `● ${el.dataset.id} 이슈에 반영했습니다 — 이슈 변경 기록에 남습니다` : j.err);
+    clearTimeout(el._t); el._t = setTimeout(() => { factChain = factChain.then(async () => {   // 한 번에 하나씩 — 판 번호(결정 ①)
+      const r = await fetch(`/api/issues/${el.dataset.id}/field`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({field: el.dataset.fact, value: el.value, meeting_id: mid, base_version: b.ver})});
+      const j = await r.json(); if (j.row_version != null) b.ver = j.row_version;
+      toast(j.ok ? `● ${el.dataset.id} 이슈에 반영했습니다 — 이슈 변경 기록에 남습니다` : j.err);
       const s2 = await (await fetch(`/api/studio/${mid}`)).json(); if (s2.ok) { S = s2.state; renderBar(); }
-    }, 600);
+    }); }, 600);
   }
 });
 addEventListener('keydown', (e) => {

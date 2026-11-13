@@ -590,7 +590,7 @@ def _block_json(s: Session, b: m.Block, week_id: str, dept_names: dict) -> dict:
     br = central.hull_brief(hull) if hull else None
     nx = br["next"] if br else None
     pics = [p.id for lk, p in ph.block_photos(s, b.id) if lk.role in ("main", "after")][:1] or [p.id for _, p in ph.block_photos(s, b.id)][:1]
-    return {"id": b.id, "type": b.block_type, "title": b.title, "status": b.status, "dept": dept_names.get(b.owner_department_id, b.owner_department_id),
+    return {"id": b.id, "ver": b.row_version or 0, "type": b.block_type, "title": b.title, "status": b.status, "dept": dept_names.get(b.owner_department_id, b.owner_department_id),
             "hull": hull or "", "ev": f"{nx['code']} {nx['date'].strftime('%m/%d')}" if nx else "", "dd": br["dday"] if br and nx else None,
             "body": b.body or "", "cause": b.cause_text or "", "act": b.action_text or "", "dec": b.decision_needed or "",
             "draft": b.draft_state, "ptag": ptag(s, b, week_id), "photo": pics[0] if pics else ""}
