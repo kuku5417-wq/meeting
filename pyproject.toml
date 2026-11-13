@@ -20,6 +20,9 @@ dependencies = [
     "pypdf>=5.0",           # PDF 가져오기(2026-10-29) — 순수 파이썬 휠(C 확장 없음). 엑셀(.xlsx)은 표준 zipfile·xml 로 읽는다
 ]
 
+[dependency-groups]
+dev = ["pytest>=8.0"]   # 결정 ②(2026-11-13) — _smoke 를 pytest 로 옮기는 중. 사내망 uv 캐시에 없으면 _smoke 로 대신
+
 [tool.uv]
 package = false
 managed = true
