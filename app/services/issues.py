@@ -97,11 +97,20 @@ def chip_counts(s: Session, week_id: str, dept: str) -> dict[str, int]:
     return {k: len(ledger(s, week_id, dept, k)) for k, _ in CHIPS}
 
 
-def save_field(s: Session, b: m.Block, field_name: str, value: str) -> bool:
-    """작업대 자동 저장 — 칸 하나. 초안 칸을 처음 고치면 「작성 중」."""
+FACT_FIELDS = ("title", "body", "cause_text", "action_text", "decision_needed", "status", "block_type")
+
+
+def save_field(s: Session, b: m.Block, field_name: str, value: str, meeting_id: int | None = None) -> bool:
+    """자동 저장 — 칸 하나(이슈 작업대, 또는 스튜디오 사실 칸이면 meeting_id). 초안 칸을 처음 고치면 「작성 중」.
+    사실 칸이 실제로 바뀌면 block_event 에 이전→이후·어디서를 남긴다(결정 ⑦)."""
+    from app.services import events
     if field_name not in FIELDS:
         raise w.WriteError(f"고칠 수 없는 항목입니다: {field_name}")
+    before = getattr(b, field_name, "") or ""
     changed = w.update_block(s, b, field_name, value)
+    if changed and field_name in FACT_FIELDS:
+        events.record(s, b.id, "사실변경", field=field_name, before=str(before),
+                      after=str(getattr(b, field_name, "") or ""), meeting_id=meeting_id)
     if changed and b.draft_state == "none" and field_name in ("body", "cause_text", "action_text", "decision_needed", "title"):
         b.draft_state = "wip"
     return changed

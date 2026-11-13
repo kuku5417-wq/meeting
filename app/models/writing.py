@@ -97,6 +97,22 @@ class BlockHistory(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
 
 
+class BlockEvent(Base):
+    """이슈 변경 기록(결정 ⑦, 2026-11-13) — 덧붙이기만 하고 고치거나 지우지 않는다.
+    kind: 사실변경 · 자료수정 · 개체추가 · 파생 · 합치기 / stage: 작업대 · 부서 · 공유회 · 팀장 · 회의(그 밖의 회의)."""
+    __tablename__ = "block_event"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    block_id: Mapped[str] = mapped_column(ForeignKey("block.id"), index=True)
+    kind: Mapped[str] = mapped_column(String(8))
+    stage: Mapped[str] = mapped_column(String(8))
+    meeting_id: Mapped[int | None] = mapped_column(ForeignKey("meeting.id"))
+    actor_id: Mapped[str | None] = mapped_column(String(32))   # 로그인이 없어 지금은 비어 있다(1단계 범위)
+    field: Mapped[str] = mapped_column(String(32), default="")
+    before: Mapped[str] = mapped_column(Text, default="")
+    after: Mapped[str] = mapped_column(Text, default="")
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
 class SourceSpan(Base):
     """AI 필드의 근거 구간 — 없으면 그 필드를 표시하지 않는다(원칙 3)."""
     __tablename__ = "source_span"

@@ -37,7 +37,7 @@ def check(name: str, cond: bool, detail: str = "") -> None:
 
 # docs/03 §3 의 테이블 전체 — 모델을 바꾸면 문서와 이 목록을 함께 고친다.
 EXPECTED_TABLES = {
-    "department", "person", "week", "section", "memo", "block", "section_block", "block_history",
+    "department", "person", "week", "section", "memo", "block", "section_block", "block_history", "block_event",
     "source_span", "ai_field_log", "closure", "block_tag", "block_table",
     "photo", "photo_link", "annotation", "marker",
     "metric_def", "metric_value",
@@ -128,7 +128,7 @@ def t_app() -> None:
 
         groups = (t_masters_api, t_hub, lambda _c: t_llm(), t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
                   t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-                  t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21)
+                  t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events)
         for fn in groups:             # 한 묶음이 죽어도 다음 묶음은 돌린다(앞 묶음이 만든 데이터에 기대는 검사는 그 자리에서 FAIL)
             try:
                 fn(c)
@@ -2263,6 +2263,41 @@ def t_m11(c) -> None:
     check("M11 — 회의 목록: 발행한 회의는 「보기 →」", f'href="/meetings/{sid}"' in r.text and "보기 →" in r.text)
     r = c.get("/meetings/999999")
     check("M11 — 없는 회의 보기는 404", r.status_code == 404)
+
+
+def t_events(c) -> None:
+    """결정 ⑦ 첫 조각 — 사실 칸 변경은 block_event 에 이전→이후·어디서(작업대/부서/공유회/팀장)로 남는다."""
+    from sqlalchemy import select
+    from app import models as m
+    from app.db import SessionLocal
+    from app.services import events
+    with SessionLocal() as s:
+        b = s.scalar(select(m.Block).where(m.Block.block_type.in_(("issue", "problem"))).limit(1))
+        mt = s.scalar(select(m.Meeting).where(m.Meeting.kind == "dept").limit(1))
+        bid, mid = b.id, (mt.id if mt else None)
+        n0 = len(s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == bid)).all())
+    r = c.post(f"/api/issues/{bid}/field", json={"field": "cause_text", "value": "결정7 원인 A"})
+    check("결정⑦ — 작업대에서 원인 저장", r.status_code == 200 and r.json().get("ok"), r.text[:120])
+    r = c.post(f"/api/issues/{bid}/field", json={"field": "cause_text", "value": "결정7 원인 B", "meeting_id": mid})
+    check("결정⑦ — 스튜디오 사실 칸에서 원인 저장", r.status_code == 200 and r.json().get("ok"), r.text[:120])
+    c.post(f"/api/issues/{bid}/field", json={"field": "cause_text", "value": "결정7 원인 B", "meeting_id": mid})   # 같은 값
+    with SessionLocal() as s:
+        evs = s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == bid).order_by(m.BlockEvent.id)).all()[n0:]
+        check("결정⑦ — 바뀐 2번만 기록(같은 값은 기록 안 함)", len(evs) == 2, str(len(evs)))
+        if len(evs) == 2:
+            a, z = evs
+            check("결정⑦ — 첫 기록: 작업대 · 사실변경 · 원인", (a.stage, a.kind, a.field) == ("작업대", "사실변경", "cause_text"), f"{a.stage} {a.kind} {a.field}")
+            check("결정⑦ — 둘째 기록: 부서 단계 · 회의 id · 이전→이후", z.stage == ("부서" if mid else "작업대") and z.meeting_id == mid
+                  and z.before == "결정7 원인 A" and z.after == "결정7 원인 B", f"{z.stage} {z.meeting_id} {z.before}→{z.after}")
+        check("결정⑦ — 관계 값에 파생·합쳐짐", {"파생", "합쳐짐"} <= set(events.LINK_RELATIONS))
+        try:
+            events.record(s, bid, "엉뚱함"); ok = False
+        except ValueError:
+            ok = True
+        check("결정⑦ — 모르는 기록 종류는 거부", ok)
+        s.rollback()
+    page = c.get(f"/issues?id={bid}").text
+    check("결정⑦ — 이슈 화면 「변경 기록」에 보임", "변경 기록" in page and "결정7 원인 B" in page)
 
 
 def main() -> int:

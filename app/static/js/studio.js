@@ -100,7 +100,7 @@ const MINI = {detail: '<i></i><i class="s"></i><i class="b"></i><i class="b"></i
 const KEYS = '<p class="st-keys"><kbd>↑</kbd><kbd>↓</kbd> 장 고르기 · <kbd>1</kbd>~<kbd>4</kbd> 형태 · <kbd>Delete</kbd> 빼기</p>';
 function facts(b) {
   if (S.meeting.kind === 'exec') return '';
-  return `<p class="v-sec">● 사실 — 고치면 이슈에 바로 반영</p><div class="st-fact"><label class="f">원인<input type="text" data-fact="cause_text" data-id="${esc(b.id)}" value="${esc(b.cause)}" placeholder="조사 중"></label><label class="f">조치 · 계획<input type="text" data-fact="action_text" data-id="${esc(b.id)}" value="${esc(b.act)}"></label><label class="f">결정 필요<input type="text" data-fact="decision_needed" data-id="${esc(b.id)}" value="${esc(b.dec)}"></label></div>`;
+  return `<p class="v-sec">● 사실 — 여기서 고치면 이슈에 반영 · 변경 기록에 남음</p><div class="st-fact"><label class="f">원인<input type="text" data-fact="cause_text" data-id="${esc(b.id)}" value="${esc(b.cause)}" placeholder="조사 중"></label><label class="f">조치 · 계획<input type="text" data-fact="action_text" data-id="${esc(b.id)}" value="${esc(b.act)}"></label><label class="f">결정 필요<input type="text" data-fact="decision_needed" data-id="${esc(b.id)}" value="${esc(b.dec)}"></label></div>`;
 }
 function renderProps() {
   const p = $('#props'), P = pages();
@@ -208,8 +208,8 @@ document.addEventListener('input', (e) => {
     const el = e.target, b = S.items[sel].blocks[0], key = {cause_text: 'cause', action_text: 'act', decision_needed: 'dec'}[el.dataset.fact];
     b[key] = el.value; renderCanvas();
     clearTimeout(el._t); el._t = setTimeout(async () => {
-      const r = await fetch(`/api/issues/${el.dataset.id}/field`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({field: el.dataset.fact, value: el.value})});
-      const j = await r.json(); toast(j.ok ? `● ${el.dataset.id} 이슈에 반영했습니다 — 작성자 이력에 남습니다` : j.err);
+      const r = await fetch(`/api/issues/${el.dataset.id}/field`, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({field: el.dataset.fact, value: el.value, meeting_id: mid})});
+      const j = await r.json(); toast(j.ok ? `● ${el.dataset.id} 이슈에 반영했습니다 — 이슈 변경 기록에 남습니다` : j.err);
       const s2 = await (await fetch(`/api/studio/${mid}`)).json(); if (s2.ok) { S = s2.state; renderBar(); }
     }, 600);
   }

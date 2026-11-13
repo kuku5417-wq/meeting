@@ -46,7 +46,9 @@ async def api_field(block_id: str, request: Request, s: Session = Depends(get_se
     data = await request.json()
     b = _block(s, block_id)
     try:
-        changed = iss.save_field(s, b, str(data.get("field", "")), str(data.get("value", "")))
+        mid = data.get("meeting_id")
+        changed = iss.save_field(s, b, str(data.get("field", "")), str(data.get("value", "")),
+                                 meeting_id=int(mid) if str(mid or "").isdigit() else None)
         s.commit()
     except w.WriteError as e:
         s.rollback()

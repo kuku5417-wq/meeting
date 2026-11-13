@@ -110,6 +110,9 @@
         {% for r in view.records %}<div class="small"><span class="mono">{{ r.week }}</span> {{ r.label }} — {{ r.text }}</div>{% endfor %}
         <a class="small" href="#attach">사진·표 붙이기 ↓</a>
       </div>
+      <div class="v-hist" id="events"><b class="small">변경 기록</b>
+        {% for e in view.events %}<div class="small"><span class="mono">{{ e.when }}</span> {{ e.stage }} · {{ e.field }} — <span class="muted">{{ e.before or '(빈 칸)' }}</span> → {{ e.after or '(빈 칸)' }}</div>{% else %}<span class="small muted">아직 바뀐 사실이 없습니다</span>{% endfor %}
+      </div>
     </div>
     {% with b = cur, v = view.attach %}{% include "_attach.html" %}{% endwith %}
     {% if view.similar is not none %}

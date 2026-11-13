@@ -16,6 +16,8 @@ const LINE = Math.max(3, Math.round(Math.min(W, H) / 150));      // 선 굵기 �
 const TEXT = Math.max(16, Math.round(Math.min(W, H) / 18));
 const MARK_R = Math.max(14, Math.round(Math.min(W, H) / 30));     // 서버 합성(compose)과 같은 반지름
 const MARK_COLOR = '#d4402a';
+// 선택 표시 색 — 화면 주 색(tokens.css --accent)을 그대로 쓴다. 마킹 색(MARK_COLOR·도구 색)은 사진에 남는 데이터라 토큰이 아니다
+const SEL = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#0963c4';
 const HIT = LINE * 5;                                              // 가는 선도 잡기 쉽게
 const MIN = Math.min(W, H) * 0.01;
 const DRAG_TOOLS = new Set(['arrow', 'circle', 'rect', 'free', 'mosaic', 'inset', 'crop']);
@@ -52,7 +54,7 @@ const marks = new Konva.Group();      // 도형·마커·자르기 표시 — �
 content.add(marks);
 const tr = new Konva.Transformer({
   rotateEnabled: false, flipEnabled: false, ignoreStroke: true, keepRatio: false,
-  anchorSize: 14, anchorCornerRadius: 3, borderStroke: '#0b6e78', anchorStroke: '#0b6e78', anchorStrokeWidth: 2,
+  anchorSize: 14, anchorCornerRadius: 3, borderStroke: SEL, anchorStroke: SEL, anchorStrokeWidth: 2,
   boundBoxFunc: (oldB, newB) => (Math.abs(newB.width) < 8 || Math.abs(newB.height) < 8 ? oldB : newB),
 });
 layer.add(tr);
@@ -214,7 +216,7 @@ function arrowHandles(n, idx) {
   const sh = doc.shapes[idx];
   const p = sh.points, ends = [[0, 1], [p.length - 2, p.length - 1]];
   ends.forEach(([ix, iy]) => {
-    const h = new Konva.Circle({ x: p[ix], y: p[iy], radius: 9 / scale, fill: '#ffffff', stroke: '#0b6e78', strokeWidth: 2 / scale, draggable: true });
+    const h = new Konva.Circle({ x: p[ix], y: p[iy], radius: 9 / scale, fill: '#ffffff', stroke: SEL, strokeWidth: 2 / scale, draggable: true });
     h.on('pointerdown', (e) => { e.cancelBubble = true; });
     h.on('dragstart', () => snapshot());
     h.on('dragmove', () => {
@@ -251,7 +253,7 @@ function render() {
   doc.markers.forEach((mk, i) => {
     mk.no = i + 1;
     const g = markerNode(mk);
-    if (isSel('marker', i)) g.add(new Konva.Circle({ radius: MARK_R * 1.35, stroke: '#0b6e78', strokeWidth: 3 / scale, dash: [6 / scale, 4 / scale] }));
+    if (isSel('marker', i)) g.add(new Konva.Circle({ radius: MARK_R * 1.35, stroke: SEL, strokeWidth: 3 / scale, dash: [6 / scale, 4 / scale] }));
     makeEditable(g, 'marker', i);
     marks.add(g);
   });

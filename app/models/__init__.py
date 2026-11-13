@@ -8,6 +8,6 @@ from app.models.others import (  # noqa: F401
     MeetingComment, MetricCell, MetricDef, MetricTable, MetricValue, Photo, PhotoLink,
 )
 from app.models.writing import (  # noqa: F401
-    AiFieldLog, Block, BlockHistory, BlockTable, BlockTag, Closure, Memo, Section, SectionBlock,
+    AiFieldLog, Block, BlockEvent, BlockHistory, BlockTable, BlockTag, Closure, Memo, Section, SectionBlock,
     SourceSpan, Week,
 )

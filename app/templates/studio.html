@@ -11,7 +11,7 @@
   <a class="btn sm" href="/export/meeting/{{ mt.id }}/pptx">PPT</a>
   <button class="btn primary" type="button" id="submitBtn">{{ '제출' if mt.kind == 'dept' else '발행' }}</button>
 </div>
-<p class="v-trial-note">고친 <b>● 사실(원인·조치·결정 필요)은 이슈에 바로 반영</b>되고, 회의용 한 줄·형태·순서는 이 자료에만 남습니다.
+<p class="v-trial-note">오른쪽 <b>● 사실 칸(원인·조치·결정 필요)에서 고치면 이슈에 반영</b>되고 이슈 변경 기록에 남습니다. 회의용 한 줄·형태·순서는 이 자료에만 남습니다.
   {% if mt.kind == 'dept' %}제출하면 그 판이 부서 현안 공유회 자료에 실립니다.{% elif mt.kind == 'share' %}부서 칸은 각 부서 자료의 제출판입니다. 종결 요청 이슈는 자동으로 들어갑니다.{% else %}발행하면 판이 고정돼 회의에서 본 그대로 남습니다.{% endif %}</p>
 <p class="flash bad" id="stNote" role="status" hidden></p>
 <div class="st-wrap">
