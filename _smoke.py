@@ -22,7 +22,7 @@ _TMP = tempfile.mkdtemp(prefix="meeting_smoke_")
 os.environ["MEETING_DATA_PATH"] = _TMP          # ★ app import 전에 주입해야 엔진이 임시 DB 를 잡는다
 os.environ.pop("MEETING_DATABASE_URL", None)
 os.environ["MEETING_CENTRAL_PARQUET"] = str(Path(_TMP) / "central")   # 공용 data/parquet 은 읽지 않는다(시험용 작은 파일)
-os.environ["MEETING_LLM_CHAIN"] = "sola,upstage,openai,mock"   # 3단 체인 — 키는 아래에서 비워 네트워크를 타지 않는다
+os.environ["MEETING_LLM_CHAIN"] = "sola,upstage,openai,mock"   # 시험용 체인(공급자 3개 폴백 + Mock) — 키는 아래에서 비워 네트워크를 타지 않는다. 앱 기본값은 결정 ④ sola,openai
 os.environ["MEETING_TODAY"] = "2026-10-23"           # 오늘 고정 — 주차(W43)·D-n 이 실행 날짜에 따라 바뀌지 않게
 os.environ["MEETING_NO_OUTLOOK"] = "1"                # 메일함 — 켜진 Outlook 에 붙지 않게(휴면으로 시험)
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -300,8 +300,13 @@ def t_llm() -> None:
     from app.models import LlmCallLog
     llm = _offline_llm()
     schema = _json.loads((Path(__file__).parent / "schema" / "extraction.schema.json").read_text(encoding="utf-8"))
-    check("체인 기본값 = SOLA → Upstage → OpenAI → Mock", llm.settings.LLM_CHAIN == ["sola", "upstage", "openai", "mock"],
+    check("시험 체인 = SOLA → Upstage → OpenAI → Mock(환경 주입)", llm.settings.LLM_CHAIN == ["sola", "upstage", "openai", "mock"],
           repr(llm.settings.LLM_CHAIN))
+    check("결정④ — 앱 기본 체인 = sola,openai (Mock·Upstage 없음)", llm.settings.LLM_CHAIN_DEFAULT == "sola,openai")
+    with SessionLocal() as s:
+        r = llm.complete_json("extract_blocks", "sys", "user", schema, session=s, chain=["sola", "openai"])
+        check("결정④ — 기본 체인 둘 다 실패(키 없음) → 결과 없음 + 공급자별 사유 2개", not r.ok and len(r.errors) == 2
+              and "SOLA" in r.errors[0] and "OpenAI" in r.errors[1], repr(r.errors))
     with SessionLocal() as s:
         r = llm.complete_json("extract_blocks", "sys", "user", schema, session=s)
         check("3단 모두 미설정 → Mock 으로 폴백 + 실패 사유 3개 누적",

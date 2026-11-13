@@ -39,10 +39,12 @@ def database_url() -> str:
 
 
 # ── LLM ─────────────────────────────────────────────────
-# 앞에서부터 시도하는 공급자 목록 — 공통지침 3단 폴백 + Mock (2026-10-20 사용자 결정: 테스트 단계).
-# ⚠ upstage·openai 는 외부 API 다. 원칙 9(사내 LLM 으로만)와 부딪히므로 운영 전 재결정한다(로드맵 「미정」).
-#   외부로 보내지 않으려면 secret/.env 에 MEETING_LLM_CHAIN=sola,mock 을 둔다.
-LLM_CHAIN = [s.strip().lower() for s in os.getenv("MEETING_LLM_CHAIN", "sola,upstage,openai,mock").split(",")
+# 앞에서부터 시도하는 공급자 목록 — 결정 ④(2026-11-13): SOLA·GPT 두 개. Upstage 뺌, Mock 은 테스트 전용(사용자 체인에 넣지 않음).
+# 둘 다 실패하면 공급자별 사유를 보여 주고 메모는 그대로 남는다 — 이슈는 사람이 직접 쓴다.
+# ⚠ openai 는 외부 API 다. 원칙 9(사내 LLM 으로만)의 테스트 단계 예외 — 실제 회사 메모를 넣기 전에 sola 하나로 줄일지 다시 정한다.
+#   외부로 보내지 않으려면 secret/.env 에 MEETING_LLM_CHAIN=sola 를 둔다.
+LLM_CHAIN_DEFAULT = "sola,openai"
+LLM_CHAIN = [s.strip().lower() for s in os.getenv("MEETING_LLM_CHAIN", LLM_CHAIN_DEFAULT).split(",")
              if s.strip()]
 LLM_TIMEOUT_SEC = _int("MEETING_LLM_TIMEOUT_SEC", 60)
 

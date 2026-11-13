@@ -78,7 +78,7 @@
   - 폴더는 `MEETING_CENTRAL_PARQUET` → NAS → `DATA_PATH\parquet`. 파일이 없으면 동기화만 건너뛰고 앱은 뜬다.
   앱 설정은 `app/settings.py` 에 모은다(`config.py` 금지 — 형제 앱 `config/` 패키지와 충돌).
 - 데이터(SQLite·사진 원본·내보내기)는 **`<NAS_BASE_PATH 또는 DATA_PATH>/meeting`** — git 밖이니 파일 백업 대상이다.
-- LLM 호출은 **폴백 체인**으로 설정한다. 순서는 `.env`의 `MEETING_LLM_CHAIN`(기본 `sola,upstage,openai,mock`).
+- LLM 호출은 **폴백 체인**으로 설정한다. 순서는 `.env`의 `MEETING_LLM_CHAIN`(기본 `sola,openai` — 결정 ④, Mock 은 테스트 전용. 둘 다 실패하면 사유 안내, 메모는 남고 사람이 쓴다).
   mock 은 `data/samples/mock_extraction.json`을 돌려준다. **실제 API 없이도 전 기능이 돌아가야 한다.**
   공급자별 실패 사유는 화면 알림과 `llm_call_log` 에 남는다(본문은 저장하지 않는다). 원칙 9 와의 충돌은 6장 참고.
 
@@ -122,7 +122,7 @@ scripts/             seed_masters.py (CSV → DB, 다시 실행해도 중복 없
 8. **ID는 사람이 읽을 수 있게.** `ISS-2026-0142` 같은 규칙은 `docs/03` 참고. ID는 블록이 부서를 옮겨도 바뀌지 않는다.
 9. **민감정보.** 보고 내용은 사내 LLM으로만 보낸다. 사진 모자이크 기능 유지.
    ⚠ **테스트 단계 예외(2026-10-20 사용자 결정)**: 체인이 공통지침 3단(SOLA → Upstage → OpenAI → Mock)이라 외부 API 호출 코드가 있다.
-   운영 전에 다시 정한다 — 그때까지 실제 회사 메모는 넣지 않고, 외부를 막으려면 `MEETING_LLM_CHAIN=sola,mock`.
+   운영 전에 다시 정한다 — 그때까지 실제 회사 메모는 넣지 않고, 외부를 막으려면 `MEETING_LLM_CHAIN=sola`. (2026-11-13 결정 ④로 기본 체인은 `sola,openai`)
 
 ## 7. 화면 구현 규칙
 
