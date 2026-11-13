@@ -177,3 +177,11 @@
 - [x] 단계 3-b 결정 ④ — LLM 기본 체인 sola,openai(Mock은 테스트 전용), 둘 다 실패하면 사람이 쓰는 길 확인·검사
 - [ ] 마감 — 로그·push·PC 폴더
 - 결과: 결정 ③ 적용(3080edf), 결정 ④ 적용 — _smoke 437/437, pytest 29 passed. 단계 3 중 「망 감지 제거(⑤)」는 단계 2 전환 지점과 함께
+- [x] 단계 4-a 결정 ① 일부(15:42~16:10): SQLite `journal_mode=DELETE`·`busy_timeout`(WAL 금지), 매일 첫 실행 백업(backups/meeting-YYYYMMDD.db, 14개 보관)+`integrity_check`, 검사. 잠금 파일·판 번호는 4-b
+- 4-a 결과: app/db.py PRAGMA, services/db_guard.py(백업 API·임시 파일→이름 바꾸기·14개 보관·integrity_check), 시작 때 실행, tests/test_11_storage.py. _smoke 443/443, pytest 30 passed
+
+## 다음 세션 시작점 (2026-11-13 갱신)
+1. 단계 0 — PC 미니맵 문서(docs 01·02·05·07) trans 로 + 고칠 것 6건 (PC에서)
+2. 단계 4-b — NAS 잠금 파일(쓰기 직전 단독 생성·2분 정리, 저장 순간만) + 블록 판 번호 충돌 알림 + 무결성 실패 시 읽기 전용
+3. 단계 2 — 전환 지점 4곳(config/paths.py·settings.py·llm_client·nas.py) + ⑤ 망 감지 제거
+4. 단계 5 이후 「남은 일 전체 계획」 표대로 (단계 1·3 끝, 4 절반)

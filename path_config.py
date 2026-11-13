@@ -181,6 +181,11 @@ def get_export_dir() -> Path:
     return _ensure(get_data_dir() / "exports")
 
 
+def get_backup_dir() -> Path:
+    """DB 백업(매일 첫 실행, 결정 ①). 데이터 폴더 안 backups/ — 정본 DB 를 덮어쓰지 않는다."""
+    return _ensure(get_data_dir() / "backups")
+
+
 def get_env_label() -> str:
     """현재 환경 레이블 (UI 표시용)."""
     return "사내망" if is_internal() else "사외망"

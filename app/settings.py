@@ -38,6 +38,10 @@ def database_url() -> str:
     return f"sqlite:///{pc.db_path().as_posix()}"
 
 
+# ── 저장(결정 ①) ─
+DB_BUSY_TIMEOUT_MS = _int("MEETING_DB_BUSY_TIMEOUT_MS", 5000)   # 다른 PC 가 쓰는 중일 때 기다리는 시간
+DB_BACKUP_KEEP = _int("MEETING_DB_BACKUP_KEEP", 14)             # 매일 백업 몇 개를 남기나
+
 # ── LLM ─────────────────────────────────────────────────
 # 앞에서부터 시도하는 공급자 목록 — 결정 ④(2026-11-13): SOLA·GPT 두 개. Upstage 뺌, Mock 은 테스트 전용(사용자 체인에 넣지 않음).
 # 둘 다 실패하면 공급자별 사유를 보여 주고 메모는 그대로 남는다 — 이슈는 사람이 직접 쓴다.

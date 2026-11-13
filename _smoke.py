@@ -2317,6 +2317,31 @@ def t_events(c) -> None:
     check("결정⑦ — 이슈 화면 「변경 기록」에 보임", "변경 기록" in page and "결정7 원인 B" in page)
 
 
+def t_storage(c) -> None:
+    """결정 ① 4-a — NAS 위 SQLite 하나: DELETE 저널·busy_timeout(WAL 금지), 매일 첫 실행 백업 + 무결성 점검."""
+    from datetime import date as _date
+    from sqlalchemy import text
+    import path_config as pc
+    from app import settings as _settings
+    from app.db import engine
+    from app.services import db_guard
+    with engine.connect() as cn:
+        jm = cn.execute(text("PRAGMA journal_mode")).scalar()
+        bt = cn.execute(text("PRAGMA busy_timeout")).scalar()
+    check("결정① — journal_mode = delete (WAL 아님)", str(jm).lower() == "delete", str(jm))
+    check("결정① — busy_timeout = 설정값", int(bt) == _settings.DB_BUSY_TIMEOUT_MS, str(bt))
+    bdir = pc.get_backup_dir()
+    g = db_guard.daily(pc.db_path(), bdir, today=_date(2030, 1, 2))
+    check("결정① — 오늘 첫 실행 백업 생성 + 무결성 ok", g["made"] and g["backup"].exists() and g["integrity"] == "ok", repr(g))
+    g2 = db_guard.daily(pc.db_path(), bdir, today=_date(2030, 1, 2))
+    check("결정① — 같은 날 두 번째는 아무것도 안 함", not g2["made"])
+    for d in range(1, 20):                                   # 오래된 백업 정리 — KEEP 개만 남김
+        (bdir / f"meeting-2029{d:04d}.db").write_bytes(b"x")
+    db_guard.daily(pc.db_path(), bdir, today=_date(2030, 1, 3))
+    left = sorted(p.name for p in bdir.glob("meeting-*.db"))
+    check(f"결정① — 백업은 최근 {_settings.DB_BACKUP_KEEP}개만", len(left) == _settings.DB_BACKUP_KEEP and left[-1] == "meeting-20300103.db", f"{len(left)}")
+    check("결정① — 반쯤 쓴 백업(.tmp) 남지 않음", not list(bdir.glob("*.tmp")))
+
 
 def t_llm_c(c) -> None:
     t_llm()
@@ -2325,7 +2350,7 @@ def t_llm_c(c) -> None:
 # 묶음 순서 = 실행 순서. 앞 묶음이 만든 데이터를 뒤 묶음이 쓴다. tests/test_NN_*.py 도 이 순서를 따른다
 GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
           t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events)
+          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage)
 
 
 def main() -> int:

@@ -26,6 +26,10 @@ def _make_engine(url: str) -> Engine:
         def _fk_on(dbapi_conn, _rec):  # noqa: ANN001
             cur = dbapi_conn.cursor()
             cur.execute("PRAGMA foreign_keys = ON")
+            # 결정 ①(2026-11-13): NAS(SMB) 위 SQLite 하나를 여러 PC 가 쓴다 — WAL 은 네트워크 드라이브에서 깨지므로
+            # 롤백 저널(DELETE)로 고정하고, 다른 PC 가 쓰는 중이면 잠깐 기다린다. 쓰기 순서는 앱 잠금 파일이 맡는다(4-b).
+            cur.execute("PRAGMA journal_mode = DELETE")
+            cur.execute(f"PRAGMA busy_timeout = {settings.DB_BUSY_TIMEOUT_MS}")
             cur.close()
 
         return eng

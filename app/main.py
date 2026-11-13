@@ -85,6 +85,14 @@ async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
     d, source = pc.data_dir_choice()
     print(f"[meeting] 데이터 폴더: {d}  ({source})", flush=True)   # 어느 DB·사진 폴더를 쓰는지 서버 창에서 바로 확인
     init_db()
+    from app.services import db_guard
+    if settings.database_url().startswith("sqlite"):
+        g = db_guard.daily(pc.db_path(), pc.get_backup_dir())
+        if g["made"]:
+            print(f"[meeting] 오늘 백업: {g['backup']}  · 무결성: {g['integrity']}", flush=True)
+        if g["integrity"] != "ok":
+            print(f"[meeting] 주의: DB 무결성 점검 실패: {g['integrity']} — 어제 백업({pc.get_backup_dir()})으로 되돌릴지 확인하세요", flush=True)
+        _app.state.db_guard = g
     _sync_hulls_on_start()
     yield
 
