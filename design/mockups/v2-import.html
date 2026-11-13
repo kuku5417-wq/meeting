@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 외부 자료 가져오기 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="v2.css">
+<style>
+/* 외부 자료 가져오기 — 시스템 밖에서 만든 PPT·HTML 을 올리면 장마다 AI 가 사실을 뽑고 기존 이슈와 짝을 찾는다.
+   사람은 장마다 「연결 / 새 이슈 / 건너뛰기」만 고른다. 원본은 보관(원칙 1), 반영은 고른 것만(원칙 3: 근거 = 장 위치) */
+.drop{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;padding:14px;border:1px dashed var(--field-line);border-radius:8px;background:var(--surface)}
+.drop .ic{width:40px;height:40px;border-radius:8px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-weight:700}
+.imp{display:grid;grid-template-columns:200px minmax(0,1fr) 420px;gap:14px;align-items:start}
+.slist{display:grid;grid-template-columns:minmax(0,1fr);gap:6px}
+.slist button{min-width:0;width:100%;display:grid;gap:4px;text-align:left;font:inherit;font-size:var(--fs-1);padding:6px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);cursor:pointer}
+.slist button[aria-current="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.slist .th{aspect-ratio:16/9;border-radius:3px;background:repeating-linear-gradient(45deg,var(--slide-soft) 0 6px,var(--slide) 6px 12px);display:grid;place-items:center;color:var(--slide-muted);font-size:var(--fs-1);text-align:center;padding:4px}
+.st{font-weight:600}
+.st.link{color:var(--ok)} .st.new{color:var(--accent)} .st.skip{color:var(--muted)} .st.todo{color:var(--signal)}
+.orig{aspect-ratio:16/9;background:#fff;color:var(--slide-fg);border:1px solid var(--line);border-radius:4px;overflow:hidden;display:grid;grid-template-rows:auto 1fr;font-size:var(--fs-2)}
+.orig .hd{background:var(--slide-band);color:#fff;padding:10px 14px;font-weight:700;display:flex;justify-content:space-between}
+.orig .bd{padding:12px 14px;display:grid;gap:6px;align-content:start;position:relative}
+.orig mark{background:var(--slide-issue-soft);color:inherit;outline:1px solid var(--slide-issue);border-radius:2px;padding:0 2px}
+.orig .ph{background:var(--slide-photo);border-radius:3px;min-height:80px}
+.ex{display:grid;gap:6px}
+.ex .f{display:grid;grid-template-columns:72px minmax(0,1fr);gap:6px;align-items:start;font-size:var(--fs-2)}
+.ex .f>span:first-child{color:var(--muted);font-size:var(--fs-1);padding-top:6px}
+.ex .src{font-size:var(--fs-1);color:var(--muted)}
+.ex input{padding:4px 8px}
+.match{display:grid;gap:6px}
+.opt{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 8px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:var(--fs-2)}
+.opt:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.opt .sc{font-family:var(--mono);font-size:var(--fs-1);color:var(--muted)}
+.opt .why{grid-column:2/-1;font-size:var(--fs-1);color:var(--muted)}
+.diff{display:grid;gap:4px;font-size:var(--fs-2);padding:8px 10px;border:1px solid var(--ok);background:var(--ok-soft);border-radius:6px}
+.diff s{color:var(--muted)}
+.foot{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px;position:sticky;bottom:0}
+@media (max-width:1300px){.imp{grid-template-columns:180px minmax(0,1fr)}.imp .right{grid-column:1/-1}}
+@media (max-width:860px){.imp{grid-template-columns:minmax(0,1fr)}.slist{grid-auto-flow:column;grid-auto-columns:150px;overflow-x:auto}.drop{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">커미셔닝팀 회의·지식</span>
+  <nav class="nav" aria-label="메뉴">
+    <a href="v2-home.html">홈</a>
+    <a href="v2-issue-desk.html" aria-current="page">이슈</a>
+    <a href="v2-meetings.html">회의</a>
+    <a href="v2-metrics.html">지표</a>
+    <a href="#">지식창고</a>
+    <a href="#">장비 허브</a>
+  </nav>
+  <div class="right"><span class="small muted">시운전2부 · 정 부장</span></div>
+</header>
+<p class="v2-note">재설계 시안 v2 — 외부 자료 가져오기. 시스템 밖에서 만든 PPT·HTML 을 올리면 장마다 AI 가 사실을 뽑고 기존 이슈와 짝을 찾습니다. 고른 것만 이슈·지식에 반영되고 원본 장은 회의자료에 그대로 쓸 수 있습니다. 데이터는 가상입니다.</p>
+
+<main class="page">
+  <div class="drop">
+    <span class="ic">PPT</span>
+    <div><b>시운전2부_주간현안_W43.pptx</b> <span class="small muted">· 5장 · 정 부장 · 10/22 14:10 · 원본 보관됨</span><br><span class="small muted">파일을 여기에 놓거나 고르세요 — .pptx · .html · 이미지. 같은 파일을 다시 올리면 바뀐 장만 다시 봅니다.</span></div>
+    <div class="row"><label class="f" style="min-width:200px">이 자료를 쓸 곳<select><option>시운전2부 W43 회의자료에 원본 장으로 넣기</option><option>지식에만 반영 (회의자료에는 안 넣음)</option></select></label></div>
+  </div>
+
+  <div class="imp">
+    <nav class="panel slist" aria-label="장" id="slist"></nav>
+
+    <section class="panel" aria-labelledby="oH">
+      <div class="panel-h"><h2 id="oH">원본 장</h2><span class="small muted">노란 표시 = AI 가 뽑은 근거</span></div>
+      <div class="orig" id="orig"></div>
+    </section>
+
+    <aside class="panel right" aria-labelledby="xH">
+      <div class="panel-h"><h2 id="xH">AI 가 뽑은 내용</h2><span class="small muted">고칠 수 있습니다</span></div>
+      <div class="ex" id="ex"></div>
+      <div class="panel-h"><h2>이 장을 어떻게 할까요</h2></div>
+      <div class="match" id="match"></div>
+      <div id="diff"></div>
+    </aside>
+  </div>
+
+  <div class="foot"><b id="cnt"></b><span class="small muted">「반영하기」를 누르면 연결·새 이슈로 고른 장만 이슈·지식에 들어가고, 작성자에게 알림이 갑니다.</span><button class="btn primary" type="button" id="apply" style="margin-left:auto">반영하기</button></div>
+</main>
+<script>
+// 시안용 — 5장짜리 부서 PPT
+const S = [
+  {t: 'SN2513 유압펌프 파손 — 메이커 주장 검토', body: ['메이커 주장: <mark>오일 오염 → 윤활 불량 → 피스톤 고착</mark>', '반박: 같은 오일을 쓴 6대 중 1대만 파손', '<mark>원인: 개별 부품 결함 의심</mark> — 파손면 분석 요구'], f: {제목: 'SN2513 유압펌프 파손', 호선: 'SN2513', 장비: '유압펌프 No.2 ← 「HPU P2」', 현상: '피스톤·실린더 고착 파손', 원인: '개별 부품 결함 의심 (메이커는 오일 오염 주장)', 조치: '파손면 SEM/EDS · 오일 분석 요구'}, m: [{k: 'link', id: 'PRB-2026-0011', sc: 92, why: '같은 호선·장비, 제목 유사'}, {k: 'new'}, {k: 'skip'}], pick: 'link', diff: [['원인', '조사 중', '개별 부품 결함 의심 (메이커는 오일 오염 주장)'], ['조치', '—', '파손면 SEM/EDS · 오일 분석 요구']]},
+  {t: 'SN2512 발전기 No.3 냉각수 온도', body: ['<mark>냉각수 출구 +6℃</mark>', '<mark>열교환기 세정 10/23</mark> 후 재시험'], f: {제목: 'SN2512 발전기 No.3 냉각수 온도 상승', 호선: 'SN2512', 장비: '발전기 No.3', 현상: '냉각수 출구 +6℃', 원인: '—', 조치: '열교환기 세정 후 재시험'}, m: [{k: 'link', id: 'ISS-2026-0015', sc: 88, why: '같은 호선·장비'}, {k: 'new'}, {k: 'skip'}], pick: 'link', diff: [['조치', '열교환기 세정', '열교환기 세정 10/23 후 재시험']]},
+  {t: '구역별 진행 현황', body: ['A구역 60% · B구역 100%', '<mark>케이블 120 → 310가닥</mark> 물량 증가로 기간 연장'], f: {제목: '수리 지원 출장 진행 현황', 호선: '(미확인) 「2516호」', 장비: '—', 현상: '케이블 물량 증가', 원인: '—', 조치: '기간 연장'}, m: [{k: 'link', id: 'ISS-2026-0021', sc: 61, why: '제목 일부 일치 — 호선 미확인'}, {k: 'new'}, {k: 'skip'}], pick: null, diff: []},
+  {t: '부서 행사', body: ['명절 근무자 격려 간식 전달'], f: {제목: '명절 근무자 격려', 호선: '—', 장비: '—', 현상: '—', 원인: '—', 조치: '—'}, m: [{k: 'new', note: '공유정보로'}, {k: 'skip'}], pick: 'new', diff: []},
+  {t: '표지', body: ['시운전2부 주간 현안 W43'], f: {제목: '—', 호선: '—', 장비: '—', 현상: '—', 원인: '—', 조치: '—'}, m: [{k: 'skip'}], pick: 'skip', diff: []},
+];
+const LBL = {link: '연결', new: '새 이슈', skip: '건너뛰기'};
+let cur = 0;
+const $ = (id) => document.getElementById(id);
+function list() {
+  $('slist').innerHTML = S.map((s, k) => `<button type="button" data-k="${k}" aria-current="${k === cur}"><span class="th">${s.t}</span><span>${k + 1}쪽</span><span class="st ${s.pick || 'todo'}">${s.pick ? LBL[s.pick] : '고르기 전'}</span></button>`).join('');
+  const done = S.filter((s) => s.pick).length;
+  $('cnt').textContent = `판정 ${done}/${S.length} · 연결 ${S.filter((s) => s.pick === 'link').length} · 새 이슈 ${S.filter((s) => s.pick === 'new').length}`;
+}
+function show() {
+  const s = S[cur];
+  $('orig').innerHTML = `<div class="hd"><span>${s.t}</span><span>${cur + 1} / ${S.length}</span></div><div class="bd">${s.body.map((b) => `<div>${b}</div>`).join('')}<div class="ph"></div></div>`;
+  $('ex').innerHTML = Object.entries(s.f).map(([k, v]) => `<label class="f"><span>${k}</span><span><input type="text" value="${v}">${v.includes('미확인') ? '<span class="src" style="color:var(--signal)">기준정보에 없는 표기 — 고르면 별칭 사전에 추가</span>' : ''}</span></label>`).join('');
+  $('match').innerHTML = s.m.map((m, j) => `<label class="opt"><input type="radio" name="m" value="${m.k}" ${s.pick === m.k ? 'checked' : ''}>
+    <b>${m.k === 'link' ? `기존 이슈에 연결 — ${m.id}` : m.k === 'new' ? `새 이슈로 등록${m.note ? ' (' + m.note + ')' : ''}` : '건너뛰기 — 원본 장만 보관'}</b>${m.sc ? `<span class="sc">${m.sc}%</span>` : '<span></span>'}${m.why ? `<span class="why">${m.why}</span>` : ''}</label>`).join('');
+  $('diff').innerHTML = s.pick === 'link' && s.diff.length ? `<div class="diff"><b>이슈에 반영될 사실</b>${s.diff.map(([k, a, b]) => `<span>${k}: <s>${a}</s> → ${b}</span>`).join('')}<span class="small muted">근거: 이 파일 ${cur + 1}쪽 · 작성자에게 알림</span></div>` : '';
+  document.querySelectorAll('input[name=m]').forEach((r) => r.addEventListener('change', () => { s.pick = r.value; list(); show(); }));
+}
+$('slist').addEventListener('click', (e) => { const b = e.target.closest('[data-k]'); if (b) { cur = +b.dataset.k; list(); show(); } });
+$('apply').onclick = (e) => { e.target.textContent = '반영했습니다 — 이슈 2건 갱신 · 새 이슈 1건'; e.target.disabled = true; };
+list(); show();
+</script>
+</body>
+</html>

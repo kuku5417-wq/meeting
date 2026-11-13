@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 B안 회의자료 보기 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<style>
+/* 회의자료 보기 B안(iPadOS) — 읽기 전용. 고치는 버튼은 「편집」 하나. 발표 화면과 같은 장을 세로로 */
+.vw{display:grid;grid-template-columns:260px minmax(0,1fr);gap:16px;align-items:start}
+.toc{position:sticky;top:12px;max-height:calc(100vh - 100px);overflow:auto}
+.toc a{grid-template-columns:28px minmax(0,1fr);min-height:36px;color:var(--fg);font-size:var(--fs-2)}
+.toc a span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toc a[aria-current="true"]{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.pgs{display:grid;gap:14px;max-width:1100px}
+.chg{font-size:var(--fs-2);font-weight:600;color:var(--t-issue);background:var(--warn-soft);border-radius:10px;padding:8px 14px}
+@media (max-width:1000px){.vw{grid-template-columns:minmax(0,1fr)}.toc{position:static;max-height:240px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">회의·지식</span>
+  <nav class="nav" aria-label="메뉴"><a href="v2b-home.html">홈</a><a href="v2b-issue-desk.html">이슈</a><a href="v2b-meetings.html" aria-current="page">회의</a><a href="v2-metrics.html">지표</a><a href="#">지식창고</a><a href="#">장비 허브</a></nav>
+  <div class="right"><a id="toA" href="#">A안 보기</a></div>
+</header>
+<details class="note"><summary>시안 설명 — B안 회의자료 보기</summary>보는 사람이 대부분이라 읽기만 합니다. 고칠 사람은 아래 「편집」. 발행 뒤 이슈 사실이 바뀐 장에는 「변경」 표시가 붙고, 편집 화면에서 반영하면 2판이 됩니다. 데이터는 가상입니다.</details>
+<main class="page">
+  <div class="ph"><h1 id="title"></h1><span class="small muted" id="sub"></span></div>
+  <div class="vw"><nav class="toc group" id="toc" aria-label="장 목록"></nav><div class="pgs" id="pgs"></div></div>
+</main>
+<div class="actbar"><span class="state" id="state"></span><a class="btn gray" id="edit" href="#">편집</a><a class="btn primary" id="run" href="#">회의 시작 →</a></div>
+<script type="module">
+import {$, $$, fitStages} from './v2b.js';
+import {deckOf, MEETING, itemSlide, coverSlide} from './v2b-data.js';
+const m = new URLSearchParams(location.search).get('m') || 'share';
+const its = deckOf(m), total = its.length + 1, title = MEETING[m];
+$('#title').textContent = title;
+$('#sub').textContent = m === 'share' ? '발행 1판 · 10/22 15:10 · 부서 제출 6/8 + 원장 자동 2' : '발행 1판';
+$('#pgs').innerHTML = `<section id="p1" class="stage-wrap"><div class="stage">${coverSlide(title, its, total)}</div></section>` + its.map((it, i) => `${it.d.id === 'ISS-2026-0001' ? '<span class="chg">● 발행 뒤 변경 1 — 원인이 바뀜(시운전1부, 10/22 16:02) · 편집에서 반영하면 2판</span>' : ''}<section id="p${i + 2}" class="stage-wrap"><div class="stage">${itemSlide(it, i + 2, total, its[i + 1]?.d.title, title)}</div></section>`).join('');
+$('#toc').innerHTML = `<a class="cell tap" href="#p1" aria-current="true"><span class="mono">1</span><span>표지</span></a>` + its.map((it, i) => `<a class="cell tap" href="#p${i + 2}"><span class="mono">${i + 2}</span><span>${it.d.title}</span></a>`).join('');
+$('#edit').href = `v2b-studio.html?kind=${m === 'hull' ? 'dept' : m}`;
+$('#run').href = `v2b-meeting-run.html?m=${m}`;
+$('#state').textContent = `${total}장 · 결정 필요 ${its.filter((x) => x.d.dec).length} · 종결 승인 대기 ${its.filter((x) => x.d.st === 'req').length}`;
+fitStages();
+// 읽는 위치에 맞춰 장 목록 강조
+const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) $$('#toc a').forEach((a) => a.setAttribute('aria-current', a.getAttribute('href') === '#' + e.target.id)); }), {rootMargin: '-40% 0px -55% 0px'});
+$$('.pgs section').forEach((s) => io.observe(s));
+</script>
+</body>
+</html>

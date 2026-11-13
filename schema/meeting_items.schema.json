@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "meeting_items.schema.json",
+  "title": "extract_meeting_items 출력",
+  "description": "회의록 메모 → 이슈 후보 / 기존 블록 연결 제안. docs/04_AI처리.md 참고. ID 는 서버가 발급한다.",
+  "type": "object",
+  "required": ["items"],
+  "additionalProperties": false,
+  "properties": {
+    "items": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "type": "object",
+        "required": ["title", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "title": { "type": "string", "maxLength": 80 },
+          "department_hint": { "type": ["string", "null"], "description": "담당 부서 이름 (메모에 있으면)" },
+          "link_block_ref": { "type": ["string", "null"], "description": "이번 주 블록 목록 중 같은 건이면 그 ID" },
+          "evidence": {
+            "type": "object",
+            "required": ["line", "quote"],
+            "additionalProperties": false,
+            "properties": {
+              "line": { "type": "integer", "minimum": 1 },
+              "quote": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

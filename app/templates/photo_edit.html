@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}{{ photo.id }} 마킹 · {{ block.id }} · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="stack">
+  <header class="ped-head">
+    <p class="crumb"><a href="/issues?id={{ block.id }}#attach">← 이슈로 돌아가기</a> · {{ block.id }} {{ block.title }}</p>
+    <div class="titleline">
+      <h2 class="hub-title">사진 마킹</h2>
+      <span class="id">{{ photo.id }} · {{ photo.width }}×{{ photo.height }}{% if photo.taken_at %} · {{ photo.taken_at.strftime("%Y.%m.%d") }} 촬영{% endif %}</span>
+      
+      {% if nav | length > 1 %}
+      <nav class="ped-nav" aria-label="같은 이슈의 사진">
+        {% if idx > 0 %}{% set pv = nav[idx - 1] %}<a class="btn sm" data-nav href="/photos/{{ pv.photo }}/edit?block={{ block.id }}&role={{ pv.role }}">◀ 이전 사진</a>{% endif %}
+        <span class="small muted">사진 {{ idx + 1 }}/{{ nav | length }}</span>
+        {% if idx < nav | length - 1 %}{% set nx = nav[idx + 1] %}<a class="btn sm" data-nav href="/photos/{{ nx.photo }}/edit?block={{ block.id }}&role={{ nx.role }}">다음 사진 ▶</a>{% endif %}
+      </nav>
+      {% endif %}
+    </div>
+  </header>
+  {% if msg %}<p class="flash ok" role="status">{{ msg }}</p>{% endif %}
+  {% if err %}<p class="flash bad" role="alert">{{ err }}</p>{% endif %}
+
+  <section class="panel" aria-labelledby="piH">
+    <h2 id="piH" class="small">사진 정보</h2>
+    {% if readonly %}
+    <p><b>{{ roles[link.role] }}</b>{% if link.caption %} · {{ link.caption }}{% endif %}{% if link.note %}<br><span class="muted">{{ link.note }}</span>{% endif %}</p>
+    {% else %}
+    <form method="post" action="/blocks/{{ block.id }}/photos/{{ photo.id }}/info" class="ph-info wide">
+      <input type="hidden" name="role" value="{{ link.role }}"><input type="hidden" name="back" value="edit">
+      <label for="pi-role">구분</label>
+      <select id="pi-role" name="to_role">{% for k, lab in roles.items() %}<option value="{{ k }}"{% if k == link.role %} selected{% endif %}>{{ lab }}</option>{% endfor %}</select>
+      <label for="pi-cap">이름</label>
+      <input id="pi-cap" name="caption" type="text" maxlength="80" value="{{ link.caption }}" placeholder="예: 3번 실린더 헤드">
+      <label for="pi-note">설명</label>
+      <input id="pi-note" name="note" type="text" maxlength="500" value="{{ link.note }}" placeholder="예: 교체 전 씰 면 손상 확인">
+      <button class="btn sm" type="submit" data-nav>정보 저장</button>
+    </form>
+    <p class="muted small">이름·설명은 PPT 사진 쪽 캡션으로 나갑니다. 조치 전·후가 둘 다 있으면 PPT 에서 나란히 놓습니다.</p>
+    {% endif %}
+  </section>
+
+  {% if readonly %}
+  <section class="panel"><img class="ped-preview" src="/photos/{{ photo.id }}/render?block={{ block.id }}&w=1600" alt="{{ photo.id }} 마킹 결과"></section>
+  {% else %}
+  <section class="ped panel" aria-labelledby="pedH">
+    <h2 id="pedH" class="sr">사진 편집</h2>
+    <div class="toolbar" role="toolbar" aria-label="사진 편집 도구">
+      <div class="tgroup">
+        <button class="tool" type="button" data-tool="select" aria-pressed="false" title="선택·이동·크기 (V)">선택</button>
+      </div>
+      <div class="tgroup">
+        <button class="tool" type="button" data-tool="arrow" aria-pressed="false">화살표</button>
+        <button class="tool" type="button" data-tool="circle" aria-pressed="false">원</button>
+        <button class="tool" type="button" data-tool="rect" aria-pressed="false">사각형</button>
+        <button class="tool" type="button" data-tool="free" aria-pressed="false">자유선</button>
+      </div>
+      <div class="tgroup">
+        <button class="tool" type="button" data-tool="marker" aria-pressed="true">번호 ①</button>
+        <button class="tool" type="button" data-tool="text" aria-pressed="false">텍스트</button>
+        <button class="tool" type="button" data-tool="inset" aria-pressed="false">확대 인셋</button>
+      </div>
+      <div class="tgroup">
+        <button class="tool" type="button" data-tool="crop" aria-pressed="false">자르기</button>
+        <button class="tool" type="button" id="rotBtn">회전</button>
+        <label class="tool bright">밝기 <input id="bright" type="range" min="-0.5" max="0.5" step="0.05" value="0" aria-label="밝기"></label>
+        <button class="tool" type="button" data-tool="mosaic" aria-pressed="false">모자이크</button>
+      </div>
+      <div class="tgroup" aria-label="색">
+        {% for hex, name in colors.items() %}
+        <button class="swatch" type="button" data-color="{{ hex }}" aria-pressed="{{ 'true' if loop.first else 'false' }}" aria-label="{{ name }}" style="background:{{ hex }}"></button>
+        {% endfor %}
+      </div>
+      <div class="tgroup">
+        <button class="tool" type="button" id="undoBtn" title="Ctrl+Z">되돌리기</button>
+        <button class="tool" type="button" id="redoBtn" title="Ctrl+Y">다시 실행</button>
+        <button class="tool" type="button" id="delBtn" disabled title="Delete">선택 지우기</button>
+        <button class="tool" type="button" id="clearBtn">마킹 모두 지우기</button>
+      </div>
+    </div>
+    <div class="cropbar" id="cropbar" hidden>
+      <span class="small">손잡이로 자를 영역을 맞추고 「자르기 적용」을 누르세요</span>
+      <button class="btn sm primary" type="button" id="cropApply">자르기 적용</button>
+      <button class="btn sm" type="button" id="cropCancel">취소</button>
+      <button class="btn sm" type="button" id="uncropBtn" hidden>자르기 해제</button>
+    </div>
+    <div id="stage" class="ped-stage" tabindex="0" aria-label="{{ photo.id }} 편집 영역. 번호 도구로 누르면 번호 마커가 추가됩니다"></div>
+    <p class="keys small muted">V 선택 · Delete 지우기 · Ctrl+Z 되돌리기 · Ctrl+Y 다시 실행 · Ctrl+S 저장 · 글자는 두 번 눌러 고치기</p>
+    <div class="mlist" id="mlist" aria-label="번호 마커"></div>
+    <p class="hint">사진을 누르면 번호 마커가 추가됩니다. 마커마다 설명과 부위 태그를 달면 지식창고 사진 검색에 쓰입니다. 원본 사진은 바뀌지 않고, 마킹은 따로 저장됩니다.</p>
+    <div class="row ped-actions">
+      <button class="btn primary" type="button" id="saveBtn">마킹 저장</button>
+      <button class="btn" type="button" id="saveBackBtn">저장하고 돌아가기</button>
+      <a class="btn" href="/photos/{{ photo.id }}/render?block={{ block.id }}" target="_blank" rel="noopener">출력 미리보기</a>
+      <span class="msg" id="msg" aria-live="polite"></span>
+    </div>
+  </section>
+  <script type="application/json" id="ped-data">{{ {
+    "photo": photo.id, "block": block.id, "src": work_src,
+    "back": "/issues?id=" ~ block.id ~ "#attach",
+    "width": photo.width, "height": photo.height, "doc": doc,
+    "components": components, "colors": colors | list
+  } | tojson }}</script>
+  <script src="{{ url_for('static', path='vendor/konva.min.js') }}?v={{ asset_v }}"></script>
+  <script type="module" src="{{ url_for('static', path='js/photo_editor.js') }}?v={{ asset_v }}"></script>
+  {% endif %}
+</div>
+{% endblock %}

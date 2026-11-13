@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 회의자료 보기 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="v2.css">
+<style>
+/* 회의자료 보기 — 회의 카드를 누르면 여기로. 발표 자료처럼 읽고, 「수정」을 누르면 회의자료 구성으로 간다(2026-10-21 사용자 제안).
+   왼쪽 쪽 목록(따라옴) · 오른쪽 슬라이드 세로로. 슬라이드마다 「이 장 수정」 */
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.bar h1{font-size:var(--fs-4)}
+.bar .right{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.view{display:grid;grid-template-columns:170px minmax(0,1fr);gap:16px;align-items:start}
+.toc{position:sticky;top:60px;display:grid;gap:6px}
+.toc a{display:grid;gap:2px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);text-decoration:none;color:inherit;font-size:var(--fs-1)}
+.toc a b{font-size:var(--fs-1)}
+.toc a span{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.toc a[aria-current="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.deck{display:grid;gap:18px;max-width:1000px}
+.pgw{display:grid;gap:6px;scroll-margin-top:70px}
+.pgw .meta{display:flex;gap:8px;align-items:center;font-size:var(--fs-1);color:var(--muted)}
+.pgw .meta .btn{margin-left:auto}
+.slide.v{font-size:14px;box-shadow:0 1px 3px rgb(0 0 0 / .08)}
+.slide.v .band{font-size:15px;padding:10px 16px}
+.slide.v .sb{padding:14px 18px;gap:10px;font-size:14px;line-height:1.45}
+.slide.v .foot{font-size:11px;padding:6px 16px}
+.slide.v .it{border-left-width:4px;padding-left:10px}
+.slide.v .it b{font-size:16px}
+.slide.v .cards{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.slide.v .card{border:1px solid var(--slide-line);border-radius:4px;padding:8px 10px;display:grid;gap:6px}
+.slide.v .card .who{color:var(--slide-muted);font-size:12px}
+.slide.v .ph{background:var(--slide-photo);border-radius:3px;min-height:70px;position:relative}
+.slide.v .ph span{position:absolute;left:6px;bottom:4px;font-size:11px}
+.slide.v .sum{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.slide.v .sum div{border:1px solid var(--slide-line);border-radius:4px;padding:8px;display:grid}
+.slide.v .sum b{font-size:24px;font-family:var(--display);color:var(--slide-band)}
+.slide.v .sum span{color:var(--slide-muted);font-size:12px}
+.slide.v .subs{display:flex;flex-wrap:wrap;gap:4px;font-size:11px}
+.slide.v .subs span{border:1px solid var(--slide-line);border-radius:999px;padding:1px 8px}
+.slide.v .subs .ok{background:var(--slide-ok-soft);border-color:var(--slide-ok);color:var(--slide-ok)}
+.slide.v .subs .wip{background:var(--slide-issue-soft);border-color:var(--slide-issue);color:var(--slide-issue)}
+.slide.v .detw{display:grid;grid-template-columns:1.4fr 1fr;gap:10px}
+.slide.v .det{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.slide.v .det>div{border:1px solid var(--slide-line);border-radius:4px;padding:6px 8px}
+.slide.v .det i{display:block;font-style:normal;font-weight:700;color:var(--slide-band);font-size:11px}
+.slide.v .det .dec{border-color:var(--slide-decide);background:var(--slide-decide-soft)}.slide.v .det .dec i{color:var(--slide-decide)}
+.slide.v .det2{display:grid;gap:6px;align-content:start}
+.slide.v .gmini{position:relative;height:56px;border:1px solid var(--slide-line);border-radius:3px;background:repeating-linear-gradient(90deg,var(--slide-line) 0 1px,transparent 1px 12.5%)}
+.slide.v .gmini span{position:absolute;height:8px;background:var(--slide-muted)}.slide.v .gmini span.a{background:var(--slide-share)}
+.slide.v .orig{height:100%;min-height:200px;display:grid;place-content:center;text-align:center;gap:4px;background:repeating-linear-gradient(45deg,var(--slide-soft) 0 8px,var(--slide) 8px 16px);color:var(--slide-muted);border-radius:3px}
+.slide.v .orig b{color:var(--slide-fg);font-size:16px}
+.draft{font-size:var(--fs-1);color:var(--signal)}
+.toc .mv{display:none;gap:4px}.toc.editing .mv{display:flex}.toc .mv button{font:inherit;font-size:var(--fs-1);padding:1px 6px;border:1px solid var(--line);border-radius:4px;background:var(--surface);cursor:pointer;color:var(--fg)}
+@media (max-width:860px){.view{grid-template-columns:minmax(0,1fr)}.toc{display:none}}
+@media (max-width:640px){.slide.v{aspect-ratio:auto}.slide.v .cards,.slide.v .detw,.slide.v .det{grid-template-columns:1fr}.slide.v .sum{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">커미셔닝팀 회의·지식</span>
+  <nav class="nav" aria-label="메뉴">
+    <a href="v2-home.html">홈</a>
+    <a href="v2-issue-desk.html">이슈</a>
+    <a href="v2-meetings.html" aria-current="page">회의</a>
+    <a href="v2-metrics.html">지표</a>
+    <a href="#">지식창고</a>
+    <a href="#">장비 허브</a>
+  </nav>
+  <div class="right"><span class="small muted">시운전1부 · 김 대리</span></div>
+</header>
+<p class="v2-note">재설계 시안 v2 — 공유회 자료 보기. <b>부서가 제출한 회의자료를 취합</b>한 것입니다. 팀 스텝은 표지·부서 순서만 고치고, 내용은 장마다 「부서 자료에서 수정」. 데이터는 가상입니다.</p>
+
+<main class="page">
+  <div class="bar">
+    <a class="btn sm ghost" href="v2-meetings.html">← 회의 목록</a>
+    <span class="pill kind">부서 현안 공유회</span><h1>W43 부서 현안 공유회</h1>
+    <span class="small muted">10/24(금) 09:00 · 기획운영 주관</span>
+    <span class="pill p-issue">구성 중 · 채택 6</span>
+    <div class="right">
+      <button class="btn" type="button">PPT 내려받기</button>
+      <a class="btn" href="v2-meeting-run.html">회의 시작</a>
+      <button class="btn primary" type="button" id="editBtn">표지·부서 순서 수정</button>
+    </div>
+  </div>
+  <p class="draft" style="margin:0">아직 발행 전입니다 — 지금 구성된 대로 보입니다. 부서 제출 5/8.</p>
+
+  <div class="view">
+    <nav class="toc" id="toc" aria-label="쪽"></nav>
+    <div class="deck" id="deck"></div>
+  </div>
+</main>
+<script>
+// 시안용 — 회의자료 쪽(구성 화면의 채택·묶기·형태 결과와 같은 모양 = PPT)
+const P = [
+  {g: '표지', s: 'W43 부서 현안 공유회', edit: false, html: `
+    <div style="font-size:1.6em;font-weight:700;color:var(--slide-band);font-family:var(--display)">W43 부서 현안 공유회</div>
+    <div>2026-10-24(금) 09:00 · 채택 6건 · 종결 요청 1 · 결정 필요 2</div>
+    <div class="sum"><div><b>4</b><span>신규</span></div><div><b>9</b><span>진행 중</span></div><div><b>1</b><span>종결 요청</span></div><div><b>2</b><span>장기 미결</span></div></div>
+    <div class="subs"><span class="ok">기획운영 제출</span><span class="ok">시운전기술 제출</span><span class="wip">시운전1부 작성 중</span><span class="ok">시운전2부 제출</span><span class="wip">시운전3부 작성 중</span><span class="ok">해운부 제출</span><span>안벽의장그룹 미작성</span><span class="ok">친환경실증Lab 제출</span></div>`},
+  {g: '시운전1부', s: '카고펌프 씰 누유 · 종결 요청', id: 'PRB-2026-0001', html: `
+    <div class="cards">
+      <div class="card"><div class="it problem"><b>[문제점] SN2514 카고펌프 No.3 메카니컬씰 누유</b></div><div>씰 교체 후 4시간 무누유 — <b>종결 요청</b></div><div class="who">시운전1부 · SN2514 · PRB-2026-0001</div><div class="ph"><span>조치 후</span></div></div>
+      <div class="card"><div class="it share"><b>[공유정보] SN2511 조타기 선급 검사 10/21 → 10/23</b></div><div>검사 일정 변경</div><div class="who">시운전1부 · SN2511 · SHR-2026-0001</div></div>
+    </div>`},
+  {g: '시운전1부', s: '발전기 배기온도 편차 · 상세', id: 'ISS-2026-0001', html: `
+    <div class="it issue"><b>[이슈] SN2511 발전기 No.2 배기온도 편차</b>시운전1부 · SN2511 · ISS-2026-0001</div>
+    <div class="detw"><div class="det"><div><i>현상</i>3번 실린더 배기온도 +38℃ 편차</div><div><i>원인</i>조사 중 (자매선 SN2510: 분사밸브 노즐 마모)</div><div><i>조치 · 계획</i>연료밸브 교체 → 부하시험</div><div class="dec"><i>결정 필요</i>선주 협의: 부하시험을 해상/안벽 어디서 할지</div></div>
+    <div class="det2"><div class="ph"><span>3번 실린더</span></div><div class="gmini"><span style="left:10%;width:20%;top:6px"></span><span class="a" style="left:40%;width:22%;top:18px"></span><span style="left:33%;width:18%;top:30px"></span><span class="a" style="left:66%;width:18%;top:42px"></span></div></div></div>`},
+  {g: '시운전기술', s: '발전기 기동 지연 · 장기 미결', id: 'ISS-2026-0004', html: `
+    <div class="card"><div class="it issue"><b>[이슈] SN2512 발전기 No.1 기동 지연</b></div><div>제조사 회신 대기 5주째 — 장기 미결</div><div class="who">시운전기술 · SN2512 · ISS-2026-0004</div></div>`},
+  {g: '시운전2부', s: '유압펌프 파손 · 원본 슬라이드', id: 'PRB-2026-0011', html: `
+    <div class="orig">원본 슬라이드 그대로<b>SN2513 유압펌프 파손 — 메이커 주장 검토</b><span>시운전2부 제출 PPT · 3쪽</span></div>`},
+  {g: '기획운영', s: 'Sterntube 금속이물질', id: 'PRB-2026-0007', html: `
+    <div class="card"><div class="it problem"><b>[문제점] Sterntube 금속이물질 발견</b></div><div>SN2402·SN2510 확인, 원인 조사 중</div><div style="color:var(--slide-decide);font-weight:700">결정 필요: 후속선 S/T LO 소형 필터 추가 적용 여부</div><div class="who">기획운영 · SN2402 · PRB-2026-0007 · 매핑 1/5</div><div class="ph"><span>이물질</span></div></div>`},
+];
+const deck = document.getElementById('deck'), toc = document.getElementById('toc');
+deck.innerHTML = P.map((p, k) => `<section class="pgw" id="pg${k + 1}">
+  <div class="meta"><b>${k + 1}</b><span>${p.g}</span>${p.id ? `<span class="id">${p.id}</span>` : ''}
+    ${p.id ? `<a class="btn sm" href="v2-dept-deck.html">${p.g} 자료에서 수정</a>` : '<button class="btn sm" type="button">표지 수정</button>'}</div>
+  <div class="slide v"><div class="band"><span>${p.g}</span><span class="tag">주간 현안</span></div><div class="sb">${p.html}</div><div class="foot">부서 현안 공유회 · ${k + 1}/${P.length}</div></div>
+</section>`).join('');
+toc.innerHTML = P.map((p, k) => `<a href="#pg${k + 1}" data-k="${k}"><b>${k + 1}. ${p.g}</b><span>${p.s}</span>${k ? '<span class="mv"><button type="button">▲</button><button type="button">▼</button></span>' : ''}</a>`).join('');
+document.getElementById('editBtn').onclick = (e) => { const on = toc.classList.toggle('editing'); e.target.textContent = on ? '순서 수정 끝' : '표지·부서 순서 수정'; };
+// 보고 있는 쪽을 목록에 표시
+const io = new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { const k = e.target.id.slice(2) - 1; toc.querySelectorAll('a').forEach((a, j) => a.setAttribute('aria-current', j === k)); } }), {rootMargin: '-40% 0px -55% 0px'});
+document.querySelectorAll('.pgw').forEach((s) => io.observe(s));
+</script>
+</body>
+</html>

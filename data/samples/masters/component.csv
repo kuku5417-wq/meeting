@@ -1,0 +1,7 @@
+id,equipment_model_id,name
+CP-GE-INJ,EM-GE6L,연료분사밸브
+CP-GE-EXM,EM-GE6L,배기 매니폴드
+CP-GE-TC,EM-GE6L,배기 열전대
+CP-CP-MSEAL,EM-CP3,메카니컬씰
+CP-CP-HSG,EM-CP3,씰 하우징
+CP-CP-DRN,EM-CP3,드레인 배관

@@ -1,0 +1,16 @@
+{
+  "items": [
+    {
+      "title": "동일 모델 카고펌프 타 호선 점검",
+      "department_hint": "3부",
+      "link_block_ref": null,
+      "evidence": { "line": 1, "quote": "동일 모델 타 호선도 점검 필요" }
+    },
+    {
+      "title": "발전기 배기온도 편차 — 부하시험 결과 재보고",
+      "department_hint": "시운전1부",
+      "link_block_ref": "ISS-2026-0001",
+      "evidence": { "line": 2, "quote": "다음 주 부하시험 결과로 다시 보고" }
+    }
+  ]
+}

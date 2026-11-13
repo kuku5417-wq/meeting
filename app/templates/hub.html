@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% import "_ms.html" as ms with context %}
+{% block title %}{% if card %}{{ card.title }} · {% endif %}장비 허브 · {{ app_title }}{% endblock %}
+{% macro dash(v) %}{% if v %}{{ v }}{% else %}<span class="muted">—</span>{% endif %}{% endmacro %}
+{% macro node(x, y, w, cls, k, n, href, label) %}
+  <a href="{{ href }}" aria-label="{{ label }}"><g class="node {{ cls }}">
+    <rect x="{{ x - w / 2 }}" y="{{ y - 22 }}" width="{{ w }}" height="44" rx="6"/>
+    <text class="k" x="{{ x }}" y="{{ y - 5 }}" text-anchor="middle">{{ k }}</text>
+    <text class="n" x="{{ x }}" y="{{ y + 13 }}" text-anchor="middle">{{ n | truncate(20, True, '…') }}</text>
+  </g></a>
+{% endmacro %}
+{% block content %}
+<div class="stack">
+  <header class="hub-head">
+    <p class="crumb"><a href="/knowledge">지식창고</a> › 장비 허브</p>
+    <div class="titleline">
+      <h2 id="hubTitle" class="hub-title">{% if card %}{{ card.title }}{% else %}장비 허브{% endif %}</h2>
+      {% if hub and hub.open %}<span class="pill p-issue">진행 이슈 {{ hub.open | length }}</span>{% endif %}
+      {% if card %}<span class="id">{{ card.id }}</span>{% endif %}
+    </div>
+  </header>
+
+  <section class="panel" aria-labelledby="aliasH">
+    <div class="panel-h">
+      <h2 id="aliasH">현장 표기로 찾기</h2>
+      <span class="muted small">메모에 쓴 그대로 입력하면 기준정보로 연결합니다</span>
+    </div>
+    <form class="alias" method="get" action="/hub" role="search">
+      <label for="aliasIn" class="sr">장비 표기</label>
+      <input id="aliasIn" name="q" type="text" value="{{ q }}" placeholder="2511 DG2" autocomplete="off">
+      <button class="btn primary" type="submit">연결 확인</button>
+    </form>
+    <div class="resolve" id="resolve" aria-live="polite">
+      {% if not has_masters %}
+        <span class="pill p-issue">기준정보 없음</span>
+        <span class="muted">아직 기준정보가 없습니다. 운영 PC 에서 <span class="mono">scripts\seed_masters.py</span> 를 한 번 실행해주세요.</span>
+      {% elif res is not none %}
+        {% set r = res.r %}
+        <span class="chip">{{ r.raw }}</span><span class="arrow">→</span>
+        {% if r.hull_id %}<span class="chip hit">호선 {{ r.hull_id }}</span>{% else %}<span class="pill p-problem">호선 미확인</span>{% endif %}
+        {% if r.linked %}
+          {% if res.eq %}<span class="chip hit">{{ res.eq.name }}</span>{% endif %}
+          <span class="arrow">=</span><span class="chip hit">{{ r.target_id }}</span>
+          <span class="muted">{% if r.via == "pattern" %}시스템 약어·번호로 연결됨{% elif r.via == "id" %}ID 로 찾음{% else %}별칭 사전으로 연결됨{% if r.alias_text and r.alias_text != r.raw %} (← {{ r.alias_text }}){% endif %}{% endif %}</span>
+        {% elif r.conflict %}
+          <span class="pill p-issue">표기 충돌</span>
+          {% for kind, tid in r.candidates %}<span class="chip">{{ tid }}</span>{% endfor %}
+          <span class="muted">같은 표기가 여러 장비를 가리킵니다. 기획부서 검토 대상입니다</span>
+        {% else %}
+          <span class="pill p-problem">장비 미확인</span>
+          <span class="muted">검토 화면에서 작성자가 고르면 별칭 사전에 추가됩니다</span>
+        {% endif %}
+      {% elif q == "" and request.query_params.get("q") is not none %}
+        <span class="err">찾을 장비 표기를 입력하세요. 예: 2511 DG2</span>
+      {% endif %}
+    </div>
+  </section>
+
+  {% if not card and unreg is defined %}
+  <section class="panel" id="unreg" aria-labelledby="unregH">
+    <div class="panel-h"><h2 id="unregH">기준정보에 없는 표기</h2><span class="pill p-neutral">{{ unreg | length }}</span></div>
+    {% if msg %}<p class="flash ok" role="status">{{ msg }}</p>{% endif %}
+    <p class="muted small">작성자가 「미등록으로 두기」 한 장비·호선·부위입니다. 기준정보 CSV(<span class="mono">data/samples/masters/</span> 또는 실제 기준정보 폴더)에
+      넣고 <span class="mono">scripts\seed_masters.py</span> 를 다시 돌리면 자동으로 이어집니다. 별칭(현장 표기)도 CSV 의 alias 에 넣어주세요.</p>
+    {% if unreg %}
+    <div class="tablewrap"><table class="unreg-list">
+      <thead><tr><th>종류</th><th>현장 표기</th><th>건수</th><th>호선</th><th>최근 주차</th><th>블록</th></tr></thead>
+      <tbody>{% for g in unreg %}<tr><td>{{ g.kind_label }}</td><td><b>{{ g.text }}</b></td><td>{{ g.count }}</td><td>{{ g.hulls | join(", ") or "—" }}</td><td>{{ g.week or "—" }}</td>
+        <td class="mono small">{{ g.blocks[:4] | join(", ") }}{% if g.blocks | length > 4 %} 외 {{ g.blocks | length - 4 }}{% endif %}</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <form method="post" action="/hub/relink"><button class="btn sm" type="submit">기준정보에 다시 이어 보기</button></form>
+    {% else %}
+    <p class="muted small">미등록 표기가 없습니다.</p>
+    {% endif %}
+  </section>
+  {% endif %}
+
+  {% if card %}
+  <div class="row1">
+    <section class="panel" id="sec-id" aria-labelledby="idH">
+      <div class="panel-h"><h2 id="idH">기준정보</h2><span class="pill p-neutral">마스터 연결</span></div>
+      <dl class="id-list">
+        <dt>호선</dt><dd><span class="mono">{{ card.hull_id }}</span>{% if card.stage %} · {{ card.stage }}{% endif %} {{ ms.ms_chip(card.hull_id) }}</dd>
+        <dt>선종 · 선주</dt><dd>{{ dash([card.ship_type, card.owner] | select | join(" · ")) }}</dd>
+        <dt>자매선</dt><dd>{% if card.sisters %}<span class="mono">{{ card.sisters | join(" · ") }}</span>{% else %}<span class="muted">—</span>{% endif %}</dd>
+        <dt>시스템</dt><dd>{% if card.system_path %}<div class="path">{% for n in card.system_path %}<span>{{ n }}</span>{% endfor %}</div>{% else %}<span class="muted">—</span>{% endif %}</dd>
+        <dt>장비 모델</dt><dd>{{ dash(card.model) }}{% if card.model_no %} <span class="id">{{ card.model_no }}</span>{% endif %}</dd>
+        <dt>위치</dt><dd>{{ dash(card.position) }}</dd>
+        <dt>시운전 항목</dt><dd>{{ dash(card.test_items | join(" · ")) }}</dd>
+        <dt>담당 부서</dt><dd><span class="muted">— (기준정보 미정)</span></dd>
+        <dt>별칭</dt><dd>{% if card.aliases %}<div class="codes">{% for a in card.aliases %}<span class="chip">{{ a }}</span>{% endfor %}</div>{% else %}<span class="muted">—</span>{% endif %}</dd>
+      </dl>
+    </section>
+
+    <section class="panel" aria-labelledby="mapH">
+      <div class="panel-h"><h2 id="mapH">연결 지도</h2><span class="muted small">노드를 누르면 근거로 이동합니다</span></div>
+      <div class="map-wrap">
+        <svg class="map" viewBox="0 0 720 380" role="img" aria-label="{{ card.title }} 연결 지도">
+          <line class="edge" x1="360" y1="190" x2="130" y2="80"/>
+          <line class="edge" x1="360" y1="190" x2="130" y2="190"/>
+          <line class="edge" x1="360" y1="190" x2="130" y2="300"/>
+          <line class="edge{% if hub.open %} strong{% endif %}" x1="360" y1="190" x2="360" y2="50"/>
+          <line class="edge" x1="360" y1="190" x2="360" y2="330"/>
+          <line class="edge strong" x1="360" y1="190" x2="590" y2="80"/>
+          <line class="edge" x1="590" y1="80" x2="590" y2="190"/>
+          <line class="edge" x1="590" y1="190" x2="590" y2="300"/>
+          {% if card.sisters %}<line class="edge dash" x1="130" y1="80" x2="130" y2="190"/>{% endif %}
+          {% if hub.precedents %}<path class="edge dash" d="M205 190 C 300 260, 470 250, 515 200"/>{% endif %}
+          {{ node(130, 80, 150, "n-master", "호선", card.hull_id ~ (" · " ~ hub.ship_code if hub.ship_code else ""), "#sec-id", "호선 기준정보") }}
+          {{ node(130, 190, 150, "n-master", "자매선", (card.sisters | reject("equalto", card.hull_id) | join(" · ")) or "없음", "#sec-same", "자매선 이력") }}
+          {{ node(130, 300, 150, "n-master", "시스템", card.system_path[-1] if card.system_path else "—", "#sec-id", "시스템 계층") }}
+          {{ node(360, 50, 170, "n-issue", "진행 이슈", (hub.open[0].id ~ (" 외 " ~ (hub.open | length - 1) if hub.open | length > 1 else "")) if hub.open else "없음", "#sec-hist", "이 장비의 이력") }}
+          <g class="node n-center"><rect x="270" y="162" width="180" height="56" rx="8"/>
+            <text class="k" x="360" y="183" text-anchor="middle">탑재 장비</text>
+            <text class="n" x="360" y="203" text-anchor="middle">{{ card.title | truncate(22, True, '…') }}</text></g>
+          {{ node(360, 330, 170, "n-master", "시운전 항목", card.test_items[0] if card.test_items else "—", "#sec-id", "시운전 항목") }}
+          {{ node(590, 80, 170, "n-model", "장비 모델", (card.model or "—").split(" · ")[-1], "#sec-same", "동일 모델") }}
+          {{ node(590, 190, 170, "n-model", "동일 모델 탑재", (hub.same | length) ~ "대", "#sec-same", "동일 모델 다른 호선") }}
+          {{ node(590, 300, 170, "n-cause", "주요 원인 1위", (hub.causes[0][0] ~ " " ~ hub.causes[0][1]) if hub.causes else "사례 없음", "#sec-cause", "원인 순위") }}
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--surface-2);border-color:var(--muted)"></i>기준정보</span>
+        <span><i style="background:var(--share-soft);border-color:var(--share)"></i>장비 모델</span>
+        <span><i style="background:var(--signal-soft);border-color:var(--signal)"></i>이슈</span>
+        <span><i style="background:var(--danger-soft);border-color:var(--danger)"></i>원인</span>
+        <span>점선 = 자매선 관계</span>
+      </div>
+      {% for p in hub.precedents[:2] %}
+      <div class="callout" role="note">
+        <span class="badge">선행 사례</span>
+        {# 받침에 따라 조사가 바뀌므로(으로/로, 이/가) 조사 없이 「항목: 값」으로 쓴다 #}
+        <p>자매선 <b class="mono">{{ p.eq.hull_id }}</b> 같은 위치 {{ p.eq.name }} · {{ p.c.approved_week_id }} 종결 —
+          증상 「{{ p.c.symptom_text }}」, 원인 <b>{{ p.c.cause_text }}</b>, 조치 「{{ p.c.action_text }}」.
+          {% if hub.open %}같은 증상이면 먼저 점검해 보세요.{% else %}점검 때 참고하세요.{% endif %}</p>
+        <a class="btn" href="/knowledge?case={{ p.c.id }}#detail">사례 보기</a>
+      </div>
+      {% endfor %}
+    </section>
+  </div>
+
+  <div class="row2">
+    <section class="panel" id="sec-hist" aria-labelledby="histH">
+      <div class="panel-h"><h2 id="histH">이 장비의 이력</h2><span class="pill p-neutral">주간보고 {{ hub.history | map(attribute="week") | unique | list | length }}주</span></div>
+      {% if hub.history %}
+      <ol class="timeline">
+        {% for h in hub.history %}<li><span class="w">{{ h.week[-3:] }}</span><span class="dot{% if h.status == '종결' %} done{% endif %}"></span><span><b>{{ h.block.id }}</b> {{ h.status }}{% if h.note %}<br><span class="muted">{{ h.note }}</span>{% endif %}</span></li>{% endfor %}
+      </ol>
+      {% else %}<p class="muted small">이 장비가 태그된 블록이 아직 없습니다.</p>{% endif %}
+    </section>
+
+    <section class="panel" id="sec-same" aria-labelledby="sameH">
+      <div class="panel-h"><h2 id="sameH">동일 모델, 다른 호선</h2><span class="muted small">장비 모델 기준 연결</span></div>
+      {% if hub.same %}
+      <div class="tablewrap"><table>
+        <thead><tr><th>호선 · 장비</th><th>증상</th><th>원인</th><th>상태</th></tr></thead>
+        <tbody>
+        {% for r in hub.same %}
+          <tr{% if r.sister %} class="sister"{% endif %}>
+            <td><a href="/hub/equipment/{{ r.eq.id }}"><span class="hull">{{ r.eq.hull_id }}</span> {{ r.eq.name }}</a>{% if r.sister %}<span class="tag-s">자매선{% if r.same_pos %} · 같은 위치{% endif %}</span>{% endif %}</td>
+            <td>{{ dash(r.symptom) }}</td><td>{{ dash(r.cause) }}</td>
+            <td>{% if r.status %}<span class="pill {{ 'p-ok' if r.status == '종결' else 'p-issue' }}">{{ r.status }}</span><br><span class="id">{{ r.ref }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table></div>
+      {% else %}<p class="muted small">같은 모델을 쓰는 다른 장비가 없습니다.</p>{% endif %}
+    </section>
+
+    <div class="stack">
+      <section class="panel" id="sec-cause" aria-labelledby="causeH">
+        <div class="panel-h"><h2 id="causeH">이 모델의 원인 순위</h2><span class="muted mono small">사례 {{ hub.causes | sum(attribute=1) }}건</span></div>
+        {% if hub.causes %}
+        <div class="bars">
+          {% set top = hub.causes[0][1] %}
+          {% for name, n in hub.causes %}
+          <div class="bar-row"><div class="lab"><span>{{ name }}</span><b>{{ n }}건</b></div><div class="track"><div class="fill{% if not loop.first %} alt{% endif %}" style="width:{{ (n / (hub.causes | sum(attribute=1)) * 100) | round(0) }}%"></div></div></div>
+          {% endfor %}
+        </div>
+        {% else %}<p class="muted small">아직 원인이 기록된 사례가 없습니다.</p>{% endif %}
+      </section>
+      <section class="panel" aria-labelledby="phH">
+        <div class="panel-h"><h2 id="phH">부위별 사진</h2><span class="muted mono small">마커 태그 {{ hub.photos | length }}</span></div>
+        {% if hub.photos %}
+        <div class="comp-photos">
+          {% for p in hub.photos %}<a class="cph" href="/photos/{{ p.photo_id }}/edit?block={{ p.block_id }}"><img src="/photos/{{ p.photo_id }}/render?block={{ p.block_id }}&w=240" alt="{{ p.comp }}"><span><b>{{ p.comp }}</b> · {{ p.no }}. {{ p.label or "설명 없음" }}</span></a>{% endfor %}
+        </div>
+        {% else %}<p class="muted small">이 모델의 부위 태그가 달린 사진 마커가 아직 없습니다.</p>{% endif %}
+      </section>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

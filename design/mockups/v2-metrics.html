@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 지표 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="v2.css">
+<style>
+/* 지표 — 부서별 주간 지표 입력. 이번 주 칸만 입력, 지난 5주는 읽기, 행마다 추이. 회의자료에는 구성 화면에서 골라 요약 항목으로 넣는다 */
+.tbl-wrap{overflow-x:auto}
+table.m{border-collapse:collapse;width:100%;font-size:var(--fs-2);font-variant-numeric:tabular-nums}
+table.m th,table.m td{padding:7px 8px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+table.m th{font-size:var(--fs-1);color:var(--muted);font-weight:600;background:var(--surface-2)}
+table.m th:first-child,table.m td:first-child{text-align:left}
+table.m td.name b{font-weight:600}
+table.m td.name span{display:block;font-size:var(--fs-1);color:var(--muted)}
+table.m th.now,table.m td.now{background:var(--accent-soft)}
+table.m td.now input{width:84px;text-align:right;font-variant-numeric:tabular-nums}
+table.m td.now input.jump{border-color:var(--signal);background:var(--signal-soft)}
+table.m tr.hid td{opacity:.5}
+table.pt th.grp{text-align:center;background:var(--surface-2);color:var(--fg)}
+table.pt td input{width:56px;text-align:right;font-variant-numeric:tabular-nums;padding:3px 6px}
+table.pt td.note input{width:260px;text-align:left}
+table.pt td.up{color:var(--danger);font-weight:700} table.pt td.down{color:var(--share);font-weight:700}
+table.pt tr.sum td{font-weight:700;background:var(--surface-2)}
+.spark{display:block}
+.spark polyline{fill:none;stroke:var(--accent);stroke-width:1.6}
+.spark circle{fill:var(--accent)}
+.spark.jump polyline{stroke:var(--signal)} .spark.jump circle{fill:var(--signal)}
+.flag{font-size:var(--fs-1);color:var(--signal);font-weight:600}
+.add{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr) auto;gap:8px;align-items:end}
+@media (max-width:640px){.add{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">커미셔닝팀 회의·지식</span>
+  <nav class="nav" aria-label="메뉴">
+    <a href="v2-home.html">홈</a>
+    <a href="v2-issue-desk.html">이슈</a>
+    <a href="v2-meetings.html">회의</a>
+    <a href="v2-metrics.html" aria-current="page">지표</a>
+    <a href="#">지식창고</a>
+    <a href="#">장비 허브</a>
+  </nav>
+  <div class="right"><span class="small muted">시운전1부 · 김 대리</span></div>
+</header>
+<p class="v2-note">재설계 시안 v2 — 지표. 숫자는 여기서만 넣습니다. 「주간 지표」(주차 추이)와 「기간 표」(특근·인원처럼 과 × 날짜 × 계획/실적 + 사유) 두 종류. 회의자료에는 「회의자료 구성」에서 골라 요약 항목으로 넣습니다. 데이터는 가상입니다.</p>
+
+<main class="page">
+  <div class="head">
+    <div><h1>지표</h1><span class="small muted mono">2026-W43 입력 중</span></div>
+    <div class="row">
+      <label class="f" style="min-width:180px">부서<select><option>시운전1부</option><option>시운전2부</option><option>시운전기술</option><option>기획운영</option></select></label>
+      <button class="btn primary" id="save">이번 주 값 저장</button>
+    </div>
+  </div>
+
+  <div class="seg" role="group" aria-label="지표 종류" style="justify-self:start"><button aria-pressed="true" data-kind="weekly">주간 지표</button><button aria-pressed="false" data-kind="period">기간 표 — 특근·인원</button></div>
+
+  <section class="panel" aria-labelledby="pH" data-k="period" hidden>
+    <div class="panel-h"><h2 id="pH">특근 계획 대비 실적 <span class="small muted mono">10/24–10/26</span></h2><span class="small muted">행 = 과 · 열 = 날짜 × 계획/실적. 차이는 자동, 사유는 행마다 적습니다</span></div>
+    <div class="tbl-wrap">
+      <table class="m pt">
+        <thead><tr><th rowspan="2">구분</th><th colspan="3" class="grp">10/24(토)</th><th colspan="3" class="grp">10/25(일)</th><th colspan="3" class="grp">10/26(월)</th><th rowspan="2">차이 사유</th></tr>
+          <tr><th>계획</th><th>실적</th><th>차이</th><th>계획</th><th>실적</th><th>차이</th><th>계획</th><th>실적</th><th>차이</th></tr></thead>
+        <tbody id="prow"></tbody>
+      </table>
+    </div>
+    <div class="row"><button class="btn sm" type="button">+ 행</button><button class="btn sm" type="button">+ 날짜</button><button class="btn sm ghost" type="button">엑셀에서 붙여넣기</button><span class="small muted">회의자료에는 표 그대로 + 사유 묶음으로 나갑니다</span></div>
+  </section>
+
+  <section class="panel" aria-labelledby="tH" data-k="weekly">
+    <div class="panel-h"><h2 id="tH">시운전1부 주간 지표</h2><span class="small muted">평소(지난 5주 평균)보다 30% 넘게 다르면 노란색으로 알려 줍니다 — 저장은 막지 않습니다</span></div>
+    <div class="tbl-wrap">
+      <table class="m">
+        <thead><tr><th>지표</th><th>W38</th><th>W39</th><th>W40</th><th>W41</th><th>W42</th><th class="now">W43</th><th>추이</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+    <span class="small" id="msg" style="color:var(--ok);font-weight:600" hidden>W43 값을 저장했습니다</span>
+  </section>
+
+  <section class="panel" aria-labelledby="aH" data-k="weekly">
+    <div class="panel-h"><h2 id="aH">지표 추가</h2></div>
+    <div class="add">
+      <label class="f">지표 이름<input type="text" placeholder="예: 시운전 항목 완료율"></label>
+      <label class="f">단위<input type="text" placeholder="%, 건, 척"></label>
+      <button class="btn">추가</button>
+    </div>
+  </section>
+</main>
+<script>
+// 시안용 — 지표 정의 + 지난 5주 값
+const M = [
+  {n:'시운전 진행 호선', u:'척', v:[6,6,7,7,7], now:7},
+  {n:'시운전 항목 완료율', u:'%', v:[62,65,68,71,74], now:77},
+  {n:'신규 이슈', u:'건', v:[4,3,5,4,3], now:9},
+  {n:'열린 이슈', u:'건', v:[18,19,21,20,19], now:''},
+  {n:'선주 코멘트 미결', u:'건', v:[11,10,9,9,8], now:''},
+];
+function spark(vals, jump) {
+  const w = 90, h = 22, max = Math.max(...vals), min = Math.min(...vals), r = (max - min) || 1;
+  const pts = vals.map((v, k) => [k * (w - 4) / (vals.length - 1) + 2, h - 3 - (v - min) / r * (h - 6)]);
+  const last = pts[pts.length - 1];
+  return `<svg class="spark${jump ? ' jump' : ''}" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" role="img" aria-label="최근 ${vals.length}주 추이"><polyline points="${pts.map((p) => p.join(',')).join(' ')}"/><circle cx="${last[0]}" cy="${last[1]}" r="2.4"/></svg>`;
+}
+function isJump(m, x) { if (x === '' || x == null) return false; const avg = m.v.reduce((a, b) => a + b, 0) / m.v.length; return Math.abs(x - avg) / avg > 0.3; }
+function row(m, k) {
+  const j = isJump(m, m.now);
+  const series = m.now === '' ? m.v : [...m.v, +m.now];
+  return `<tr data-k="${k}"><td class="name"><b>${m.n}</b><span>${m.u}</span></td>${m.v.map((x) => `<td>${x}</td>`).join('')}<td class="now"><input type="text" inputmode="decimal" aria-label="${m.n} W43" value="${m.now}" class="${j ? 'jump' : ''}" placeholder="입력"></td><td>${spark(series, j)}${j ? '<span class="flag">평소와 다름</span>' : ''}</td><td><button class="btn sm ghost" data-hide>숨기기</button></td></tr>`;
+}
+function draw() {
+  document.getElementById('rows').innerHTML = M.map(row).join('');
+  document.querySelectorAll('#rows input').forEach((inp) => inp.addEventListener('change', () => { const k = +inp.closest('tr').dataset.k; M[k].now = inp.value === '' ? '' : +inp.value; draw(); }));
+  document.querySelectorAll('[data-hide]').forEach((b) => b.addEventListener('click', () => { const tr = b.closest('tr'); tr.classList.toggle('hid'); b.textContent = tr.classList.contains('hid') ? '보이기' : '숨기기'; }));
+}
+draw();
+// 기간 표 — 특근 인원 (가상)
+const R = [
+  {n: '1과', v: [[12, 15], [4, 4], [18, 20]], note: '10/24 긴급 지원 3명 추가 — 계획 반영 누락'},
+  {n: '2과', v: [[16, 16], [10, 9], [22, 22]], note: '10/25 개인 사정 1명 미출근'},
+  {n: '3과', v: [[20, 18], [6, 6], [25, 27]], note: '업무량 감소로 배원 취소 2명 / 10/26 추가 2명'},
+];
+function pdraw() {
+  const tot = R[0].v.map((_, k) => [R.reduce((a, r) => a + r.v[k][0], 0), R.reduce((a, r) => a + r.v[k][1], 0)]);
+  const cell = ([pl, ac]) => { const d = ac - pl; return `<td><input value="${pl}" aria-label="계획"></td><td><input value="${ac}" aria-label="실적"></td><td class="${d > 0 ? 'up' : d < 0 ? 'down' : ''}">${d > 0 ? '+' : ''}${d || '—'}</td>`; };
+  document.getElementById('prow').innerHTML = R.map((r) => `<tr><td class="name"><b>${r.n}</b></td>${r.v.map(cell).join('')}<td class="note"><input value="${r.note}" aria-label="${r.n} 차이 사유"></td></tr>`).join('') +
+    `<tr class="sum"><td>시운전1부 계</td>${tot.map(([pl, ac]) => { const d = ac - pl; return `<td>${pl}</td><td>${ac}</td><td>${d > 0 ? '+' : ''}${d || '—'}</td>`; }).join('')}<td></td></tr>`;
+}
+pdraw();
+document.querySelectorAll('[data-kind]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-kind]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  document.querySelectorAll('[data-k]').forEach((p) => { p.hidden = p.dataset.k !== b.dataset.kind; });
+}));
+document.getElementById('save').onclick = () => { document.getElementById('msg').hidden = false; };
+</script>
+</body>
+</html>

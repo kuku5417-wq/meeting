@@ -1,0 +1,118 @@
+{# 이슈에 붙이는 것 — 지식 매핑(태그 연결·확인·미등록·빼기) · 사진(마킹·구분·순서) · 표. M12 에서 옛 작성 화면에서 옮겼다.
+   쓰는 곳: issues.html(b = 이슈, v = write.attach_view). 동작은 /tags/… · /blocks/{id}/photos|tables 그대로, 끝나면 /issues?id= 로 돌아온다 #}
+<section class="panel v-attach" id="attach" data-attach="{{ b.id }}" aria-labelledby="attH">
+  <h3 class="v-sec" id="attH">지식 매핑 · 사진 · 표 — 고친 것은 바로 이슈에 남습니다</h3>
+          {% if v.tags %}
+          <div class="tags">
+            {% for tv in v.tags %}{% set t = tv.t %}
+            {% set unreg = tv.unlinked and t.confirmed %}
+            <span class="tag{% if tv.check %}{% if tv.unlinked %} miss{% else %} low{% endif %}{% elif unreg %} unreg{% elif t.confirmed or t.target_id %} ok{% endif %}">
+              <b>{{ tv.kind }}</b>{{ tv.label }}
+              {% if unreg %}<span class="unreg-l">미등록</span>{% endif %}
+              {% if t.kind == 'hull' and t.target_id %}{{ ms.ms_chip(t.target_id) }}{% endif %}
+              {% if t.target_id and t.raw_text and t.raw_text != tv.label and t.kind != 'hull' %}<span class="link">← {{ t.raw_text }}</span>{% endif %}
+              {% if tv.check or unreg %}
+                {% if tv.unlinked and tv.options %}
+                <form method="post" action="/tags/{{ t.id }}/link" class="inline">
+                  <label class="sr" for="link-{{ t.id }}">{{ t.raw_text }} 연결 대상</label>
+                  <select id="link-{{ t.id }}" name="target_id"><option value="">대상 고르기</option>{% for oid, olab in tv.options %}<option value="{{ oid }}">{{ olab }}</option>{% endfor %}</select>
+                  <button type="submit">연결</button>
+                </form>
+                {% endif %}
+                {% if tv.check and tv.unlinked %}
+                <form method="post" action="/tags/{{ t.id }}/unregistered" class="inline"><button type="submit" class="ghost" title="기준정보에 없는 장비·호선·부위 — 확정을 막지 않고 미등록 표기 목록에 모입니다">미등록으로 두기</button></form>
+                {% elif tv.check %}
+                <form method="post" action="/tags/{{ t.id }}/confirm" class="inline"><button type="submit">확인</button></form>
+                {% endif %}
+                <form method="post" action="/tags/{{ t.id }}/dismiss" class="inline"><button type="submit" class="x" aria-label="태그 '{{ t.raw_text }}' 빼기" title="잘못 단 태그 빼기">✕</button></form>
+              {% endif %}
+            </span>
+            {% endfor %}
+          </div>
+          {% endif %}
+          {% if not v.tags %}<p class="muted small">매핑이 없습니다. 메모에서 AI 정리를 하면 호선·장비·부위·증상·원인 표기가 달립니다.</p>{% endif %}
+          {% for e in v.evidence %}<p class="evidence">근거 · 메모 <q>{{ e.quote }}</q></p>{% endfor %}
+          {% if b.block_type in ("issue", "problem") %}
+          <div class="attach-zone">
+            {% if v.photos %}
+            {% set ph_keys = v.photos | map(attribute="key") | list %}{% set ph_on = photo_sel if photo_sel in ph_keys else ph_keys[0] %}
+            <div class="photos gallery" aria-label="사진 {{ v.photos | length }}장" data-gallery>
+              {% if v.photos | length > 1 %}
+              <div class="thumbs" role="tablist" aria-label="사진 고르기">
+                {% for pv in v.photos %}<button type="button" class="thumb" role="tab" data-show="{{ pv.key }}" aria-selected="{{ 'true' if pv.key == ph_on else 'false' }}" aria-label="{{ pv.role }} {{ pv.link.caption or pv.p.id }}"><img src="/photos/{{ pv.p.id }}/render?block={{ b.id }}&w=160" alt="" width="72"><span>{{ pv.role }}</span></button>{% endfor %}
+              </div>
+              {% endif %}
+              {% for pv in v.photos %}{% set lk = pv.link %}{% set fid = b.id ~ "-" ~ pv.p.id ~ "-" ~ lk.role %}
+              <figure class="ph ph-big" data-ph="{{ pv.key }}"{% if pv.key != ph_on %} data-off{% endif %}>
+                <a href="/photos/{{ pv.p.id }}/edit?block={{ b.id }}&role={{ lk.role }}" title="마킹 편집"><img src="/photos/{{ pv.p.id }}/render?block={{ b.id }}&w=960" alt="{{ pv.role }} {{ lk.caption or pv.p.id }}" loading="eager"></a>
+                <figcaption><b>{{ pv.role }}</b>{% if lk.caption %} · {{ lk.caption }}{% endif %}
+                  <span class="muted small"><span class="id">{{ pv.p.id }}</span>{% if pv.markers %} · 마커 {{ pv.markers }}{% endif %}{% if pv.shapes %} · 도형 {{ pv.shapes }}{% endif %}{% if not pv.markers and not pv.shapes %} · 마킹 전{% endif %}</span>
+                  {% if lk.note %}<span class="ph-note">{{ lk.note }}</span>{% endif %}</figcaption>
+                {% if true %}
+                <form method="post" action="/blocks/{{ b.id }}/photos/{{ pv.p.id }}/info" class="ph-info">
+                  <input type="hidden" name="role" value="{{ lk.role }}">
+                  <label class="sr" for="rl-{{ fid }}">{{ pv.p.id }} 구분</label>
+                  <select id="rl-{{ fid }}" name="to_role">{% for k, lab in photo_roles.items() %}<option value="{{ k }}"{% if k == lk.role %} selected{% endif %}>{{ lab }}</option>{% endfor %}</select>
+                  <label class="sr" for="cp-{{ fid }}">{{ pv.p.id }} 이름</label>
+                  <input id="cp-{{ fid }}" name="caption" type="text" maxlength="80" value="{{ lk.caption }}" placeholder="이름 (예: 3번 실린더 헤드)">
+                  <label class="sr" for="nt-{{ fid }}">{{ pv.p.id }} 설명</label>
+                  <input id="nt-{{ fid }}" name="note" type="text" maxlength="500" value="{{ lk.note }}" placeholder="설명">
+                  <button class="btn sm" type="submit">저장</button>
+                </form>
+                <div class="row ph-acts">
+                  <a class="btn sm{% if not pv.markers and not pv.shapes %} primary{% endif %}" href="/photos/{{ pv.p.id }}/edit?block={{ b.id }}&role={{ lk.role }}">마킹</a>
+                  <form method="post" action="/blocks/{{ b.id }}/photos/{{ pv.p.id }}/move"><input type="hidden" name="role" value="{{ lk.role }}"><input type="hidden" name="dir" value="up"><button class="btn sm" type="submit" aria-label="{{ pv.p.id }} 앞으로"{% if loop.first %} disabled{% endif %}>◀</button></form>
+                  <form method="post" action="/blocks/{{ b.id }}/photos/{{ pv.p.id }}/move"><input type="hidden" name="role" value="{{ lk.role }}"><input type="hidden" name="dir" value="down"><button class="btn sm" type="submit" aria-label="{{ pv.p.id }} 뒤로"{% if loop.last %} disabled{% endif %}>▶</button></form>
+                  <form method="post" action="/blocks/{{ b.id }}/photos/{{ pv.p.id }}/unlink"><input type="hidden" name="role" value="{{ lk.role }}"><button class="btn sm" type="submit">떼기</button></form>
+                </div>
+                {% endif %}
+              </figure>
+              {% endfor %}
+            </div>
+            {% endif %}
+            {% for tv in v.tables if tv.rows %}
+            <figure class="btable">
+              <figcaption><b>{{ tv.t.title or "표" }}</b> <span class="muted small">{{ tv.rows | length - 1 }}행 × {{ tv.rows[0] | length }}열</span></figcaption>
+              <div class="tablewrap"><table>
+                <thead><tr>{% for c in tv.rows[0] %}<th>{{ c }}</th>{% endfor %}</tr></thead>
+                <tbody>{% for r in tv.rows[1:] %}<tr>{% for c in r %}<td>{{ c }}</td>{% endfor %}</tr>{% endfor %}</tbody>
+              </table></div>
+              {% if true %}
+              <details class="tbl-edit"><summary class="btn sm">표 고치기</summary>
+                <form method="post" action="/blocks/{{ b.id }}/tables/{{ tv.t.id }}/update" class="tbl-form">
+                  <label for="tt-{{ tv.t.id }}">표 제목</label>
+                  <input id="tt-{{ tv.t.id }}" name="title" type="text" maxlength="128" value="{{ tv.t.title }}">
+                  <label for="tx-{{ tv.t.id }}">표 내용 (칸은 탭으로 구분 · 엑셀에서 복사해 붙여넣어도 됩니다)</label>
+                  <textarea id="tx-{{ tv.t.id }}" name="text" rows="6" data-table-src>{{ tv.tsv }}</textarea>
+                  <div class="tbl-preview" data-table-preview aria-live="polite"></div>
+                  <div class="row"><button class="btn sm primary" type="submit">표 저장</button>
+                    <button class="btn sm" type="submit" formaction="/blocks/{{ b.id }}/tables/{{ tv.t.id }}/delete">표 지우기</button></div>
+                </form>
+              </details>
+              {% endif %}
+            </figure>
+            {% endfor %}
+            {% if true %}
+            <div class="attach-bar">
+              <form method="post" action="/blocks/{{ b.id }}/photos" enctype="multipart/form-data" class="ph-up" data-upload="{{ b.id }}">
+                <label class="btn sm" for="file-{{ b.id }}">사진 추가</label>
+                <input id="file-{{ b.id }}" class="file-in" type="file" name="file" accept="image/jpeg,image/png,image/webp" multiple required>
+                <input type="hidden" name="role" value="main">
+                <button class="btn sm js-hide" type="submit">올리기</button>
+              </form>
+              <details class="tbl-add"><summary class="btn sm">표 추가</summary>
+                <form method="post" action="/blocks/{{ b.id }}/tables" class="tbl-form">
+                  <label for="tt-new-{{ b.id }}">표 제목</label>
+                  <input id="tt-new-{{ b.id }}" name="title" type="text" maxlength="128" placeholder="예: 3번 실린더 배기온도">
+                  <label for="tx-new-{{ b.id }}">엑셀·한글 표에서 복사해 붙여넣기 (첫 줄 = 머리글)</label>
+                  <textarea id="tx-new-{{ b.id }}" name="text" rows="5" data-table-src placeholder="실린더	배기온도(℃)	편차&#10;1	352	-4&#10;3	394	+38"></textarea>
+                  <div class="tbl-preview" data-table-preview aria-live="polite"></div>
+                  <div class="row"><button class="btn sm primary" type="submit">표 저장</button><span class="muted small">최대 20행 × 8열 · PPT 에는 PowerPoint 표로 나갑니다</span></div>
+                </form>
+              </details>
+              <span class="muted small attach-hint">사진은 이 카드에 끌어다 놓거나 Ctrl+V 로도 붙습니다</span>
+            </div>
+            {% endif %}
+          </div>
+          {% endif %}
+</section>

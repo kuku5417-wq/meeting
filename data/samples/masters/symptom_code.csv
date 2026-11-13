@@ -1,0 +1,5 @@
+id,code,name,parent_id
+SY-TEMP,TEMP,온도 이상,
+SY-EXH-DEV,EXH-DEV,배기온도 편차,SY-TEMP
+SY-LEAK,LEAK,누유·누수,
+SY-START,START,기동 실패,

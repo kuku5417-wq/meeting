@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 C안 회의자료 스튜디오 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<style>
+/* C안 회의자료 스튜디오(2026-10-23) — Figma 편집기 구성 + 와이어프레임 키트(섹션 변형을 나란히 두고 고르기)를 섞음.
+   위 도구줄 · 왼쪽 장(레이어)/후보 · 가운데 어두운 캔버스(장 = 프레임, 고른 장 옆에 다른 형태 변형) · 오른쪽 속성.
+   패널은 B안(iPadOS 그룹 목록) 그대로, 캔버스만 어둡게. 반투명 없음. 슬라이드는 1920×1080 기준(본문 26px 이상) */
+body{padding-left:0;height:100vh;overflow:hidden;display:grid;grid-template-rows:52px minmax(0,1fr)}
+.tb{display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--surface);box-shadow:0 1px 0 var(--sep);z-index:5}
+.tb .ttl{display:grid;line-height:1.2;margin-right:auto;min-width:0}
+.tb .ttl b{font-size:var(--fs-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb .ttl span{font-size:var(--fs-1);color:var(--muted)}
+.tb .home{font-weight:700;color:var(--fg);padding:0 6px}
+.zoom{display:flex;align-items:center;gap:2px;background:var(--fill);border-radius:8px;padding:2px}
+.zoom button{font:inherit;font-size:var(--fs-2);border:0;background:none;color:var(--fg);min-width:30px;min-height:28px;border-radius:6px;cursor:pointer}
+.zoom button:hover{background:var(--surface)}
+.zoom output{font-family:var(--mono);font-size:var(--fs-1);min-width:44px;text-align:center}
+.studio{display:grid;grid-template-columns:260px minmax(0,1fr) 320px;min-height:0}
+.pane{background:var(--surface);overflow:auto;display:grid;align-content:start;gap:10px;padding:10px;min-height:0}
+.pane.left{box-shadow:1px 0 0 var(--sep)} .pane.right{box-shadow:-1px 0 0 var(--sep)}
+.pane .group{box-shadow:none;background:var(--fill-2)}
+.pane .cell{background:transparent;min-height:36px;padding:6px 10px}
+.pane .cell+.cell::before{left:10px}
+.pane .sec-h{padding:0 4px}
+.lyr{grid-template-columns:22px minmax(0,1fr) auto;cursor:pointer;font-size:var(--fs-2)}
+.lyr .n{font-family:var(--mono);color:var(--muted);font-size:var(--fs-1)}
+.lyr .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lyr.on{background:var(--accent)!important;color:var(--accent-fg)}
+.lyr.on .n,.lyr.on .f{color:var(--accent-fg)}
+.lyr .f{font-size:var(--fs-1);color:var(--muted)}
+.lyr.dragging{opacity:.4} .lyr.over{box-shadow:inset 0 2px 0 var(--accent)}
+.cand{grid-template-columns:minmax(0,1fr) auto;font-size:var(--fs-2)}
+.cand .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 캔버스 — 어두운 바탕 위 프레임. 고른 장은 파란 테두리(선택 표시)와 옆에 변형 */
+.canvas{background:#2b2d31;overflow:auto;padding:28px 36px 80px;min-height:0}
+.rowf{display:flex;gap:28px;align-items:flex-start;margin-bottom:34px}
+.frame{flex:0 0 auto;display:grid;gap:6px;cursor:pointer}
+.frame .lbl{font-size:var(--fs-1);color:#c7c9ce;white-space:nowrap;display:flex;gap:8px}
+.frame .lbl b{color:#fff;font-weight:600}
+.frame .stage-wrap{border-radius:2px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.frame.on .stage-wrap{outline:3px solid #4c9bff;outline-offset:2px}
+.frame:hover .stage-wrap{outline:2px solid #8bbcff;outline-offset:2px}
+.frame.var{opacity:.55}
+.frame.var:hover{opacity:1}
+.frame.var .lbl{color:#9da1a8}
+.vars-h{font-size:var(--fs-1);color:#9da1a8;align-self:center;writing-mode:vertical-rl;letter-spacing:.1em}
+/* 속성 */
+.prop{display:grid;gap:6px}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.vgrid button{font:inherit;font-size:var(--fs-1);font-weight:600;border:0;border-radius:8px;background:var(--fill);color:var(--fg);padding:4px;cursor:pointer;display:grid;gap:4px}
+.vgrid button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.vgrid .mini{aspect-ratio:16/9;background:#fff;border-radius:4px;display:grid;gap:3px;padding:5px;align-content:start}
+.vgrid .mini i{display:block;height:4px;border-radius:2px;background:#c8d0db}
+.vgrid .mini i.b{height:12px;background:#e3e8ef}
+.vgrid .mini i.s{width:60%}
+.fact{display:grid;gap:6px;padding:10px;border-radius:8px;background:var(--ok-soft)}
+.fact .lbl{font-size:var(--fs-1);font-weight:700;color:var(--t-ok)} .fact .lbl::before{content:"● "}
+.fact input{background:var(--surface)!important}
+.expr{font-size:var(--fs-1);font-weight:700;color:var(--muted)} .expr::before{content:"○ "}
+.ptag{font:inherit;font-size:var(--fs-2);font-weight:700;border:0;color:var(--t-decide);background:var(--decide-soft);border-radius:8px;padding:3px 10px;cursor:pointer;min-height:30px;justify-self:start}
+.ptag[aria-pressed="false"]{text-decoration:line-through;background:var(--fill);color:var(--muted)}
+.empty{padding:16px;color:var(--muted);font-size:var(--fs-2)}
+.tabs2{display:flex}
+@media (max-width:1200px){.studio{grid-template-columns:220px minmax(0,1fr) 280px}}
+@media (max-width:900px){body{height:auto;overflow:auto;grid-template-rows:auto auto}.tb{flex-wrap:wrap;padding:8px}.studio{grid-template-columns:minmax(0,1fr)}.canvas{min-height:60vh;padding:16px}.pane{max-height:none}}
+</style>
+</head>
+<body>
+<header class="tb">
+  <a class="home" href="v2b-home.html" title="홈">회의·지식</a>
+  <div class="ttl"><b id="title">W43 부서 현안 공유회</b><span id="sub">회의자료 스튜디오 · 구성 중 · 자동 저장됨</span></div>
+  <div class="seg" role="group" aria-label="시안 — 갈래"><button type="button" data-k="share" aria-pressed="true">공유회</button><button type="button" data-k="exec" aria-pressed="false">팀장 정보회의</button><button type="button" data-k="hull" aria-pressed="false">호선별</button></div>
+  <div class="zoom" aria-label="확대"><button type="button" id="zOut" aria-label="축소">−</button><output id="zv">100%</output><button type="button" id="zIn" aria-label="확대">＋</button><button type="button" id="zFit">맞춤</button></div>
+  <a class="btn sm gray" href="#" id="present">발표 미리보기</a>
+  <button class="btn sm primary" type="button" id="primary">발행</button>
+  <a class="small" href="v2b-deck-edit.html?kind=share" style="white-space:nowrap">B안 보기</a>
+</header>
+<div class="studio">
+  <aside class="pane left" aria-label="장과 후보">
+    <div class="seg tabs2" role="tablist"><button type="button" data-tab="lyr" aria-pressed="true" style="flex:1">장 <span class="mono" id="nL"></span></button><button type="button" data-tab="cand" aria-pressed="false" style="flex:1">후보 <span class="mono" id="nC"></span></button></div>
+    <div data-p="lyr"><div class="sec-h">장 — 끌어서 순서 · ↑↓ 고르기 · Delete 빼기</div><div class="group" id="layers"></div></div>
+    <div data-p="cand" hidden><div class="sec-h">원장 후보 — ＋ 를 누르면 끝에 장이 생깁니다</div><div class="group" id="cands"></div></div>
+  </aside>
+  <main class="canvas" id="canvas" aria-label="캔버스"></main>
+  <aside class="pane right" aria-label="속성" id="props"></aside>
+</div>
+
+<script type="module">
+import {$, $$, esc, toast, fitStages} from './v2b.js';
+import {ISSUES, KIND, ptag, byId, deckOf, MEETING, itemSlide, coverSlide} from './v2b-data.js';
+let kind = 'share';
+let items = [], sel = 0, zoom = 1, published = false;
+const FORMS = {detail: '상세 한 장', card: '카드', photo: '사진 강조', line: '한 줄'};
+const load = () => { items = deckOf(kind).slice(0, kind === 'share' ? 7 : undefined).map(({d, line}) => ({id: d.id, line, form: d.sym ? 'detail' : 'card', tag: true})); sel = 0; };
+// 형태별 한 장(1920 좌표) — 키트처럼 같은 내용을 다른 배치로
+function slide(it, n, total, title) {
+  const d = byId(it.id), p = ptag(d), pre = p && it.tag ? `<b style="color:var(--t-decide)">[${esc(p)}]</b> ` : '';
+  const head = `<div class="sh"><span>${esc(title)}</span><span>${esc(d.dept)}</span></div>`, foot = `<div class="sf"><span>${n} / ${total} · ${esc(d.hull)} · ${esc(d.ev)}${d.dd !== null ? ' D-' + d.dd : ''}</span><span>${esc(FORMS[it.form])}</span></div>`;
+  const t = `<div class="st1"><span class="lab" style="background:var(--t-${d.t})">${KIND[d.t]}</span>${esc(d.title)}</div>`;
+  if (it.form === 'detail') return itemSlide({d, line: it.line}, n, total, null, title).replace(/<div style="font-size:30px">[^]*?<\/div>/, `<div style="font-size:30px">${pre}${esc(it.line)}</div>`);
+  if (it.form === 'photo') return head + `<div class="sb">${t}<div style="display:grid;grid-template-columns:1.3fr 1fr;gap:32px"><div style="background:#e3e8ef;border-radius:16px;min-height:520px;display:grid;place-items:center;color:#7d8ea6;font-size:30px">사진 · 마커</div><div style="display:grid;gap:20px;align-content:start;font-size:30px">${pre}${esc(it.line)}${d.dec ? `<div class="decide"><b>결정 필요</b> ${esc(d.dec)}</div>` : ''}</div></div></div>` + foot;
+  if (it.form === 'line') return head + `<div class="sb" style="align-content:center">${t}<div style="font-size:40px;line-height:1.4">${pre}${esc(it.line)}</div></div>` + foot;
+  return head + `<div class="sb">${t}<div style="display:grid;grid-template-columns:1fr 360px;gap:28px"><div style="display:grid;gap:16px;font-size:30px">${pre}${esc(it.line)}<div class="grid4"><div><b>담당</b>${esc(d.dept)}</div><div><b>상태</b>${d.st === 'req' ? '종결 요청' : '진행'}</div></div></div><div style="background:#e3e8ef;border-radius:16px;min-height:300px"></div></div>${d.dec ? `<div class="decide"><b>결정 필요</b> ${esc(d.dec)}</div>` : ''}</div>` + foot;
+}
+const W = () => Math.round(560 * zoom);
+function frame(html, label, extra, attrs) {
+  return `<div class="frame ${extra}" ${attrs} style="width:${W()}px"><span class="lbl">${label}</span><div class="stage-wrap"><div class="stage">${html}</div></div></div>`;
+}
+function renderCanvas() {
+  const title = MEETING[kind], total = items.length + 1;
+  let h = `<div class="rowf">${frame(coverSlide(title, items.map((x) => ({d: byId(x.id)})), total), '<b>1 · 표지</b>', '', 'data-cover')}</div>`;
+  items.forEach((it, i) => {
+    const on = i === sel;
+    h += `<div class="rowf" data-row="${i}">${frame(slide(it, i + 2, total, title), `<b>${i + 2} · ${esc(byId(it.id).title.slice(0, 28))}</b><span>${FORMS[it.form]}</span>`, on ? 'on' : '', `data-f="${i}"`)}`;
+    if (on) h += `<span class="vars-h">다른 형태</span>` + Object.keys(FORMS).filter((k) => k !== it.form).map((k) => frame(slide({...it, form: k}, i + 2, total, title), `<b>${FORMS[k]}</b> 로 바꾸기`, 'var', `data-var="${k}"`)).join('');
+    h += '</div>';
+  });
+  $('#canvas').innerHTML = h;
+  fitStages();
+}
+function renderLayers() {
+  $('#layers').innerHTML = `<div class="cell lyr" style="cursor:default"><span class="n">1</span><span class="t">표지</span><span></span></div>` + items.map((it, i) => { const d = byId(it.id); return `<div class="cell lyr ${i === sel ? 'on' : ''}" data-l="${i}" draggable="true"><span class="n">${i + 2}</span><span class="t"><span class="tl ${d.t}" style="margin-right:4px">${KIND[d.t]}</span>${esc(d.title)}</span><span class="f">${FORMS[it.form]}</span></div>`; }).join('');
+  const rest = ISSUES.filter((d) => !items.some((x) => x.id === d.id));
+  $('#cands').innerHTML = rest.map((d) => `<div class="cell cand"><span class="t"><span class="tl ${d.t}" style="margin-right:4px">${KIND[d.t]}</span>${esc(d.title)}</span><button class="btn sm" type="button" data-add="${d.id}" aria-label="${d.id} 장으로 넣기">＋</button></div>`).join('') || '<div class="empty">모든 후보가 들어가 있습니다</div>';
+  $('#nL').textContent = items.length + 1; $('#nC').textContent = rest.length;
+}
+const mini = (k) => ({detail: '<i></i><i class="s"></i><i class="b"></i><i class="b"></i>', card: '<i></i><i class="s"></i><i class="b" style="width:40%;justify-self:end;height:22px"></i>', photo: '<i></i><i class="b" style="height:30px;width:60%"></i>', line: '<i style="margin-top:12px"></i><i class="s"></i>'}[k]);
+function renderProps() {
+  const it = items[sel];
+  if (!it) { $('#props').innerHTML = '<div class="empty">왼쪽 후보에서 장을 넣으세요</div>'; return; }
+  const d = byId(it.id), p = ptag(d);
+  $('#props').innerHTML = `
+    <div class="prop"><span class="small muted">${sel + 2}장 · ${d.id}</span><b>${esc(d.title)}</b><span class="meta"><span>${d.dept}</span><span class="dd ${d.dd !== null && d.dd <= 14 ? 'soon' : ''}">${d.hull} · ${esc(d.ev)}${d.dd !== null ? ' D-' + d.dd : ''}</span></span></div>
+    <div class="sec-h">형태 — 1~4 키</div>
+    <div class="vgrid">${Object.entries(FORMS).map(([k, v], n) => `<button type="button" data-form="${k}" aria-pressed="${k === it.form}"><span class="mini">${mini(k)}</span>${n + 1}. ${v}</button>`).join('')}</div>
+    <div class="sec-h">회의용 한 줄</div>
+    <div class="prop"><span class="expr">이 자료에만 — 이슈는 그대로</span>${p ? `<button class="ptag" type="button" id="tag" aria-pressed="${it.tag}">[${esc(p)}]</button>` : ''}<label class="sr" for="ln">회의용 한 줄</label><input type="text" id="ln" value="${esc(it.line)}"></div>
+    ${kind === 'exec' ? '' : `<div class="sec-h">사실</div><div class="fact"><span class="lbl">고치면 이슈에 바로 반영 · 작성자 알림</span><label class="f">원인<input type="text" data-fact="cause" value="${esc(d.cause || '')}" placeholder="조사 중"></label><label class="f">조치 · 계획<input type="text" data-fact="act" value="${esc(d.act || '')}"></label><label class="f">결정 필요<input type="text" data-fact="dec" value="${esc(d.dec || '')}"></label></div>`}
+    <div class="row" style="margin-top:4px"><a class="btn sm gray" href="v2b-issue-desk.html?id=${d.id}">이슈 열기</a><button class="btn sm gray" type="button" id="drop">이 장 빼기</button></div>`;
+}
+const all = () => { renderLayers(); renderCanvas(); renderProps(); };
+function pick(i, scroll = true) { sel = Math.max(0, Math.min(items.length - 1, i)); all(); if (scroll) $(`[data-row="${sel}"]`)?.scrollIntoView({block: 'center', behavior: 'smooth'}); }
+function setForm(k) { const it = items[sel]; if (!it || it.form === k) return; const b = it.form; it.form = k; all(); toast(`${sel + 2}장을 「${FORMS[k]}」로 바꿨습니다`, () => { it.form = b; all(); }); }
+function drop() { const i = sel, x = items.splice(i, 1)[0]; sel = Math.min(i, items.length - 1); all(); toast(`「${byId(x.id).title}」 장을 뺐습니다`, () => { items.splice(i, 0, x); pick(i); }); }
+document.addEventListener('click', (e) => {
+  const f = e.target.closest('[data-f]'), v = e.target.closest('[data-var]'), l = e.target.closest('[data-l]'), fm = e.target.closest('[data-form]'), add = e.target.closest('[data-add]'), tab = e.target.closest('[data-tab]'), k = e.target.closest('[data-k]');
+  if (v) return setForm(v.dataset.var);
+  if (f) return pick(+f.dataset.f, false);
+  if (l) return pick(+l.dataset.l);
+  if (fm) return setForm(fm.dataset.form);
+  if (e.target.id === 'tag') { items[sel].tag = !items[sel].tag; all(); return; }
+  if (e.target.id === 'drop') return drop();
+  if (add) { const d = byId(add.dataset.add); items.push({id: d.id, line: d.wk || d.last, form: d.sym ? 'detail' : 'card', tag: true}); pick(items.length - 1); toast(`「${d.title}」을 ${items.length + 1}장으로 넣었습니다`, () => { items = items.filter((x) => x.id !== d.id); pick(sel); }); return; }
+  if (tab) { $$('[data-tab]').forEach((b) => b.setAttribute('aria-pressed', b === tab)); $$('[data-p]').forEach((p) => (p.hidden = p.dataset.p !== tab.dataset.tab)); return; }
+  if (k) { kind = k.dataset.k; $$('[data-k]').forEach((b) => b.setAttribute('aria-pressed', b === k)); $('#title').textContent = MEETING[kind]; published = false; $('#primary').textContent = '발행'; load(); all(); }
+});
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'ln') { items[sel].line = e.target.value; renderCanvas(); }
+  if (e.target.dataset.fact) { byId(items[sel].id)[e.target.dataset.fact] = e.target.value; renderCanvas(); $('#sub').textContent = `● ${items[sel].id} 이슈에 반영됨 · 작성자에게 알림`; }
+});
+addEventListener('keydown', (e) => {
+  if (e.target.closest?.('input,textarea,select')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); pick(sel + 1); }
+  if (e.key === 'ArrowUp') { e.preventDefault(); pick(sel - 1); }
+  if (['1', '2', '3', '4'].includes(e.key)) setForm(Object.keys(FORMS)[+e.key - 1]);
+  if (e.key === 'Delete' || e.key === 'Backspace') { e.preventDefault(); drop(); }
+});
+// 장 끌어서 순서 바꾸기
+let dragI = null;
+document.addEventListener('dragstart', (e) => { const l = e.target.closest('[data-l]'); if (l) { dragI = +l.dataset.l; l.classList.add('dragging'); } });
+document.addEventListener('dragover', (e) => { const l = e.target.closest('[data-l]'); if (l && dragI !== null) { e.preventDefault(); $$('.lyr.over').forEach((x) => x.classList.remove('over')); l.classList.add('over'); } });
+document.addEventListener('drop', (e) => { const l = e.target.closest('[data-l]'); if (!l || dragI === null) return; e.preventDefault(); const to = +l.dataset.l, x = items.splice(dragI, 1)[0]; items.splice(to, 0, x); dragI = null; pick(to); });
+document.addEventListener('dragend', () => { dragI = null; $$('.lyr').forEach((x) => x.classList.remove('dragging', 'over')); });
+// 확대
+const setZ = (z) => { zoom = Math.max(.4, Math.min(1.6, z)); $('#zv').textContent = Math.round(zoom * 100) + '%'; renderCanvas(); };
+$('#zIn').onclick = () => setZ(zoom + .2); $('#zOut').onclick = () => setZ(zoom - .2);
+$('#zFit').onclick = () => setZ(($('#canvas').clientWidth - 72) / (560 * 2 + 28));
+$('#present').onclick = (e) => { e.preventDefault(); window.open(`v2b-meeting-run.html?m=${kind}&view=present`, 'v2b-present', 'width=1280,height=720'); };
+$('#primary').onclick = () => {
+  if (published) { location.href = `v2b-meeting-run.html?m=${kind}`; return; }
+  published = true; $('#primary').textContent = '회의 시작 →'; $('#sub').textContent = '발행 1판 · 이후 바뀐 사실은 「변경 n」으로 표시';
+  toast('발행했습니다 — 이 판은 고정됩니다', () => { published = false; $('#primary').textContent = '발행'; $('#sub').textContent = '회의자료 스튜디오 · 구성 중 · 자동 저장됨'; });
+};
+load(); all();
+</script>
+</body>
+</html>

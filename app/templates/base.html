@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}{{ app_title }}{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', path='css/fonts.css') }}?v={{ asset_v }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/tokens.css') }}?v={{ asset_v }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}?v={{ asset_v }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/knowledge.css') }}?v={{ asset_v }}">
+</head>
+<body>
+{# 최종 시안(2026-10-23, design/mockups/v2m-*) — 왼쪽 네이비 사이드바 + 연한 청회색 바탕 + 흰 카드. 좁은 화면에서는 사이드바가 위 가로줄이 된다 #}
+<aside class="side">
+  <div class="brand">
+    <a class="brand-name" href="/">{{ app_title }}</a>
+    <span class="week">{{ week.label }}</span>
+  </div>
+  <nav class="tabs" aria-label="화면">
+    {% for key, label, href in tabs %}
+    <a class="tab" href="{{ href }}"{% if key == active %} aria-current="page"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </nav>
+  <span class="env">{{ env_label }}</span>
+</aside>
+<div class="wrap{% block wrap_class %}{% endblock %}">
+  <main>
+  {% block content %}{% endblock %}
+  </main>
+</div>
+</body>
+</html>

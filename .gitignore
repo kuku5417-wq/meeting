@@ -1,0 +1,35 @@
+# ── 시크릿 (절대 커밋 금지) ─────────────────────────────
+.env
+*.env
+.env.*
+!.env.template
+secret/
+
+# ── 데이터 (앱이 만드는 것 — git 밖, <base>/meeting) ────
+storage/
+exports/
+# MEETING_DATA_PATH 를 repo 안(data/)으로 잡은 경우 — 사진 원본은 얼굴·명판이 있을 수 있어 절대 커밋 금지
+data/photos/
+data/exports/
+*.db
+*.parquet
+*.tmp
+tests/llm_eval/private/
+
+# ── 원본 번들(내용은 이미 풀려 있다) ────────────────────
+_bundle.tgz
+
+# ── 파이썬 ─────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+
+# ── OS · 에디터 ────────────────────────────────────────
+Thumbs.db
+desktop.ini
+.DS_Store
+.idea/
+.vscode/
+~$*.pptx

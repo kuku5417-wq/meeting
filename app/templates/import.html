@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}가져오기 · {{ app_title }}{% endblock %}
+{% block content %}
+{# 가져오기(최종 시안 design/mockups/v2m-import) — M13. 입구 하나(메모·파일·메일함). 메모는 곧바로 AI 정리,
+   파일·메일은 조각 → 판정(붙이기·새 이슈·건너뛰기) → 「반영하기」. 원본은 그대로 보관한다 #}
+<div class="v-ph">
+  <div><h1>가져오기</h1><span class="mono muted small">{{ week.label }}</span></div>
+  <nav class="v-seg" aria-label="입구">
+    {% for k, l in (('memo', '메모 붙여넣기'), ('file', 'PPT·HTML 올리기'), ('mail', '메일함')) %}<a href="?entry={{ k }}"{% if entry == k %} aria-current="true"{% endif %}>{{ l }}</a>{% endfor %}
+  </nav>
+</div>
+{% if msg %}<p class="flash ok" role="status">{{ msg }}</p>{% endif %}
+{% if err %}<p class="flash bad" role="alert">{{ err }}</p>{% endif %}
+
+{% if entry == 'memo' %}
+<form class="panel im-entry" method="post" action="/import/memo">
+  <div class="row"><label class="f">부서<select name="dept_id">{% for d in depts %}<option value="{{ d.id }}"{% if d.id == dept %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></label>
+    <span class="small muted">현장 메모·회의록·사내 메신저 대화를 그대로 붙여넣으세요. 메신저의 시간·보낸 사람 줄은 걷어내고 이름은 저장하지 않습니다.</span></div>
+  <label for="raw_text" class="sr">메모 붙여넣기</label>
+  <textarea id="raw_text" name="raw_text" rows="7" placeholder="- 2511 DG2 배기온도 편차 계속, 3번 실린더 +38도 …&#10;- 2514 카고펌프 No.3 씰 누유 발견(사진1) …"></textarea>
+  <div class="row"><button class="btn primary" type="submit" name="then" value="extract">저장하고 AI 정리</button><button class="btn" type="submit" name="then" value="save">저장만</button>
+    <span class="muted small">원문은 저장한 그대로 남습니다 · AI 순서 {{ chain }}</span></div>
+</form>
+{% elif entry == 'file' %}
+<form class="panel im-entry" method="post" action="/import/file" enctype="multipart/form-data">
+  <div class="row"><label class="f">파일(.pptx · .html · .pdf · .xlsx, {{ max_mb }}MB 까지)<input type="file" name="file" accept=".pptx,.html,.htm,.pdf,.xlsx" required></label>
+    <label class="f">새 이슈 기본 부서<select name="dept_id">{% for d in depts %}<option value="{{ d.id }}"{% if d.id == dept %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></label>
+    <button class="btn primary" type="submit">올리고 조각으로 나누기</button></div>
+  <span class="small muted">PPT 는 장마다, HTML 은 제목(h1~h3)마다 한 조각. 원본은 보관하고 바꾸지 않습니다. .ppt·PDF·엑셀은 다음 단계입니다.</span>
+</form>
+{% elif entry == 'mail' %}
+<form class="panel im-entry" method="post" action="/import/mail">
+  <div class="row"><label class="f">새 이슈 기본 부서<select name="dept_id">{% for d in depts %}<option value="{{ d.id }}"{% if d.id == dept %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select></label>
+    <button class="btn primary" type="submit"{% if mail_why %} disabled aria-disabled="true"{% endif %}>메일함에서 가져오기</button>
+    <span class="small muted">{% if mail_folder %}서버 PC Outlook 「{{ mail_folder }}」 폴더(하위 포함) · 최근 {{ mail_days }}일 · 이미 가져온 메일은 건너뜁니다{% endif %}</span></div>
+  {% if mail_why %}<p class="small v-late">{{ mail_why }}</p>{% endif %}
+  <span class="small muted">메일 제목·받은 때·본문·첨부만 읽고, 보낸 사람·받는 사람은 저장하지 않습니다. 본문 한 조각 + 첨부 PPT·HTML 은 장·절마다 조각.</span>
+</form>
+{% endif %}
+
+<div class="im-wrap">
+  <aside class="st-pane im-list" aria-label="가져온 자료와 메모">
+    <p class="v-sec">가져온 자료 {{ jobs | length }}</p>
+    <div class="v-list">
+      {% for j in jobs %}<a class="v-row im-job{% if job and job.id == j.id %} on{% endif %}" href="?job={{ j.id }}"{% if job and job.id == j.id %} aria-current="true"{% endif %}>
+        <span class="t"><span class="v-tl share">{{ kinds[j.kind] }}</span> {{ j.title }}</span>
+        <span class="m"><span>{{ j.status }}</span>{% if left[j.id] %}<span>남은 조각 {{ left[j.id] }}</span>{% endif %}<span class="mono">{{ j.created_at.strftime('%m.%d') }}</span></span></a>
+      {% else %}<p class="muted small" style="padding:8px">아직 없습니다.</p>{% endfor %}
+    </div>
+    <p class="v-sec">메모 {{ memos | length }}</p>
+    <div class="v-list">
+      {% for x in memos %}<a class="v-row im-job{% if open_memo and open_memo.m.id == x.id %} on{% endif %}" href="?memo={{ x.id }}#memo">
+        <span class="t">{{ (x.raw_text.strip().split('\n')[0] or '(빈 줄)')[:40] }}</span><span class="m"><span class="mono">{{ x.id }}</span><span class="mono">{{ x.created_at.strftime('%m.%d') }}</span></span></a>
+      {% else %}<p class="muted small" style="padding:8px">아직 없습니다.</p>{% endfor %}
+    </div>
+  </aside>
+  <section class="im-main" aria-label="고른 자료">
+    {% if job %}
+    <div id="imp"></div>
+    <div class="st-toast" id="toast" role="status" hidden></div>
+    <script id="imState" type="application/json">{{ state_json | safe }}</script>
+    <script type="module" src="{{ url_for('static', path='js/import.js') }}?v={{ asset_v }}"></script>
+    {% elif open_memo %}
+    {% include "_memo.html" %}
+    {% else %}
+    <div class="panel"><p class="muted">위 입구로 자료를 넣거나, 왼쪽에서 가져온 자료·메모를 고르세요.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}

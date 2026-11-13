@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 부서 회의자료 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="v2.css">
+<style>
+/* 부서 회의자료 — 부장·부서 스텝이 과장·호선 담당자의 1차 초안을 골라 고친다(docs/06 §2-1).
+   왼쪽 우리 부서 초안 · 가운데 자료 개요(사실 칸 = 이슈에 바로 반영 / 표현 = 이 자료만, 여러 이슈 요약 묶기) · 오른쪽 미리보기 */
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.bar h1{font-size:var(--fs-4)}
+.deckc{display:grid;grid-template-columns:300px minmax(0,1fr) 360px;gap:14px;align-items:start}
+.cand{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 8px;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);cursor:pointer}
+.cand:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.cand .t{font-weight:600;font-size:var(--fs-2)}
+.cand .m{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;font-size:var(--fs-1);color:var(--muted);align-items:center}
+.src{font-size:var(--fs-1);border:1px solid var(--line);border-radius:4px;padding:0 6px}
+.ditem{display:grid;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.ditem.sel{border-color:var(--accent)}
+.ditem .h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.ditem .h .t{font-weight:700}
+.ditem .h .right{margin-left:auto;display:flex;gap:6px;align-items:center}
+.ditem select{width:auto;padding:3px 6px;font-size:var(--fs-1)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fact{display:grid;gap:3px;font-size:var(--fs-1);color:var(--muted)}
+.fact.dec input{border-color:var(--decide);background:var(--decide-soft)}
+.kind{display:inline-flex;gap:4px;align-items:center;font-size:var(--fs-1);font-weight:600}
+.kind.fact-k{color:var(--ok)} .kind.expr-k{color:var(--muted)}
+.synced{font-size:var(--fs-1);color:var(--ok);font-weight:600}
+.sum-of{display:flex;gap:6px;flex-wrap:wrap;font-size:var(--fs-1)}
+.sum-of span{border:1px solid var(--line);border-radius:4px;padding:1px 6px;font-family:var(--mono)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:var(--fs-1);color:var(--muted);padding:8px 10px;border:1px dashed var(--line);border-radius:6px}
+.prev{display:grid;gap:8px;position:sticky;top:60px}
+.slide .dg{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.slide .dg div{border:1px solid var(--slide-line);border-radius:2px;padding:2px 4px}
+.slide .dg i{display:block;font-style:normal;font-weight:700;color:var(--slide-band);font-size:8.5px}
+.slide .dg .dec{border-color:var(--slide-decide);background:var(--slide-decide-soft)}.slide .dg .dec i{color:var(--slide-decide)}
+.slide .orig{height:100%;display:grid;place-content:center;text-align:center;gap:3px;background:repeating-linear-gradient(45deg,var(--slide-soft) 0 6px,var(--slide) 6px 12px);color:var(--slide-muted)}
+.slide .orig b{color:var(--slide-fg)}
+@media (max-width:1300px){.deckc{grid-template-columns:280px minmax(0,1fr)}.deckc .right{grid-column:1/-1}.prev{position:static}}
+@media (max-width:860px){.deckc{grid-template-columns:minmax(0,1fr)}.facts{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">커미셔닝팀 회의·지식</span>
+  <nav class="nav" aria-label="메뉴">
+    <a href="v2-home.html">홈</a>
+    <a href="v2-issue-desk.html">이슈</a>
+    <a href="v2-meetings.html" aria-current="page">회의</a>
+    <a href="v2-metrics.html">지표</a>
+    <a href="#">지식창고</a>
+    <a href="#">장비 허브</a>
+  </nav>
+  <div class="right"><span class="small muted">시운전1부 · 이 부장</span></div>
+</header>
+<p class="v2-note">재설계 시안 v2 — 부서 회의자료. 과장·호선 담당자가 만든 <b>1차 초안</b>을 골라 고칩니다. <b>사실</b>을 고치면 이슈·지식에 바로 반영되고(작성자에게 알림), <b>표현</b>은 이 자료에만 남습니다. 데이터는 가상입니다.</p>
+
+<main class="page">
+  <div class="bar">
+    <div class="row"><span class="pill kind">부서 회의자료</span><h1>시운전1부 · W43</h1><span class="small muted">제출 대상: W43 부서 현안 공유회 10/24(금)</span></div>
+    <div class="row"><span class="pill p-issue" id="state">작성 중 · 3장</span><a class="btn" href="v2-import.html">PPT 가져오기</a><a class="btn" href="v2-meeting-view.html">공유회 자료 보기</a><button class="btn primary" type="button" id="submit">제출</button></div>
+  </div>
+
+  <div class="deckc">
+    <aside class="panel" aria-labelledby="cH">
+      <div class="panel-h"><h2 id="cH">우리 부서 1차 초안</h2><span class="small muted" id="cN"></span></div>
+      <p class="small muted" style="margin:0">과장·호선 담당자가 만든 초안입니다. 체크하면 자료에 들어갑니다.</p>
+      <div class="list" id="cands"></div>
+    </aside>
+
+    <section class="panel" aria-labelledby="oH">
+      <div class="panel-h"><h2 id="oH">자료 개요</h2><button class="btn sm" type="button" id="merge" disabled>선택한 항목 한 장으로 요약</button></div>
+      <div class="legend"><span class="kind fact-k">● 사실</span><span>현상·원인·조치·결정 — 고치면 이슈·지식에 바로 반영</span><span class="kind expr-k">○ 표현</span><span>회의용 한 줄·요약 문장·형태 — 이 자료에만</span></div>
+      <div class="list" id="items" style="gap:10px"></div>
+    </section>
+
+    <aside class="panel right" aria-labelledby="pH">
+      <div class="panel-h"><h2 id="pH">미리보기</h2><span class="small muted">= PPT · 공유회 자료</span></div>
+      <div class="prev"><div class="slide" id="slide"></div><div class="thumbs" id="pages"></div></div>
+    </aside>
+  </div>
+</main>
+<script>
+// 시안용 — 우리 부서 초안
+const D = [
+  {id: 'ISS-2026-0001', t: 'issue', title: 'SN2511 발전기 No.2 배기온도 편차', by: '김 대리(SN2511 담당)', src: '자동', sym: '3번 실린더 배기온도 +38℃', cause: '조사 중', act: '연료밸브 교체 → 부하시험', dec: '부하시험 해상/안벽', line: '밸브 입고 지연, 다음 주 교체'},
+  {id: 'PRB-2026-0001', t: 'problem', title: 'SN2514 카고펌프 No.3 메카니컬씰 누유', by: '박 과장(기장과)', src: '자동', sym: '메카니컬씰 누유', cause: '씰 면 손상 — 초기 건운전', act: '씰 교체 후 4시간 무누유 확인', dec: '', line: '종결 요청'},
+  {id: 'ISS-2026-0012', t: 'issue', title: 'SN2511 발전기 No.1 과급기 소음', by: '김 대리(SN2511 담당)', src: '자동', sym: '과급기 부하 70%에서 소음', cause: '조사 중', act: '진동 계측 예정', dec: '', line: '진동 계측 10/23'},
+  {id: 'ISS-2026-0015', t: 'issue', title: 'SN2512 발전기 No.3 냉각수 온도 상승', by: '최 과장(전장과)', src: 'PPT 한 장', orig: '최 과장 제출 PPT · 1쪽', sym: '냉각수 출구 +6℃', cause: '조사 중', act: '열교환기 세정', dec: '', line: '세정 후 재시험'},
+  {id: 'SHR-2026-0001', t: 'share', title: 'SN2511 조타기 선급 검사 10/21 → 10/23', by: '김 대리(SN2511 담당)', src: '자동', sym: '', cause: '', act: '', dec: '', line: '검사 일정 변경'},
+];
+const KIND = {issue: '이슈', problem: '문제점', share: '공유정보'};
+const FORMS = {detail: '상세 한 장', card: '카드', line: '한 줄', orig: '원본 슬라이드'};
+let items = [ // {ids:[...], form, line, sum?}
+  {ids: ['ISS-2026-0001'], form: 'detail', line: D[0].line},
+  {ids: ['PRB-2026-0001'], form: 'card', line: '씰 교체 후 4시간 무누유 — 종결 요청'},
+  {ids: ['ISS-2026-0015'], form: 'orig', line: D[3].line},
+];
+let sel = new Set(), page = 0, synced = {};
+const $ = (id) => document.getElementById(id), by = (id) => D.find((d) => d.id === id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const used = (id) => items.some((it) => it.ids.includes(id));
+
+function renderCands() {
+  $('cands').innerHTML = D.map((d) => `<label class="cand"><input type="checkbox" data-c="${d.id}" ${used(d.id) ? 'checked' : ''}>
+    <span class="t"><span class="pill p-${d.t}">${KIND[d.t]}</span> ${esc(d.title)}</span>
+    <span class="m"><span class="id">${d.id}</span>${d.by}<span class="src">${d.src}</span></span></label>`).join('');
+  $('cN').textContent = `${D.length}건`;
+}
+function factInput(d, k, label) {
+  return `<label class="fact ${k === 'dec' ? 'dec' : ''}"><span><span class="kind fact-k">●</span> ${label}${synced[d.id + k] ? ' <span class="synced">이슈에 반영됨 · 김 대리에게 알림</span>' : ''}</span><input type="text" data-f="${d.id}|${k}" value="${esc(d[k])}"></label>`;
+}
+function renderItems() {
+  $('items').innerHTML = items.map((it, n) => {
+    const ds = it.ids.map(by), d = ds[0], multi = ds.length > 1;
+    const head = multi ? `<span class="pill">요약 ${ds.length}건</span><span class="t">${esc(it.title)}</span>` : `<span class="pill p-${d.t}">${KIND[d.t]}</span><span class="t">${esc(d.title)}</span>`;
+    const body = multi
+      ? `<div class="sum-of">${ds.map((x) => `<span>${x.id}</span>`).join('')}</div><label class="fact"><span><span class="kind expr-k">○</span> 요약 문장 (이 자료만)</span><input type="text" data-sum="${n}" value="${esc(it.line)}"></label><span class="small muted">각 이슈의 사실은 각 이슈 화면에서 그대로 유지됩니다.</span>`
+      : (it.form === 'orig' ? `<span class="small muted">원본 슬라이드: ${esc(d.orig)} — 사실 칸은 가져오기에서 뽑은 값입니다.</span>` : '')
+        + (d.t !== 'share' ? `<div class="facts">${factInput(d, 'sym', '현상')}${factInput(d, 'cause', '원인')}${factInput(d, 'act', '조치 · 계획')}${factInput(d, 'dec', '결정 필요')}</div>` : '')
+        + `<label class="fact"><span><span class="kind expr-k">○</span> 회의용 한 줄 (이 자료만)</span><input type="text" data-line="${n}" value="${esc(it.line)}"></label>`;
+    return `<div class="ditem ${sel.has(n) ? 'sel' : ''}"><div class="h"><input type="checkbox" data-s="${n}" aria-label="요약할 항목 고르기" ${sel.has(n) ? 'checked' : ''}>${head}
+      <span class="right"><select data-form="${n}">${Object.entries(FORMS).filter(([k]) => !multi || k !== 'detail').map(([k, v]) => `<option value="${k}" ${k === it.form ? 'selected' : ''}>${v}</option>`).join('')}</select><button class="btn sm ghost" type="button" data-drop="${n}">빼기</button></span></div>${body}</div>`;
+  }).join('') || '<div class="small muted">왼쪽 초안을 체크하세요</div>';
+  $('merge').disabled = sel.size < 2;
+  $('state').textContent = `작성 중 · ${items.length}장`;
+}
+function slideHtml(it) {
+  const ds = it.ids.map(by), d = ds[0];
+  if (ds.length > 1) return `<div class="it"><b>${esc(it.title)}</b>${esc(it.line)}</div><table><tr><th>ID</th><th>제목</th><th>이번 주</th></tr>${ds.map((x) => `<tr><td>${x.id}</td><td>${esc(x.title)}</td><td>${esc(x.line)}</td></tr>`).join('')}</table>`;
+  if (it.form === 'orig') return `<div class="orig">원본 슬라이드 그대로<b>${esc(d.title)}</b><span>${esc(d.orig || '')}</span></div>`;
+  if (it.form === 'detail') return `<div class="it ${d.t}"><b>${esc(d.title)}</b>${esc(it.line)}</div><div class="dg"><div><i>현상</i>${esc(d.sym)}</div><div><i>원인</i>${esc(d.cause)}</div><div><i>조치 · 계획</i>${esc(d.act)}</div><div class="dec"><i>결정 필요</i>${esc(d.dec || '없음')}</div></div>`;
+  if (it.form === 'line') return `<div class="it ${d.t}"><b>${esc(d.title)}</b>${esc(it.line)}</div>`;
+  return `<div class="it ${d.t}"><b>[${KIND[d.t]}] ${esc(d.title)}</b>${esc(it.line)}<br><span style="color:var(--slide-muted)">${d.id} · 원인: ${esc(d.cause || '—')}</span></div>`;
+}
+function renderPreview() {
+  page = Math.min(page, Math.max(items.length - 1, 0));
+  const it = items[page];
+  $('slide').innerHTML = `<div class="band"><span>시운전1부</span><span>W43</span></div><div class="sb">${it ? slideHtml(it) : ''}</div><div class="foot">시운전1부 회의자료 · ${items.length ? page + 1 : 0}/${items.length}</div>`;
+  $('pages').innerHTML = items.map((x, i) => `<button type="button" class="pg" data-pg="${i}" ${i === page ? 'aria-current="true"' : ''}>${i + 1}</button>`).join('');
+}
+const all = () => { renderCands(); renderItems(); renderPreview(); };
+document.addEventListener('change', (e) => {
+  const t = e.target;
+  if (t.dataset.c) { if (t.checked) items.push({ids: [t.dataset.c], form: by(t.dataset.c).orig ? 'orig' : 'card', line: by(t.dataset.c).line}); else items = items.filter((it) => !it.ids.includes(t.dataset.c)); sel.clear(); all(); }
+  else if (t.dataset.s) { t.checked ? sel.add(+t.dataset.s) : sel.delete(+t.dataset.s); renderItems(); }
+  else if (t.dataset.form) { items[+t.dataset.form].form = t.value; renderItems(); renderPreview(); }
+  else if (t.dataset.f) { const [id, k] = t.dataset.f.split('|'); by(id)[k] = t.value; synced[id + k] = true; renderItems(); renderPreview(); }
+});
+document.addEventListener('input', (e) => {
+  const t = e.target;
+  if (t.dataset.line) { items[+t.dataset.line].line = t.value; renderPreview(); }
+  if (t.dataset.sum) { items[+t.dataset.sum].line = t.value; renderPreview(); }
+});
+document.addEventListener('click', (e) => {
+  const dr = e.target.closest('[data-drop]'), pg = e.target.closest('[data-pg]');
+  if (dr) { items.splice(+dr.dataset.drop, 1); sel.clear(); all(); }
+  if (pg) { page = +pg.dataset.pg; renderPreview(); }
+});
+$('merge').onclick = () => {
+  const idx = [...sel].sort((a, b) => a - b), ids = idx.flatMap((i) => items[i].ids);
+  const merged = {ids, form: 'card', title: '발전기 계열 이슈 요약', line: `${ids.length}건 — 원인 조사 중, 다음 주 부하시험 때 함께 확인`};
+  items = items.filter((_, i) => !sel.has(i)); items.splice(idx[0], 0, merged); sel.clear(); page = idx[0]; all();
+};
+$('submit').onclick = (e) => { $('state').className = 'pill p-ok'; $('state').textContent = `제출됨 · ${items.length}장`; e.target.textContent = '다시 제출'; e.target.classList.remove('primary'); };
+// 시안 시작 상태: 과급기 소음 초안도 넣어 두고 배기온도와 요약 묶기를 해 볼 수 있게
+items.splice(1, 0, {ids: ['ISS-2026-0012'], form: 'card', line: D[2].line});
+all();
+</script>
+</body>
+</html>

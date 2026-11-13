@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>최종 시안 — 이슈</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<link rel="stylesheet" href="v2s.css">
+<style>
+/* 최종 시안 — 이슈(스튜디오 틀). 왼쪽 원장 · 가운데 1차 초안(크게) + 다른 형태 변형 + 붙인 것 · 오른쪽 이슈 칸(자동 저장, 고치면 캔버스 즉시 반영) */
+.chips{display:flex;gap:4px;flex-wrap:wrap}
+.fchip{font:inherit;font-size:var(--fs-1);font-weight:500;min-height:28px;padding:0 10px;border:0;border-radius:999px;background:var(--fill);color:var(--fg);cursor:pointer}
+.fchip[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.iss{grid-template-columns:auto minmax(0,1fr) auto;align-items:start;cursor:pointer;font-size:var(--fs-2)}
+.iss input{width:16px;height:16px;margin-top:3px;accent-color:var(--accent)}
+.iss .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.iss .m{grid-column:2/-1;font-size:var(--fs-1);color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.iss .st{font-size:var(--fs-1)}
+.bulk{display:flex;gap:4px;flex-wrap:wrap;align-items:center;padding:8px;border-radius:8px;background:var(--accent-soft)}
+.bulk select{width:100%;min-height:30px;font-size:var(--fs-1);padding:2px 8px;background:var(--surface)}
+.maps{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.mp{display:grid;padding:6px 8px;border-radius:8px;background:var(--fill-2);font-size:var(--fs-2)}
+.mp .k{font-size:var(--fs-1);color:var(--muted);font-weight:600}
+.mp button{font:inherit;font-size:var(--fs-2);font-weight:600;color:var(--t-issue);background:var(--warn-soft);border:0;border-radius:6px;padding:2px 8px;cursor:pointer;justify-self:start}
+.decide-f input{background:var(--decide-soft)!important}
+.att .paper{width:240px;min-height:150px}
+.phv{background:#c9d3d8;border-radius:4px;aspect-ratio:4/3;display:grid;align-items:end;padding:6px;font-size:var(--fs-1);color:#111114}
+</style>
+</head>
+<body>
+<header class="tb" id="tb"></header>
+<div class="studio">
+  <aside class="pane left" aria-label="이슈 원장">
+    <div class="row"><a class="btn sm primary" href="v2s-import.html" style="flex:1">＋ 가져오기</a><select id="fDept" aria-label="부서" style="width:auto;min-height:30px;font-size:var(--fs-1)"><option value="시운전1부">시운전1부</option><option value="">전 부서</option></select></div>
+    <label class="sr" for="q">찾기</label><input id="q" type="search" placeholder="찾기 — 2511 DG2" style="min-height:30px">
+    <div class="chips" role="group" aria-label="걸러 보기" id="fc"></div>
+    <div class="bulk" id="bulk" hidden>
+      <b class="small" id="bN" style="width:100%"></b>
+      <label class="sr" for="toM">넣을 회의자료</label><select id="toM"><option>W43 시운전1부 회의자료</option><option>W43 부서 현안 공유회</option><option>W43 팀장 정보회의</option></select>
+      <button class="btn sm primary" type="button" id="adopt">회의자료에 넣기</button><button class="btn sm gray" type="button" data-bulk="담당 부서 바꾸기">부서</button><button class="btn sm gray" type="button" data-bulk="상태 바꾸기">상태</button><button class="btn sm gray" type="button" data-bulk="합치기">합치기</button>
+    </div>
+    <div class="group" id="rows"></div>
+  </aside>
+  <main class="canvas" id="canvas" aria-label="캔버스"></main>
+  <aside class="pane right" aria-label="이슈 칸" id="props">
+    <div class="sec-h">기본</div>
+    <div class="prop"><label class="f">제목<input id="fTitle" type="text"></label>
+      <div class="row" style="display:grid;grid-template-columns:1fr 1fr;gap:6px"><label class="f">상태<select id="fSt"><option value="go">진행</option><option value="new">신규</option><option value="req">종결 요청</option><option value="post">게시</option></select></label><label class="f">장비<input id="fEq" type="text"></label></div>
+      <label class="f">이번 주 한 줄<input id="fWk" type="text" placeholder="비어 있음 — 이번 주 진행"></label></div>
+    <div class="sec-h">내용 — 그대로 1차 초안이 됩니다</div>
+    <div class="prop"><label class="f">현상<textarea id="fSym" style="min-height:52px"></textarea></label><label class="f">원인<input id="fCause" type="text" placeholder="모르면 비워 두기 — 「조사 중」"></label><label class="f">조치 · 계획<input id="fAct" type="text"></label><label class="f decide-f" style="color:var(--t-decide)">결정 필요<input id="fDec" type="text" placeholder="회의에서 정할 것(없으면 비움)"></label></div>
+    <div class="sec-h">지식 매핑 <span class="map" id="mN"></span></div>
+    <div class="maps" id="maps"></div>
+    <div class="sec-h">이 이슈가 들어간 회의자료</div>
+    <div class="small" id="used"></div>
+    <div class="keys"><kbd>J</kbd>/<kbd>K</kbd> 다음·이전 이슈 · <kbd>Ctrl</kbd>+<kbd>S</kbd> 초안 완료</div>
+  </aside>
+</div>
+<script type="module">
+import {$, $$, esc, toast, keys, fitStages} from './v2b.js';
+import {ISSUES, KIND, ST} from './v2b-data.js';
+import {toolbar, slide, frame, FORMS} from './v2s.js';
+toolbar('issue', 'v2b-issue-desk.html' + location.search);
+$('#act').innerHTML = '<span class="small muted" id="save">저장됨</span><button class="btn sm gray" type="button" id="reqClose">종결 요청</button><button class="btn sm primary" type="button" id="primary"></button>';
+const qs = new URLSearchParams(location.search);
+const F = {dept: '시운전1부', chip: qs.get('f') || '', q: ''};
+const sel = new Set();
+const used = {'ISS-2026-0001': ['W43 부서 현안 공유회'], 'PRB-2026-0001': ['W43 부서 현안 공유회']};
+let cur = qs.get('id') || ISSUES[0].id, form = 'detail';
+const CHIPS = [['draft', '초안 미완료', (d) => d.draft !== 'ok'], ['line', '한 줄 없음', (d) => !d.wk && d.st !== 'post'], ['map', '매핑 빈 곳', (d) => d.map < 5], ['soon', '일정 임박', (d) => d.dd !== null && d.dd <= 14]];
+const vis = () => ISSUES.filter((d) => (!F.dept || d.dept === F.dept) && (!F.chip || CHIPS.find((c) => c[0] === F.chip)[2](d)) && (!F.q || (d.title + d.raw + d.hull + d.id).toLowerCase().includes(F.q.toLowerCase())));
+const D = () => ISSUES.find((x) => x.id === cur);
+function renderList() {
+  const base = ISSUES.filter((d) => !F.dept || d.dept === F.dept);
+  $('#fc').innerHTML = CHIPS.map(([k, l, f]) => `<button class="fchip" type="button" data-chip="${k}" aria-pressed="${F.chip === k}">${l} ${base.filter(f).length}</button>`).join('');
+  $('#rows').innerHTML = vis().map((d) => `<div class="cell iss ${d.id === cur ? 'on' : ''}" data-id="${d.id}"><input type="checkbox" data-sel="${d.id}" ${sel.has(d.id) ? 'checked' : ''} aria-label="${d.id} 고르기"><span class="t"><span class="tl ${d.t}">${KIND[d.t]}</span> ${esc(d.title)}</span><span class="st ${ST[d.st][0]}">${ST[d.st][1]}</span>
+    <span class="m"><span class="dd ${d.dd !== null && d.dd <= 14 ? 'soon' : ''}">${d.hull} ${esc(d.ev)}${d.dd !== null ? ' D-' + d.dd : ''}</span><span class="map ${d.map < 5 ? 'gap' : ''}">매핑 ${d.map}/5</span>${d.wk ? '' : '<span class="st late">한 줄 없음</span>'}${d.draft === 'ok' ? '' : '<span>초안 ' + (d.draft === 'wip' ? '작성 중' : '없음') + '</span>'}</span></div>`).join('') || '<div class="empty">조건에 맞는 이슈가 없습니다</div>';
+  $('#bulk').hidden = !sel.size; $('#bN').textContent = `고른 이슈 ${sel.size}건`;
+}
+function renderCanvas() {
+  const d = D(), it = {id: d.id, line: d.wk || d.last, form, tag: true};
+  const t = `${d.dept} · 1차 초안`;
+  let h = `<p class="cv-h">${d.id} · ${d.draft === 'ok' ? '1차 초안 완료' : '1차 초안 ' + (d.draft === 'wip' ? '작성 중' : '없음')} — 오른쪽 칸을 고치면 바로 다시 그려집니다</p>`;
+  h += `<div class="rowf nowrap">${frame(slide(it, 1, 1, t), `<b>1차 초안</b><span>${FORMS[form]}</span>`, 'on', '', 620)}<span class="vars-h">다른 형태</span>` + Object.keys(FORMS).filter((k) => k !== form).map((k) => frame(slide({...it, form: k}, 1, 1, t), `<b>${FORMS[k]}</b>`, 'var', `data-var="${k}"`, 300)).join('') + '</div>';
+  h += `<p class="cv-h">붙인 것</p><div class="rowf att"><div class="frame static"><span class="lbl"><b>사진</b> 마커 1</span><div class="paper"><div class="phv">[조치 전] 3번 실린더</div></div></div><div class="frame static"><span class="lbl"><b>＋ 붙이기</b></span><div class="paper"><span class="small muted">사진은 끌어다 놓기 · Ctrl+V</span><div class="row"><button class="btn sm gray" type="button" data-att="표">표</button><button class="btn sm gray" type="button" data-att="계획 대비 실적">계획 대비 실적</button><button class="btn sm gray" type="button" data-att="호선 비교">호선 비교</button></div></div></div></div>`;
+  $('#canvas').innerHTML = h; fitStages();
+}
+const MAPK = ['호선', '장비', '부위', '증상', '원인'];
+function renderProps() {
+  const d = D();
+  $('#title').textContent = d.title; $('#sub').textContent = `${d.id} · ${d.dept} · ${d.hull} ${d.ev}${d.dd !== null ? ' D-' + d.dd : ''}`;
+  $('#fTitle').value = d.title; $('#fSt').value = d.st; $('#fEq').value = d.eq ? `${d.eq} ← ${d.raw}` : `미등록 ← ${d.raw}`; $('#fWk').value = d.wk;
+  $('#fSym').value = d.sym || ''; $('#fCause').value = d.cause || ''; $('#fAct').value = d.act || ''; $('#fDec').value = d.dec || '';
+  $('#maps').innerHTML = MAPK.map((k, i) => i < d.map ? `<div class="mp"><span class="k">${k}</span>${esc([d.hull, d.eq || d.raw, '연소·배기', '배기온도 편차', '분사밸브'][i])}</div>` : `<div class="mp"><span class="k">${k}</span><button type="button" data-map="${k}">＋ 고르기</button></div>`).join('');
+  $('#mN').textContent = `${d.map}/5`; $('#mN').className = 'map' + (d.map < 5 ? ' gap' : '');
+  $('#used').innerHTML = (used[d.id] || []).map(esc).join(' · ') || '<span class="muted">아직 없음 — 왼쪽에서 골라 「회의자료에 넣기」</span>';
+  $('#primary').textContent = d.draft === 'ok' ? '다음 이슈 →' : '초안 완료 → 다음 초안';
+  $('#reqClose').hidden = d.st === 'req' || d.t === 'share';
+}
+const all = () => { renderList(); renderCanvas(); renderProps(); };
+let st;
+document.addEventListener('input', (e) => {
+  if (e.target.id === 'q') { F.q = e.target.value; renderList(); return; }
+  if (!e.target.closest('#props')) return;
+  const d = D(), m = {fTitle: 'title', fWk: 'wk', fSym: 'sym', fCause: 'cause', fAct: 'act', fDec: 'dec'}[e.target.id];
+  if (m) d[m] = e.target.value;
+  if (d.draft === 'none') d.draft = 'wip';
+  $('#save').textContent = '저장 중…'; clearTimeout(st); st = setTimeout(() => { $('#save').textContent = '저장됨 · 방금'; renderList(); }, 500);
+  renderCanvas(); $('#title').textContent = d.title;
+});
+function go(step) { const xs = vis(); const i = xs.findIndex((d) => d.id === cur); const n = xs[(i + step + xs.length) % xs.length]; if (n) { cur = n.id; all(); } }
+function primary() {
+  const d = D();
+  if (d.draft === 'ok') return go(1);
+  const before = d.draft; d.draft = 'ok';
+  const next = ISSUES.find((x) => x.dept === d.dept && x.draft !== 'ok');
+  toast(`${d.id} 초안 완료 — 부서 자료 후보에 올라갑니다`, () => { d.draft = before; cur = d.id; all(); });
+  if (next) { cur = next.id; all(); $('#fSym').focus(); }
+  else { all(); $('#primary').textContent = '홈으로 →'; $('#primary').onclick = () => { location.href = 'v2s-home.html'; }; }
+}
+$('#primary').onclick = primary;
+$('#reqClose').onclick = () => { const d = D(); if (!$('#fAct').value.trim()) { toast('종결 요청에는 「조치 · 계획」이 필요합니다 — 칸을 채워주세요'); $('#fAct').focus(); return; } const b = d.st; d.st = 'req'; all(); toast('종결 요청했습니다 — 부서 현안 공유회에서 승인됩니다', () => { d.st = b; all(); }); };
+document.addEventListener('click', (e) => {
+  const c = e.target.closest('[data-chip]'), r = e.target.closest('.iss[data-id]'), b = e.target.closest('[data-bulk]'), a = e.target.closest('[data-att]'), mp = e.target.closest('[data-map]'), v = e.target.closest('[data-var]');
+  if (c) { F.chip = F.chip === c.dataset.chip ? '' : c.dataset.chip; renderList(); }
+  if (r && !e.target.closest('input')) { cur = r.dataset.id; all(); }
+  if (v) { const b0 = form; form = v.dataset.var; renderCanvas(); toast(`미리보기를 「${FORMS[form]}」로 — 회의마다 형태는 스튜디오에서 정합니다`, () => { form = b0; renderCanvas(); }); }
+  if (b) toast(`고른 ${sel.size}건 「${b.dataset.bulk}」 — 이력과 작성자 알림으로 남습니다(시안)`);
+  if (a) toast(`「${a.dataset.att}」 입력 칸이 열립니다(시안)`);
+  if (mp) toast(`「${mp.dataset.map}」 고르기 — 현장 표기로 찾아 연결하면 별칭 사전에 남습니다(시안)`);
+});
+document.addEventListener('change', (e) => {
+  if (e.target.matches('[data-sel]')) { e.target.checked ? sel.add(e.target.dataset.sel) : sel.delete(e.target.dataset.sel); renderList(); }
+  if (e.target.id === 'fDept') { F.dept = e.target.value; renderList(); }
+  if (e.target.id === 'fSt') { D().st = e.target.value; renderList(); }
+});
+$('#adopt').onclick = () => { const m = $('#toM').value, ids = [...sel]; ids.forEach((id) => (used[id] = [...new Set([...(used[id] || []), m])])); sel.clear(); all(); toast(`${ids.length}건을 「${m}」에 넣었습니다 — 순서·형태는 스튜디오에서`, () => { ids.forEach((id) => (used[id] = used[id].filter((x) => x !== m))); all(); }); };
+keys({next: () => go(1), prev: () => go(-1), save: primary});
+all();
+</script>
+</body>
+</html>

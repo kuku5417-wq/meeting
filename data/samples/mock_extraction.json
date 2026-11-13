@@ -1,0 +1,76 @@
+{
+  "blocks": [
+    {
+      "block_type": "issue",
+      "type_confidence": 0.92,
+      "title": "SN2511 발전기 No.2 배기온도 편차",
+      "body": "3번 실린더 배기온도 평균 대비 +38℃. 연료분사밸브 교체품 금요일 입고 예정, 정비업체와 작업 일정 조율 중.",
+      "status": "진행",
+      "carried_block_ref": "ISS-2026-0142",
+      "valid_until": null,
+      "photo_refs": [],
+      "tags": [
+        { "kind": "hull", "raw_text": "2511", "normalized": "SN2511", "confidence": 0.98, "evidence": { "line": 1, "quote": "2511" } },
+        { "kind": "installed_equipment", "raw_text": "DG2", "normalized": "발전기 No.2", "confidence": 0.95, "evidence": { "line": 1, "quote": "DG2" } },
+        { "kind": "symptom", "raw_text": "배기온도 편차", "normalized": "배기온도 편차", "confidence": 0.9, "evidence": { "line": 1, "quote": "배기온도 편차" } },
+        { "kind": "related", "raw_text": "연소·배기", "normalized": "연소·배기", "confidence": 0.55, "evidence": { "line": 1, "quote": "배기온도" } },
+        { "kind": "next_action", "raw_text": "연료밸브 교체", "normalized": "밸브 교체 후 부하시험", "confidence": 0.8, "evidence": { "line": 1, "quote": "연료밸브 교체품 금요일 입고 예정" } }
+      ],
+      "evidence": [ { "line": 1, "quote": "DG2 배기온도 편차 계속, 3번 실린더 +38도" } ]
+    },
+    {
+      "block_type": "problem",
+      "type_confidence": 0.88,
+      "title": "SN2514 카고펌프 No.3 메카니컬씰 누유",
+      "body": "메카니컬씰 하우징 부위 누유 발견, 드레인 라인까지 젖어 있음. 운전 정지 조치.",
+      "status": "신규",
+      "carried_block_ref": null,
+      "valid_until": null,
+      "photo_refs": ["사진1", "사진2"],
+      "tags": [
+        { "kind": "hull", "raw_text": "2514", "normalized": "SN2514", "confidence": 0.98, "evidence": { "line": 2, "quote": "2514" } },
+        { "kind": "installed_equipment", "raw_text": "카고펌프 No.3", "normalized": "카고펌프 No.3", "confidence": 0.96, "evidence": { "line": 2, "quote": "카고펌프 No.3" } },
+        { "kind": "component", "raw_text": "메카니컬씰", "normalized": "메카니컬씰", "confidence": 0.62, "evidence": { "line": 2, "quote": "메카니컬씰 하우징" } },
+        { "kind": "symptom", "raw_text": "씰 누유", "normalized": "누유", "confidence": 0.93, "evidence": { "line": 2, "quote": "씰 누유" } },
+        { "kind": "action", "raw_text": "운전 정지", "normalized": "운전 정지", "confidence": 0.95, "evidence": { "line": 2, "quote": "일단 운전 정지" } }
+      ],
+      "evidence": [ { "line": 2, "quote": "카고펌프 No.3 씰 누유 발견" } ]
+    },
+    {
+      "block_type": "share",
+      "type_confidence": 0.9,
+      "title": "SN2511 조타기 선급 검사 일정 변경",
+      "body": "조타기 선급 검사 10/21 → 10/23으로 변경.",
+      "status": null,
+      "carried_block_ref": null,
+      "valid_until": "2026-10-23",
+      "photo_refs": [],
+      "tags": [
+        { "kind": "hull", "raw_text": "2511", "normalized": "SN2511", "confidence": 0.98, "evidence": { "line": 3, "quote": "2511" } },
+        { "kind": "installed_equipment", "raw_text": "조타기", "normalized": "조타기", "confidence": 0.9, "evidence": { "line": 3, "quote": "조타기" } },
+        { "kind": "related", "raw_text": "선급 검사", "normalized": "선급 검사", "confidence": 0.6, "evidence": { "line": 3, "quote": "선급 검사" } }
+      ],
+      "evidence": [ { "line": 3, "quote": "2511 조타기 검사 10/21 → 10/23" } ]
+    },
+    {
+      "block_type": "dashboard",
+      "type_confidence": 0.95,
+      "title": "시운전1부 시운전 지표",
+      "body": "",
+      "status": null,
+      "carried_block_ref": null,
+      "valid_until": null,
+      "photo_refs": [],
+      "metrics": [
+        { "name": "시운전 항목 완료율", "value": 74, "unit": "%", "evidence": { "line": 4, "quote": "완료율 74%" } },
+        { "name": "신규 펀치", "value": 18, "unit": "건", "evidence": { "line": 4, "quote": "신규 펀치 18건" } },
+        { "name": "미결 펀치", "value": 41, "unit": "건", "evidence": { "line": 4, "quote": "미결 41건" } }
+      ],
+      "tags": [],
+      "evidence": [ { "line": 4, "quote": "시운전 항목 완료율 74%" } ]
+    }
+  ],
+  "questions": [
+    { "block_index": 1, "field": "cause", "question": "원인이 확인됐나요? 모르면 \"조사 중\"이라고 적어주세요.", "placeholder": "예: 씰 면 손상 / 축 정렬 불량 / 조사 중" }
+  ]
+}

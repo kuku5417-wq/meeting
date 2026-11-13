@@ -1,0 +1,274 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 회의자료 구성 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="v2.css">
+<style>
+/* 회의자료 구성: 왼쪽 후보(채택 체크) · 가운데 개요(묶음·순서·형태·회의용 한 줄) · 오른쪽 미리보기(= PPT)
+   2026-10-21: 부서 제출 현황 띠, 후보 「부서 제출」 묶음(자동 채택 X, 종결 요청만 자동), 끌어서 옮기기, 형태 한꺼번에, 미리보기 크게 보기 */
+.subs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;font-size:var(--fs-1)}
+.subs .d{display:inline-flex;gap:4px;align-items:center;padding:3px 8px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
+.subs .d.ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.subs .d.wip{border-color:var(--signal);background:var(--signal-soft);color:var(--signal)}
+.oitem.dragging{opacity:.4}
+.oitem.focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.oitem.over{box-shadow:0 -3px 0 var(--accent)}
+.grip{cursor:grab;color:var(--muted);font-size:var(--fs-2);line-height:1;user-select:none}
+.compose.bigpv{grid-template-columns:320px minmax(0,1fr) 380px}
+.compose.bigpv .right{grid-column:2;grid-row:1}
+.compose.bigpv>section{grid-column:3;grid-row:1}
+.compose{display:grid;grid-template-columns:320px minmax(0,1fr) 380px;gap:14px;align-items:start}
+.cgroup{display:grid;gap:4px}
+.cgroup h3{font-size:var(--fs-1);color:var(--muted);font-family:var(--body);font-weight:700;margin-top:4px}
+.cand{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 8px;padding:7px 8px;border:1px solid var(--line);border-radius:6px;cursor:pointer;align-items:start;background:var(--surface)}
+.cand:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.cand input{margin-top:3px}
+.cand .t{font-size:var(--fs-2);font-weight:600}
+.cand .m{grid-column:2;display:flex;gap:6px;flex-wrap:wrap;font-size:var(--fs-1);color:var(--muted);align-items:center}
+.ogroup{display:grid;gap:6px}
+.ogroup>h3{font-size:var(--fs-2);display:flex;gap:8px;align-items:center}
+.oitem{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:6px 10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;background:var(--surface);align-items:center}
+.oitem .mv{display:grid;gap:2px}
+.oitem .mv button{font:inherit;font-size:var(--fs-1);line-height:1;padding:3px 6px;border:1px solid var(--line);border-radius:4px;background:var(--surface);cursor:pointer;color:var(--fg)}
+.oitem .body{display:grid;gap:4px;min-width:0}
+.oitem .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.oitem .line{font-size:var(--fs-2);padding:4px 8px}
+.oitem .side{display:grid;gap:4px;justify-items:end}
+.oitem select{width:auto;padding:3px 6px;font-size:var(--fs-1)}
+.warn{font-size:var(--fs-1);color:var(--signal)}
+.empty{border:1px dashed var(--line);border-radius:6px;padding:10px;color:var(--muted);font-size:var(--fs-2);text-align:center}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.bar h1{font-size:var(--fs-4)}
+.prev{display:grid;gap:8px;position:sticky;top:60px}
+.slide .det{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.slide .det>div{border:1px solid var(--slide-line);border-radius:2px;padding:2px 4px;min-height:22px}
+.slide .det i{display:block;font-style:normal;font-weight:700;color:var(--slide-band);font-size:8.5px}
+.slide .det .dec{border-color:var(--slide-decide);background:var(--slide-decide-soft)}.slide .det .dec i{color:var(--slide-decide)}
+.slide .detw{display:grid;grid-template-columns:1.5fr 1fr;gap:4px;min-height:0}
+.slide .det2{display:grid;gap:3px;align-content:start}
+.slide .det2 .ph{min-height:26px}
+.slide .gmini{position:relative;height:42px;border:1px solid var(--slide-line);border-radius:2px;background:repeating-linear-gradient(90deg,var(--slide-line) 0 1px,transparent 1px 12.5%)}
+.slide .gmini span{position:absolute;top:4px;height:6px;background:var(--slide-muted)}.slide .gmini span.a{top:12px;background:var(--slide-share)}
+.slide .orig{height:100%;display:grid;place-content:center;text-align:center;gap:3px;background:repeating-linear-gradient(45deg,var(--slide-soft) 0 6px,var(--slide) 6px 12px);color:var(--slide-muted);border-radius:2px}
+.slide .orig b{color:var(--slide-fg);font-size:11px}
+.slide .card{border:1px solid var(--slide-line);border-radius:3px;padding:3px 5px;display:grid;grid-template-columns:1fr auto;gap:4px}
+.slide .card .ph{width:46px;min-height:30px}
+.slide .big{display:grid;grid-template-columns:1fr 1.2fr;gap:5px}
+.slide .big .ph{min-height:56px}
+/* B6 회의용 한 줄 자동 머리표(2026-10-23, docs/08) — 상태·결정 필요·미결 주수에서 제안, 표현이라 이 회의에만 */
+.lnrow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px;align-items:center}
+.ptag{font:inherit;font-size:var(--fs-1);font-weight:700;white-space:nowrap;border:1px solid var(--field-line);border-radius:4px;padding:3px 7px;background:var(--surface-2);color:var(--fg);cursor:pointer}
+.ptag[aria-pressed="false"]{text-decoration:line-through;color:var(--muted);font-weight:500}
+.ptag.decide{border-color:var(--decide);background:var(--decide-soft);color:var(--decide)}
+.ptag.close{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.ptag.share{border-color:var(--share);background:var(--share-soft);color:var(--share)}
+.ptag.long{border-color:var(--danger);background:var(--danger-soft);color:var(--danger)}
+.slide .pt{font-weight:700;color:var(--slide-band);margin-right:3px}
+@media (max-width:1300px){.compose{grid-template-columns:300px minmax(0,1fr)}.compose .right{grid-column:1 / -1}.prev{position:static}}
+@media (max-width:860px){.compose{grid-template-columns:minmax(0,1fr)}.oitem{grid-template-columns:minmax(0,1fr)}.oitem .mv{grid-auto-flow:column;justify-content:start}.oitem .side{justify-items:start}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">커미셔닝팀 회의·지식</span>
+  <nav class="nav" aria-label="메뉴">
+    <a href="v2-home.html">홈</a>
+    <a href="v2-issue-desk.html">이슈</a>
+    <a href="v2-meetings.html" aria-current="page">회의</a>
+    <a href="v2-metrics.html">지표</a>
+    <a href="#">지식창고</a>
+    <a href="#">장비 허브</a>
+  </nav>
+  <div class="right"><span class="small muted">기획운영 · 이 과장</span></div>
+</header>
+<p class="v2-note">재설계 시안 v2 — 회의자료 구성(팀장 정보회의 · 팀 스텝). 공유회 채택분과 원장에서 골라 다른 형식으로 다시 구성합니다. 왼쪽 후보를 체크하면 가운데 개요와 오른쪽 미리보기에 바로 들어갑니다. 매핑 빈 곳은 경고만 하고 막지 않습니다. 데이터는 가상입니다.</p>
+
+<main class="page">
+  <div class="bar">
+    <div class="row"><a class="btn sm ghost" href="v2-meeting-view.html">← 보기로</a><span class="pill kind">팀장 정보회의</span><h1>W43 팀장 정보회의</h1><span class="small muted">10/27(월) 08:30 · 팀 스텝 구성 · 팀장 → 본부장</span></div>
+    <div class="row"><span class="pill p-issue" id="state">구성 중 · 채택 0</span>
+      <button class="btn" type="button">PPT 내려받기</button><a class="btn" href="v2-meeting-run.html">회의 시작</a><button class="btn primary" type="button">발행</button></div>
+  </div>
+  <div class="subs" aria-label="기준 자료"><b>기준: W43 부서 현안 공유회 자료</b><span class="d ok">부서 제출 8/8</span><span class="d ok">채택 14</span><span class="d ok">종결 승인 1</span><span class="muted">공유회에서 바뀐 사실은 이미 이슈에 반영되어 있습니다</span></div>
+
+  <div class="compose" id="compose">
+    <!-- 후보 -->
+    <aside class="panel" aria-labelledby="candH">
+      <div class="panel-h"><h2 id="candH">후보 이슈</h2><span class="small muted" id="candN"></span></div>
+      <input type="search" placeholder="찾기 — 호선·장비·제목" aria-label="후보 찾기">
+      <div class="filters">
+        <select aria-label="부서"><option>전 부서</option></select>
+        <div class="seg" role="group" aria-label="보기"><button aria-pressed="true">추천순</button><button aria-pressed="false">부서순</button></div>
+      </div>
+      <div id="cands"></div>
+      <p class="small muted" style="margin:0">후보: W43 공유회 채택분 + 중요 표시 + 장기 미결 + 이번 주 종결, 그리고 원장에서 직접(「그 밖」). 「중요 표시 · 이번 주 종결」은 처음부터 채택됩니다. 형태·한 줄을 바꿔도 이슈와 공유회 자료는 그대로입니다.</p>
+    </aside>
+
+    <!-- 개요 -->
+    <section class="panel" aria-labelledby="outH">
+      <div class="panel-h"><h2 id="outH">회의자료 개요</h2>
+        <div class="row"><label class="small muted" for="allForm">형태 한꺼번에</label><select id="allForm" style="width:auto"><option value="">—</option><option value="line">한 줄</option><option value="card">카드</option><option value="photo">사진 강조</option><option value="table">표</option><option value="detail">상세 한 장</option></select><label class="small muted" for="grp">묶기</label><select id="grp" style="width:auto"><option value="none">묶지 않음</option><option value="dept">부서별</option><option value="hull">호선별</option></select></div></div>
+      <div id="outline" class="ogroup"></div>
+      <div class="decide"><b>표시 형태</b> — 항목마다 고릅니다. <b>한 줄</b>(제목+회의용 한 줄) · <b>카드</b>(내용·담당·상태) · <b>사진 강조</b>(사진 크게) · <b>표</b>(같은 묶음을 표 한 장으로) · <b>상세 한 장</b>(현상·원인·조치·결정 필요 + 사진·간트) · <b>원본 슬라이드</b>(부서 PPT 장 그대로). 형태는 이 회의에만 적용되고 이슈 원장은 그대로입니다.<br><b>머리표</b> — 회의용 한 줄 앞의 <b>[종결]</b> <b>[종결승인 대기]</b> <b>[결정필요 · 5주 미결]</b> <b>[공유]</b> 는 이슈 상태·결정 필요·미결 주수에서 자동으로 붙습니다. 누르면 이 회의에서만 뺍니다.</div>
+    </section>
+
+    <!-- 미리보기 -->
+    <aside class="panel right" aria-labelledby="pvH">
+      <div class="panel-h"><h2 id="pvH">미리보기</h2><button class="btn sm" type="button" id="bigBtn">크게 보기</button></div>
+      <span class="small muted" style="margin-top:-6px">PPT·웹 회의 화면과 같은 모양</span>
+      <div class="prev">
+        <div class="slide" id="slide"></div>
+        <div class="thumbs" id="pages"></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script>
+// 시안용 상태 — 실제 구현에서는 report_item 표(회의·이슈·묶음·순서·형태·회의용 한 줄)가 된다
+const DATA = [
+  {id: 'PRB-2026-0001', t: 'problem', title: 'SN2514 카고펌프 No.3 메카니컬씰 누유', dept: '시운전1부', hull: 'SN2514', why: '이번 주 종결', st: '종결', weeks: 2, line: '씰 교체 후 4시간 무누유 — 종결 승인(10/24 공유회)', map: 5, photo: true, sym: '카고펌프 No.3 메카니컬씰에서 누유', cause: '씰 면 손상 — 초기 건운전', act: '씰 교체 후 4시간 무누유 확인(10/21)'},
+  {id: 'ISS-2026-0004', t: 'issue', title: 'SN2512 발전기 No.1 기동 지연', dept: '시운전기술', hull: 'SN2512', why: '장기 미결', st: '진행', weeks: 5, dec: '제조사 현장 점검 요청 여부', line: '제조사 회신 대기', map: 3, photo: false},
+  {id: 'ISS-2026-0001', t: 'issue', title: 'SN2511 발전기 No.2 배기온도 편차', dept: '시운전1부', hull: 'SN2511', why: '공유회 채택', st: '진행', weeks: 3, line: '밸브 입고 지연, 다음 주 교체', map: 4, photo: true, sym: '3번 실린더 배기온도 +38℃ 편차', cause: '조사 중 (자매선 SN2510: 분사밸브 노즐 마모)', act: '연료밸브 교체 → 부하시험', dec: '선주 협의: 부하시험을 해상/안벽 어디서 할지', sched: true},
+  {id: 'PRB-2026-0007', t: 'problem', title: 'Sterntube 금속이물질 발견', dept: '기획운영', hull: 'SN2402', why: '공유회 채택', st: '종결 요청', weeks: 2, line: 'SN2402·SN2510 확인, 원인 조사 중', map: 1, photo: true},
+  {id: 'SHR-2026-0001', t: 'share', title: 'SN2511 조타기 선급 검사 10/21 → 10/23', dept: '시운전1부', hull: 'SN2511', why: '공유회 채택', st: '게시', weeks: 1, line: '검사 일정 변경', map: 5, photo: false},
+  {id: 'SHR-2026-0006', t: 'share', title: '안전사고 예방 캠페인 10/6~10/30', dept: '기획운영', hull: '—', why: '그 밖', st: '게시', weeks: 3, line: '캠페인 기간 안내', map: 5, photo: false},
+  {id: 'PRB-2026-0011', t: 'problem', title: 'SN2513 유압펌프 파손 — 메이커 주장 검토', dept: '시운전2부', hull: 'SN2513', why: '중요 표시', st: '진행', weeks: 4, dec: '메이커 주장 대응 방침', line: '메이커 「오일 관리」 주장 반박 자료', map: 2, photo: false, orig: '시운전2부 제출 PPT · 3쪽'},
+  {id: 'ISS-2026-0009', t: 'issue', title: 'SN2511 청수 발생기 생산량 저하', dept: '시운전2부', hull: 'SN2511', why: '그 밖', st: '진행', weeks: 2, line: '세관 세척 예정', map: 2, photo: false},
+];
+const KIND = {issue: '이슈', problem: '문제점', share: '공유정보'};
+const AUTO = new Set(['중요 표시', '이번 주 종결']);
+const FORMS = {line: '한 줄', card: '카드', photo: '사진 강조', table: '표', detail: '상세 한 장', orig: '원본 슬라이드'};
+const defForm = (d) => 'line';
+// B6 — 머리표 규칙: 종결 > 종결 요청 > 결정 필요(+4주 이상 미결) > 장기 미결 > 공유. 끄면 한 줄만 나간다
+function ptag(d) {
+  const long = d.weeks >= 4 && !['종결', '게시'].includes(d.st) ? `${d.weeks}주 미결` : '';
+  if (d.st === '종결') return {txt: '종결', cls: 'close'};
+  if (d.st === '종결 요청') return {txt: '종결승인 대기', cls: 'close'};
+  if (d.dec) return {txt: ['결정필요', long].filter(Boolean).join(' · '), cls: 'decide'};
+  if (long) return {txt: long, cls: 'long'};
+  if (d.t === 'share') return {txt: '공유', cls: 'share'};
+  return null;
+}
+const lineOf = (it) => { const p = ptag(it.d); return (p && it.tag !== false ? `<span class="pt">[${esc(p.txt)}]</span>` : '') + esc(it.line); }; // 팀장 정보회의는 한 줄 요약이 기본 — 항목마다 바꿀 수 있음
+let picked = DATA.filter((d) => AUTO.has(d.why) || ['ISS-2026-0001', 'ISS-2026-0004'].includes(d.id)).map((d) => ({id: d.id, form: defForm(d), line: d.line}));
+let page = 0;
+const $ = (id) => document.getElementById(id);
+const byId = (id) => DATA.find((d) => d.id === id);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+
+function renderCands() {
+  const order = ['중요 표시', '이번 주 종결', '공유회 채택', '장기 미결', '그 밖'];
+  $('cands').innerHTML = order.map((g) => {
+    const rows = DATA.filter((d) => d.why === g);
+    if (!rows.length) return '';
+    return `<div class="cgroup"><h3>${g} ${rows.length}</h3>` + rows.map((d) => `
+      <label class="cand"><input type="checkbox" data-id="${d.id}" ${picked.some((p) => p.id === d.id) ? 'checked' : ''}>
+        <span class="t"><span class="pill p-${d.t}">${KIND[d.t]}</span> ${esc(d.title)}</span>
+        <span class="m"><span class="id">${d.id}</span>${d.dept}${d.map < 3 ? ' · <span class="warn">매핑 ' + d.map + '/5</span>' : ''}</span></label>`).join('') + '</div>';
+  }).join('');
+  $('candN').textContent = `${DATA.length}건 · 채택 ${picked.length}`;
+}
+
+function groups() {
+  const key = $('grp').value;
+  const out = new Map();
+  picked.forEach((p) => {
+    const d = byId(p.id);
+    const g = key === 'dept' ? d.dept : key === 'hull' ? d.hull : '채택 이슈';
+    if (!out.has(g)) out.set(g, []);
+    out.get(g).push({...p, d});
+  });
+  return [...out.entries()];
+}
+
+function renderOutline() {
+  const gs = groups();
+  $('outline').innerHTML = gs.length ? gs.map(([g, items]) => `<div class="ogroup"><h3>${esc(g)} <span class="small muted">${items.length}건</span></h3>` + items.map((it) => `
+    <div class="oitem" data-id="${it.id}" draggable="true">
+      <div class="mv"><span class="grip" title="끌어서 옮기기" aria-hidden="true">⠿</span><button type="button" data-mv="-1" aria-label="${it.id} 위로">▲</button><button type="button" data-mv="1" aria-label="${it.id} 아래로">▼</button></div>
+      <div class="body"><span class="t"><span class="pill p-${it.d.t}">${KIND[it.d.t]}</span> ${esc(it.d.title)}</span>
+        <div class="lnrow">${(() => { const p = ptag(it.d); return p ? `<button type="button" class="ptag ${p.cls}" data-tag aria-pressed="${it.tag !== false}" title="상태·결정 필요·미결 주수에서 자동 — 누르면 빼기/넣기">[${esc(p.txt)}]</button>` : '<span></span>'; })()}
+          <label class="sr" for="ln-${it.id}">회의용 한 줄</label><input class="line" id="ln-${it.id}" type="text" value="${esc(it.line)}" data-line></div>
+        ${it.d.map < 3 ? `<span class="warn">매핑 ${it.d.map}/5 — 지식창고용 정보가 비어 있습니다(회의에는 지장 없음) · <a href="v2-issue-desk.html">이슈에서 채우기</a></span>` : ''}</div>
+      <div class="side"><label class="sr" for="fm-${it.id}">표시 형태</label><select id="fm-${it.id}" data-form>${Object.entries(FORMS).map(([k, v]) => `<option value="${k}" ${k === it.form ? 'selected' : ''}>${v}</option>`).join('')}</select>
+        <button class="btn sm ghost" type="button" data-drop>빼기</button></div>
+    </div>`).join('') + '</div>').join('') : '<div class="empty">왼쪽 후보에서 채택할 이슈를 체크하세요</div>';
+  $('state').textContent = `구성 중 · 채택 ${picked.length}`;
+}
+
+function slides() {
+  const pages = [{label: '표지', kind: 'cover'}];
+  groups().forEach(([g, items]) => {
+    const tbl = items.filter((i) => i.form === 'table'), one = items.filter((i) => i.form === 'detail' || i.form === 'orig'), rest = items.filter((i) => !['table', 'detail', 'orig'].includes(i.form));
+    for (let i = 0; i < rest.length; i += 4) pages.push({label: g, kind: 'items', items: rest.slice(i, i + 4)});
+    one.forEach((it) => pages.push({label: g, kind: it.form, items: [it]}));
+    if (tbl.length) pages.push({label: g + ' · 표', kind: 'table', items: tbl});
+  });
+  return pages;
+}
+
+function itemHtml(it) {
+  const d = it.d, cls = d.t;
+  if (it.form === 'line') return `<div class="it ${cls}"><b>[${KIND[d.t]}] ${esc(d.title)}</b>${lineOf(it)}</div>`;
+  if (it.form === 'photo') return `<div class="it ${cls} big"><div><b>[${KIND[d.t]}] ${esc(d.title)}</b>${lineOf(it)}<br><span style="color:var(--slide-muted)">${d.dept} · ${d.hull}</span></div><div class="ph"></div></div>`;
+  return `<div class="card"><div class="it ${cls}"><b>[${KIND[d.t]}] ${esc(d.title)}</b>${lineOf(it)}<br><span style="color:var(--slide-muted)">${d.dept} · ${d.hull} · ${d.id}</span></div>${d.photo ? '<div class="ph"></div>' : ''}</div>`;
+}
+
+function renderPreview() {
+  const ps = slides();
+  page = Math.min(page, ps.length - 1);
+  const p = ps[page];
+  let body = '';
+  if (p.kind === 'cover') body = `<div style="display:grid;gap:6px;align-content:center;height:100%"><b style="font-size:var(--fs-2);color:var(--slide-band)">W43 팀장 정보회의</b><span>10/24(금) · 채택 ${picked.length}건</span><span style="color:var(--slide-muted)">${groups().map(([g, i]) => g + ' ' + i.length).join(' · ') || '채택 없음'}</span></div>`;
+  else if (p.kind === 'table') body = `<table><tr><th>구분</th><th>제목</th><th>회의용 한 줄</th></tr>${p.items.map((i) => `<tr><td>${KIND[i.d.t]}</td><td>${esc(i.d.title)}</td><td>${lineOf(i)}</td></tr>`).join('')}</table>`;
+  else if (p.kind === 'detail') { const d = p.items[0].d; body = `<div class="it ${d.t}"><b>[${KIND[d.t]}] ${esc(d.title)}</b>${esc(d.dept)} · ${d.hull} · ${d.id}</div><div class="detw"><div class="det"><div><i>현상</i>${esc(d.sym || '—')}</div><div><i>원인</i>${esc(d.cause || '—')}</div><div><i>조치 · 계획</i>${esc(d.act || p.items[0].line)}</div><div class="dec"><i>결정 필요</i>${esc(d.dec || '없음')}</div></div><div class="det2">${d.photo ? '<div class="ph"></div><div class="ph"></div>' : ''}${d.sched ? '<div class="gmini"><span style="left:10%;width:20%"></span><span class="a" style="left:40%;width:22%"></span><span style="left:33%;width:18%;top:20px"></span><span class="a" style="left:66%;width:18%;top:30px"></span></div>' : ''}</div></div>`; }
+  else if (p.kind === 'orig') { const d = p.items[0].d; body = `<div class="orig">원본 슬라이드 그대로<br><b>${esc(d.title)}</b><span>${esc(d.orig)}</span></div>`; }
+  else body = p.items.map(itemHtml).join('');
+  $('slide').innerHTML = `<div class="band"><span>${esc(p.label)}</span><span>W43</span></div><div class="sb">${body}</div><div class="foot">팀장 정보회의 · ${page + 1}/${ps.length}</div>`;
+  $('pages').innerHTML = ps.map((x, i) => `<button type="button" class="pg" data-pg="${i}" ${i === page ? 'aria-current="true"' : ''}>${i + 1} ${esc(x.label)}</button>`).join('');
+}
+
+const all = () => { renderCands(); renderOutline(); renderPreview(); };
+document.addEventListener('change', (e) => {
+  const cb = e.target.closest('[data-id]');
+  if (cb && cb.type === 'checkbox') {
+    const d = byId(cb.dataset.id);
+    if (cb.checked) picked.push({id: d.id, form: defForm(d), line: d.line}); else picked = picked.filter((p) => p.id !== d.id);
+    all();
+  } else if (e.target.matches('[data-form]')) {
+    picked.find((p) => p.id === e.target.closest('.oitem').dataset.id).form = e.target.value; renderPreview();
+  } else if (e.target.id === 'grp') { page = 0; renderOutline(); renderPreview(); }
+});
+document.addEventListener('input', (e) => {
+  if (e.target.matches('[data-line]')) { picked.find((p) => p.id === e.target.closest('.oitem').dataset.id).line = e.target.value; renderPreview(); }
+});
+document.addEventListener('click', (e) => {
+  const mv = e.target.closest('[data-mv]'), drop = e.target.closest('[data-drop]'), pg = e.target.closest('[data-pg]');
+  if (mv) { const id = mv.closest('.oitem').dataset.id, i = picked.findIndex((p) => p.id === id), j = i + Number(mv.dataset.mv);
+    if (j >= 0 && j < picked.length) { [picked[i], picked[j]] = [picked[j], picked[i]]; renderOutline(); renderPreview(); } }
+  if (drop) { const id = drop.closest('.oitem').dataset.id; picked = picked.filter((p) => p.id !== id); all(); }
+  if (pg) { page = Number(pg.dataset.pg); renderPreview(); }
+  const tg = e.target.closest('[data-tag]');
+  if (tg) { const p = picked.find((x) => x.id === tg.closest('.oitem').dataset.id); p.tag = p.tag === false; renderOutline(); renderPreview(); }
+});
+// 끌어서 옮기기 — 놓은 항목 앞으로 들어간다(키보드는 ▲▼)
+let dragId = null;
+document.addEventListener('dragstart', (e) => { const o = e.target.closest('.oitem'); if (!o) return; dragId = o.dataset.id; o.classList.add('dragging'); });
+document.addEventListener('dragend', () => { document.querySelectorAll('.oitem').forEach((o) => o.classList.remove('dragging', 'over')); });
+document.addEventListener('dragover', (e) => { const o = e.target.closest('.oitem'); if (!o || !dragId) return; e.preventDefault(); document.querySelectorAll('.oitem.over').forEach((x) => x.classList.remove('over')); o.classList.add('over'); });
+document.addEventListener('drop', (e) => { const o = e.target.closest('.oitem'); if (!o || !dragId) return; e.preventDefault();
+  const from = picked.findIndex((p) => p.id === dragId), item = picked.splice(from, 1)[0], to = picked.findIndex((p) => p.id === o.dataset.id);
+  picked.splice(to < 0 ? picked.length : to, 0, item); dragId = null; renderOutline(); renderPreview(); });
+$('allForm').addEventListener('change', (e) => { if (!e.target.value) return; picked.forEach((p) => { p.form = e.target.value; }); e.target.value = ''; renderOutline(); renderPreview(); });
+$('bigBtn').addEventListener('click', (e) => { const on = $('compose').classList.toggle('bigpv'); e.target.textContent = on ? '작게 보기' : '크게 보기'; });
+all();
+// 보기 화면 「이 장 수정」에서 오면 그 항목으로
+if (location.hash) { const o = document.querySelector(`.oitem[data-id="${location.hash.slice(1)}"]`); if (o) { o.classList.add('focus'); o.scrollIntoView({block: 'center'}); } }
+</script>
+</body>
+</html>

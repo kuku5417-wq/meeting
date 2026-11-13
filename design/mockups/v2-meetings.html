@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 회의 목록·만들기 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="v2.css">
+<style>
+/* 회의 목록(전체 폭) + 회의 만들기(버튼 → 오른쪽 서랍) — 종류를 고르면 템플릿이 대상·묶기·형태를 미리 채운다.
+   2026-10-21: 주간 정기 회의 2종(부서 현안 공유회·팀장 정보회의)은 매주 자동 생성, 부서 회의 종류는 뺌 */
+.wrap{display:grid;gap:14px}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(440px,100%);overflow-y:auto;background:var(--surface);border-left:1px solid var(--line);box-shadow:-8px 0 24px rgb(0 0 0 / .12);padding:16px;display:grid;gap:10px;align-content:start;z-index:20}
+.rec{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:4px 10px;align-items:center;padding:8px 10px;border:1px solid var(--line);border-radius:6px;font-size:var(--fs-2)}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.mcard{display:grid;gap:6px;padding:12px;border:1px solid var(--line);border-radius:8px;background:var(--surface);text-decoration:none;color:inherit}
+.mcard:hover{border-color:var(--accent)}
+.mcard h3{font-size:var(--fs-3)}
+.mcard .stat{display:flex;gap:10px;font-size:var(--fs-1);color:var(--muted);flex-wrap:wrap}
+.mcard .stat b{color:var(--fg)}
+.types{display:grid;gap:6px}
+.type{display:grid;grid-template-columns:auto minmax(0,1fr);gap:2px 10px;padding:8px 10px;border:1px solid var(--line);border-radius:6px;cursor:pointer;align-items:start}
+.type:has(input:checked){border-color:var(--accent);background:var(--accent-soft)}
+.type input{margin-top:3px}
+.type b{font-size:var(--fs-2)}
+.type span{grid-column:2;font-size:var(--fs-1);color:var(--muted)}
+.tpl{display:grid;gap:6px;border-top:1px dashed var(--line);padding-top:10px}
+.tpl dl{display:grid;grid-template-columns:90px minmax(0,1fr);gap:4px 10px;margin:0;font-size:var(--fs-2)}
+.tpl dt{color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">커미셔닝팀 회의·지식</span>
+  <nav class="nav" aria-label="메뉴">
+    <a href="v2-home.html">홈</a>
+    <a href="v2-issue-desk.html">이슈</a>
+    <a href="v2-meetings.html" aria-current="page">회의</a>
+    <a href="v2-metrics.html">지표</a>
+    <a href="#">지식창고</a>
+    <a href="#">장비 허브</a>
+  </nav>
+  <div class="right"><span class="small muted">커미셔닝팀 · 박 팀장</span></div>
+</header>
+<p class="v2-note">재설계 시안 v2 — 회의. 카드를 누르면 회의자료가 <b>발표 자료처럼</b> 열리고, 고칠 때는 그 안의 「수정」. 회의마다 이슈 원장에서 <b>골라 채택</b>해 회의자료를 만듭니다. 부서 현안 공유회·팀장 정보회의는 매주 자동으로 생깁니다.</p>
+
+<main class="page">
+  <div class="head"><h1>회의</h1><div class="row"><span class="small muted">다가오는 회의 3 · 지난 회의 12</span><button class="btn primary" type="button" id="newOpen">+ 회의 만들기</button></div></div>
+  <div class="wrap">
+    <section class="panel" aria-labelledby="listH">
+      <div class="panel-h"><h2 id="listH">다가오는 회의</h2>
+        <div class="seg" role="group" aria-label="보기"><button aria-pressed="true">전체</button><button aria-pressed="false">정기</button><button aria-pressed="false">수시</button></div></div>
+      <div class="cards">
+        <a class="mcard" href="v2-meeting-view.html">
+          <span class="row"><span class="pill kind">부서 현안 공유회</span><span class="pill">정기 · 매주 금</span></span>
+          <h3>W43 부서 현안 공유회</h3>
+          <span class="small muted">10/24(금) 09:00 · 부서장 8명</span>
+          <span class="stat"><span>제출 <b>5</b>/8</span><span>채택 <b>14</b></span><span>종결 요청 <b>1</b></span><span class="pill p-issue">구성 중</span></span>
+        </a>
+        <a class="mcard" href="#">
+          <span class="row"><span class="pill kind">호선별 회의</span><span class="pill">팀 주관</span></span>
+          <h3>SN2511 선주 협의</h3>
+          <span class="small muted">10/24(금) 14:00 · SN2511 + 자매선</span>
+          <span class="stat"><span>채택 <b>6</b></span><span>후보 9</span><span class="pill p-issue">구성 중</span></span>
+        </a>
+        <a class="mcard" href="v2-meeting-compose.html">
+          <span class="row"><span class="pill kind">팀장 정보회의</span><span class="pill">정기 · 매주 월</span></span>
+          <h3>W43 팀장 정보회의</h3>
+          <span class="small muted">10/27(월) 08:30 · 팀장 → 본부장</span>
+          <span class="stat"><span>후보: 공유회 채택분 · 중요 표시</span><span class="pill">공유회 뒤 구성</span></span>
+        </a>
+      </div>
+      <div class="panel-h"><h2>W43 부서 회의자료</h2><span class="small muted">부장·부서 스텝이 1차 초안으로 만들어 공유회에 제출</span></div>
+      <div class="list">
+        <a class="rec" href="v2-dept-deck.html" style="text-decoration:none;color:inherit"><span class="pill">시운전1부</span><span>4장 · 김 대리·박 과장·최 과장 초안 · 요약 1</span><span class="pill p-issue">작성 중</span></a>
+        <a class="rec" href="v2-dept-deck.html" style="text-decoration:none;color:inherit"><span class="pill">시운전2부</span><span>3장 · 원본 슬라이드 1</span><span class="pill p-ok">제출</span></a>
+        <a class="rec" href="v2-dept-deck.html" style="text-decoration:none;color:inherit"><span class="pill">시운전기술</span><span>2장</span><span class="pill p-ok">제출</span></a>
+      </div>
+      <div class="panel-h"><h2>지난 회의</h2></div>
+      <div class="list">
+        <a class="item" href="v2-meeting-view.html"><span class="pill kind">문제점 리뷰</span><span class="t">발전기 배기온도 계열 리뷰 — 6L 이중연료 발전엔진</span><span class="m">10/17 · 채택 8 · 결정 3건 → 이슈 이력에 남음</span></a>
+        <a class="item" href="v2-meeting-view.html"><span class="pill kind">월간 현안</span><span class="t">10월 월간 현안 (W40 공유회 대신)</span><span class="m">10/02 · 상세 한 장 9 · 결정 4건 → 이슈 이력에 남음</span></a>
+        <a class="item" href="v2-meeting-view.html"><span class="pill kind">팀장 정보회의</span><span class="t">W42 팀장 정보회의</span><span class="m">10/20 · 핵심 5건 + 요약 지표 · PPT</span></a>
+        <a class="item" href="v2-meeting-view.html"><span class="pill kind">부서 현안 공유회</span><span class="t">W42 부서 현안 공유회</span><span class="m">10/17 · 제출 8/8 · 채택 15 · 종결 승인 2</span></a>
+      </div>
+      <div class="panel-h"><h2>정기 회의</h2><span class="small muted">매주 자동으로 만들어집니다 — 템플릿을 바꾸면 다음 주부터 적용</span></div>
+      <div class="list">
+        <div class="rec"><span class="pill kind">부서 현안 공유회</span><span>매주 금 09:00 · 기획운영 주관 · 종결 승인 가능</span><button class="btn sm" type="button">설정</button></div>
+        <div class="rec"><span class="pill kind">월간 현안</span><span>매월 첫 주 금 09:00 · <b>그 주 부서 현안 공유회 대신</b> · 상세 한 장 · 종결 승인 가능</span><button class="btn sm" type="button">설정</button></div>
+        <div class="rec"><span class="pill kind">팀장 정보회의</span><span>매주 월 08:30 · 기획 구성 · 팀장 확인</span><button class="btn sm" type="button">설정</button></div>
+      </div>
+    </section>
+  </div>
+
+    <aside class="drawer" aria-labelledby="newH" id="drawer" hidden>
+      <div class="panel-h"><h2 id="newH">회의 만들기</h2><button class="btn sm ghost" type="button" id="newClose">닫기</button></div>
+      <fieldset class="types" style="border:0;padding:0;margin:0">
+        <legend class="small muted" style="margin-bottom:6px">수시 회의 — 종류를 고르면 아래 템플릿이 채워집니다</legend>
+        <label class="type"><input type="radio" name="t" value="hull" checked><b>호선별 회의</b><span>한 호선(+자매선)의 이슈만. 선주·선급 협의용</span></label>
+        <label class="type"><input type="radio" name="t" value="review"><b>문제점 · 장비 리뷰</b><span>장비·원인별로 묶고 유사 사례를 함께</span></label>
+        <label class="type"><input type="radio" name="t" value="share"><b>부서 현안 공유회 (임시)</b><span>정기 회의 외에 한 번 더 열 때. 종결 승인 가능</span></label>
+        <label class="type"><input type="radio" name="t" value="exec"><b>팀장 정보회의 (임시)</b><span>핵심 몇 건 + 요약 지표, 짧은 양식</span></label>
+      </fieldset>
+      <div class="grid2">
+        <label class="f">회의 이름<input id="mname" type="text" value="SN2511 선주 협의"></label>
+        <label class="f">날짜<input type="date" value="2026-10-24"></label>
+        <label class="f">주관<select id="owner"><option>커미셔닝팀</option><option>시운전1부</option><option>시운전2부</option></select></label>
+        <label class="f">발표 순서 묶기<select id="group"><option>부서별</option><option>호선별</option><option selected>장비·원인별</option><option>묶지 않음</option></select></label>
+      </div>
+      <div class="tpl" aria-live="polite">
+        <b class="small">템플릿이 채운 값 (바꿀 수 있음)</b>
+        <dl>
+          <dt>후보 조건</dt><dd id="cond">SN2511 + 자매선(SN2510·SN2512) 열린 이슈</dd>
+          <dt>자동 채택</dt><dd id="auto">선주·선급 관련 태그</dd>
+          <dt>표지·요약</dt><dd id="cover">호선 요약(진행률·미결 건수)</dd>
+          <dt>기본 형태</dt><dd id="form">사진 강조</dd>
+          <dt>회의에서</dt><dd id="act">코멘트 · 결정 · 담당 지정</dd>
+        </dl>
+      </div>
+      <div class="row"><a class="btn primary" href="v2-meeting-compose.html">만들고 자료 구성하기</a><span class="small muted">만든 뒤 후보에서 채택합니다</span></div>
+    </aside>
+</main>
+<script>
+// 시안용 — 종류를 고르면 템플릿 값이 바뀐다
+const T = {
+  share: ['W43 부서 현안 공유회 (임시)', '커미셔닝팀', '부서별', '이번 주 부서 제출분 + 열린 이슈·문제점 + 이번 주 공유정보', '종결 요청', '요약 4칸 + 부서 제출 현황', '카드 (사진 있으면 사진 강조)', '코멘트 · 결정 · 종결 승인 · 회의 중 등록'],
+  hull: ['SN2511 선주 협의', '커미셔닝팀', '장비·원인별', 'SN2511 + 자매선(SN2510·SN2512) 열린 이슈', '선주·선급 관련 태그', '호선 요약(진행률·미결 건수)', '사진 강조', '코멘트 · 결정 · 담당 지정'],
+  review: ['발전기 배기온도 계열 리뷰', '커미셔닝팀', '장비·원인별', '같은 장비 모델·같은 원인 코드의 이슈와 종결 사례', '반복 발생(3건 이상)', '원인별 건수 그래프', '표 + 유사 사례', '재발 방지 대책 · 사례 카드 보완'],
+  exec: ['W43 팀장 정보회의 (임시)', '커미셔닝팀', '묶지 않음', '공유회 채택분 · 중요 표시 · 장기 미결 · 이번 주 종결', '중요 표시', '핵심 지표 4개', '한 줄 요약', '없음 (발행만)'],
+};
+document.querySelectorAll('input[name=t]').forEach((r) => r.addEventListener('change', () => {
+  const [n, o, g, c, a, cv, f, act] = T[r.value];
+  document.getElementById('mname').value = n;
+  document.getElementById('owner').value = o;
+  document.getElementById('group').value = g;
+  [['cond', c], ['auto', a], ['cover', cv], ['form', f], ['act', act]].forEach(([id, v]) => { document.getElementById(id).textContent = v; });
+}));
+document.getElementById('newOpen').onclick = () => { document.getElementById('drawer').hidden = false; };
+document.getElementById('newClose').onclick = () => { document.getElementById('drawer').hidden = true; };
+</script>
+</body>
+</html>

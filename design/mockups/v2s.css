@@ -1,0 +1,91 @@
+/* 최종 시안 — 스튜디오 셸(2026-10-23). v2b.css(토큰·컴포넌트) 위에 덮어쓴다.
+   모든 화면이 같은 틀: 위 도구줄(메뉴 탭 · 제목 · 동작) · 왼쪽 목록 · 가운데 어두운 캔버스(작업 대상 = 프레임) · 오른쪽 속성·동작.
+   패널은 B안(iPadOS 그룹 목록·조밀·테두리 없음), 캔버스만 어둡게. 반투명 없음. 슬라이드는 1920×1080 기준(본문 26px 이상) */
+body{padding-left:0;height:100vh;overflow:hidden;display:grid;grid-template-rows:52px minmax(0,1fr)}
+.tb{display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--surface);box-shadow:0 1px 0 var(--sep);z-index:5;min-width:0}
+.tb .brand{font-weight:700;font-size:var(--fs-3);padding:0 4px;white-space:nowrap;color:var(--fg)}
+.tb .menu{display:flex;gap:2px;padding:2px;background:var(--fill);border-radius:9px}
+.tb .menu a{font-size:var(--fs-2);font-weight:500;color:var(--fg);padding:4px 11px;border-radius:7px;white-space:nowrap}
+.tb .menu a[aria-current="page"]{background:var(--surface);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.tb .ttl{display:grid;line-height:1.2;margin-right:auto;min-width:0;padding-left:6px;border-left:1px solid var(--sep)}
+.tb .ttl b{font-size:var(--fs-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb .ttl span{font-size:var(--fs-1);color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tb .act{display:flex;gap:8px;align-items:center}
+.tb .ab{font-size:var(--fs-1);white-space:nowrap}
+.zoom{display:flex;align-items:center;gap:2px;background:var(--fill);border-radius:8px;padding:2px}
+.zoom button{font:inherit;font-size:var(--fs-2);border:0;background:none;color:var(--fg);min-width:30px;min-height:28px;border-radius:6px;cursor:pointer}
+.zoom button:hover{background:var(--surface)}
+.zoom output{font-family:var(--mono);font-size:var(--fs-1);min-width:44px;text-align:center}
+
+.studio{display:grid;grid-template-columns:280px minmax(0,1fr) 330px;min-height:0}
+.studio.two{grid-template-columns:280px minmax(0,1fr)}
+.pane{background:var(--surface);overflow:auto;display:grid;align-content:start;gap:10px;padding:10px;min-height:0}
+.pane.left{box-shadow:1px 0 0 var(--sep)} .pane.right{box-shadow:-1px 0 0 var(--sep)}
+.pane .group{box-shadow:none;background:var(--fill-2)}
+.pane .cell{background:transparent;min-height:36px;padding:6px 10px}
+.pane .cell+.cell::before{left:10px}
+.pane .cell.tap:hover{background:var(--fill)}
+.pane .sec-h{padding:0 4px;margin-top:4px}
+.pane .cell.on{background:var(--accent)!important;color:var(--accent-fg)}
+.pane .cell.on *{color:var(--accent-fg)!important}
+.pane .cell.on .tl{background:rgba(255,255,255,.22)!important}
+.pane .cell.multi{background:var(--accent-soft)!important}
+.pane .cell.fin{opacity:.5}
+.pane h2{font-size:var(--fs-3)}
+.li2{grid-template-columns:minmax(0,1fr) auto;font-size:var(--fs-2);cursor:pointer}
+.li2 .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.li2 .m{grid-column:1/-1;font-size:var(--fs-1);color:var(--muted);display:flex;gap:8px;flex-wrap:wrap}
+.prop{display:grid;gap:6px}
+.keys{font-size:var(--fs-1);color:var(--muted);line-height:1.7}
+.keys kbd{font-family:var(--mono);background:var(--fill);border-radius:4px;padding:0 5px}
+.empty{padding:16px;color:var(--muted);font-size:var(--fs-2)}
+
+/* 캔버스 — 어두운 바탕 위 프레임 */
+.canvas{background:#2b2d31;overflow:auto;padding:28px 36px 60px;min-height:0;color:#e9eaee}
+.rowf{display:flex;gap:28px;align-items:flex-start;margin-bottom:34px;flex-wrap:wrap}
+.rowf.nowrap{flex-wrap:nowrap}
+.frame{flex:0 0 auto;display:grid;gap:6px;cursor:pointer}
+.frame .lbl{font-size:var(--fs-1);color:#c7c9ce;white-space:nowrap;display:flex;gap:8px}
+.frame .lbl b{color:#fff;font-weight:600}
+.frame .stage-wrap{border-radius:2px;box-shadow:0 2px 10px rgba(0,0,0,.35)}
+.frame.on .stage-wrap,.frame.on .paper{outline:3px solid #4c9bff;outline-offset:2px}
+.frame.multi .stage-wrap{outline:3px dashed #4c9bff;outline-offset:2px}
+.frame:hover .stage-wrap,.frame:hover .paper{outline:2px solid #8bbcff;outline-offset:2px}
+.frame.var{opacity:.55} .frame.var:hover{opacity:1} .frame.var .lbl{color:#9da1a8}
+.frame.static{cursor:default}
+.vars-h{font-size:var(--fs-1);color:#9da1a8;align-self:center;writing-mode:vertical-rl;letter-spacing:.1em}
+/* 캔버스 위 흰 종이(슬라이드가 아닌 작업 대상 — 메모 원문·카드 등) */
+.paper{background:var(--surface);color:var(--fg);border-radius:4px;padding:18px 20px;box-shadow:0 2px 10px rgba(0,0,0,.35);display:grid;gap:10px}
+.cv-h{font-size:var(--fs-1);color:#9da1a8;margin:0 0 8px}
+.cv-title{font-size:var(--fs-4);font-weight:700;color:#fff;margin:0 0 4px}
+.startc{max-width:560px;margin:80px auto;background:var(--surface);color:var(--fg);border-radius:var(--r);padding:20px;display:grid;gap:12px}
+
+/* 속성 공통 */
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.vgrid button{font:inherit;font-size:var(--fs-1);font-weight:600;border:0;border-radius:8px;background:var(--fill);color:var(--fg);padding:4px;cursor:pointer;display:grid;gap:4px}
+.vgrid button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.vgrid .mini{aspect-ratio:16/9;background:#fff;border-radius:4px;display:grid;gap:3px;padding:5px;align-content:start}
+.vgrid .mini i{display:block;height:4px;border-radius:2px;background:#c8d0db}
+.vgrid .mini i.b{height:12px;background:#e3e8ef} .vgrid .mini i.s{width:60%}
+.fact{display:grid;gap:6px;padding:10px;border-radius:8px;background:var(--ok-soft)}
+.fact .lbl{font-size:var(--fs-1);font-weight:700;color:var(--t-ok)} .fact .lbl::before{content:"● "}
+.fact input,.fact textarea{background:var(--surface)!important}
+.expr{font-size:var(--fs-1);font-weight:700;color:var(--muted)} .expr::before{content:"○ "}
+.ptag{font:inherit;font-size:var(--fs-2);font-weight:700;border:0;color:var(--t-decide);background:var(--decide-soft);border-radius:8px;padding:3px 10px;cursor:pointer;min-height:30px;justify-self:start}
+.ptag[aria-pressed="false"]{text-decoration:line-through;background:var(--fill);color:var(--muted)}
+.pane .seg{display:flex} .pane .seg button{flex:1}
+
+@media (max-width:1250px){.studio{grid-template-columns:240px minmax(0,1fr) 290px}.tb .menu a{padding:4px 8px}}
+@media (max-width:900px){
+  body{height:auto;overflow:auto;grid-template-rows:auto auto}
+  .tb{flex-wrap:wrap;padding:8px;height:auto}
+  .tb .menu{order:5;width:100%;overflow-x:auto}
+  .tb .ttl{border-left:0}
+  .tb .act{flex-wrap:wrap;width:100%}
+  .studio,.studio.two{grid-template-columns:minmax(0,1fr)}
+  .canvas{min-height:50vh;padding:16px}
+  .rowf.nowrap{flex-wrap:wrap}
+}
+
+/* 알림 — 사이드바가 없으니 가운데 아래 */
+.toast{left:50%;bottom:20px;max-width:calc(100vw - 32px)}

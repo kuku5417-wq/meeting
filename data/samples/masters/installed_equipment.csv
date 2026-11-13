@@ -1,0 +1,10 @@
+id,hull_id,equipment_model_id,system_id,name,unit_no,position
+EQ-SN2511-GE-01,SN2511,EM-GE6L,SYS-GE,발전기 No.1,1,기관실 하부 좌현
+EQ-SN2511-GE-02,SN2511,EM-GE6L,SYS-GE,발전기 No.2,2,기관실 하부 중앙
+EQ-SN2510-GE-02,SN2510,EM-GE6L,SYS-GE,발전기 No.2,2,기관실 하부 중앙
+EQ-SN2512-GE-01,SN2512,EM-GE6L,SYS-GE,발전기 No.1,1,기관실 하부 좌현
+EQ-SN2433-GE-01,SN2433,EM-GE6L,SYS-GE,발전기 No.1,1,기관실 하부 좌현
+EQ-SN2433-GE-02,SN2433,EM-GE6L,SYS-GE,발전기 No.2,2,기관실 하부 중앙
+EQ-SN2402-GE-03,SN2402,EM-GE6L,SYS-GE,발전기 No.3,3,기관실 하부 우현
+EQ-SN2514-CP-03,SN2514,EM-CP3,SYS-CP,카고펌프 No.3,3,No.3 화물창
+EQ-SN2511-SG-01,SN2511,EM-SG4,SYS-SG,조타기,1,조타기실

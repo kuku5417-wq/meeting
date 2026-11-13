@@ -1,0 +1,9 @@
+/* 로컬 글꼴 — 사내망에서 Google Fonts 가 막혀도 시안과 같은 글꼴로 보이게 한다.
+   파일은 app/static/fonts/ (서브셋 woff2 + OFL 라이선스). 만든 방법은 그 폴더의 README.md.
+   IBM Plex 서브셋은 OFL 예약 이름("Plex") 때문에 이름을 Meeting Sans KR / Meeting Mono 로 바꿨다.
+   tokens.css 의 --display / --body / --mono 가 이 이름들을 맨 앞에서 찾는다. */
+@font-face{font-family:"Meeting Sans KR";font-weight:400;font-style:normal;font-display:swap;src:url("../fonts/MeetingSansKR-Regular.woff2") format("woff2")}
+@font-face{font-family:"Meeting Sans KR";font-weight:500;font-style:normal;font-display:swap;src:url("../fonts/MeetingSansKR-Medium.woff2") format("woff2")}
+@font-face{font-family:"Meeting Sans KR";font-weight:600;font-style:normal;font-display:swap;src:url("../fonts/MeetingSansKR-SemiBold.woff2") format("woff2")}
+@font-face{font-family:"Meeting Mono";font-weight:400;font-style:normal;font-display:swap;src:url("../fonts/MeetingMono-Regular.woff2") format("woff2")}
+@font-face{font-family:"Meeting Mono";font-weight:500;font-style:normal;font-display:swap;src:url("../fonts/MeetingMono-Medium.woff2") format("woff2")}

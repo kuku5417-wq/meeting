@@ -1,0 +1,43 @@
+{# 메모 하나 — 원문(근거 줄)·AI 정리·원문 수정(새 판)·이전 판. M13 에서 옛 작성 화면에서 가져오기 화면으로 옮겼다.
+   쓰는 곳: import.html(open_memo = {m, chain, lines, blocks}, memo_blocks, chain, editing, mweek, mdept) #}
+<section class="panel" id="memo" aria-labelledby="memoH" data-memo="{{ open_memo.m.id }}">
+{% set mo = open_memo.m %}
+          <div class="panel-h memo-h">
+            <h2 id="memoH">메모 <span class="id">{{ mo.id }}</span></h2>
+            {% if open_memo.chain %}<span class="pill p-neutral">수정본 ← {{ open_memo.chain[0].id }}</span>{% endif %}
+            <span class="muted small">{{ mo.created_at.strftime("%m.%d %H:%M") }} · 작성자 미지정</span>
+            {% if not editing %}
+            <div class="memo-tools">
+              <form method="post" action="/write/{{ mweek }}/{{ mdept }}/memo/{{ mo.id }}/extract">
+                <button class="btn primary sm" type="submit">{% if open_memo.blocks %}AI 다시 정리{% else %}AI 정리{% endif %}</button>
+              </form>
+              <a class="btn sm" href="?memo={{ mo.id }}&amp;edit=1#memo">원문 수정</a>
+            </div>
+            {% endif %}
+          </div>
+          {% if editing %}
+          <form method="post" action="/write/{{ mweek }}/{{ mdept }}/memo/{{ mo.id }}/revise" class="memo-form">
+            <label for="rev-{{ mo.id }}" class="sr">{{ mo.id }} 원문 수정</label>
+            <textarea id="rev-{{ mo.id }}" name="raw_text" rows="9">{{ mo.raw_text }}</textarea>
+            <div class="row"><button class="btn primary" type="submit">수정본 저장 → AI 다시 정리</button>
+              <a class="btn" href="?memo={{ mo.id }}#memo">취소</a>
+              <span class="muted small">원문은 새 판으로 저장되고 이전 판도 남습니다 · 블록에서 직접 고친 칸은 그대로 둡니다</span></div>
+          </form>
+          {% else %}
+          <ol class="memo-lines" aria-label="{{ mo.id }} 원문">
+            {% for ln in open_memo.lines %}<li id="L{{ loop.index }}"><span class="ln" aria-hidden="true">{{ loop.index }}</span><span class="lt">{{ ln }}</span></li>{% endfor %}
+          </ol>
+          {% if true %}<p class="muted small">고친 칸은 다시 정리해도 그대로 둡니다 · 이슈 제목·본문은 이슈를 열어 고칩니다 · AI 순서 {{ chain }}</p>{% endif %}
+          {% endif %}
+          <div class="memo-out" aria-label="이 메모에서 나온 이슈">
+            <b class="small">이 메모에서 나온 이슈 {{ memo_blocks | length }}</b>
+            {% for v in memo_blocks %}<a class="chip-link" href="{{ '/metrics/' ~ mdept if v.b.block_type == 'dashboard' else '/issues?id=' ~ v.b.id }}"><span class="pill p-{{ v.b.block_type }}">{{ v.type_label }}</span>{{ v.b.title or v.b.id }}</a>
+            {% else %}<span class="muted small">아직 없습니다 — 「AI 정리」를 누르면 이슈로 나뉩니다</span>{% endfor %}
+          </div>
+          {% if open_memo.chain %}
+          <details class="hist"><summary>이전 판 보기 ({{ open_memo.chain | length }})</summary>
+            {% for old in open_memo.chain %}<div class="muted small"><span class="id">{{ old.id }}</span> · {{ old.created_at.strftime("%m.%d %H:%M") }}</div>
+            <pre class="memo-raw memo-old">{{ old.raw_text }}</pre>{% endfor %}
+          </details>
+          {% endif %}
+</section>

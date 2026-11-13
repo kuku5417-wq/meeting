@@ -1,0 +1,12 @@
+{# 마일스톤 칩 — 다음 이벤트·남은 날·인도일, 펼치면 전체 이벤트(실적/전망/계획). hull_brief 는 main.py 전역 #}
+{% macro ms_chip(hull_id) %}{% set hb = hull_brief(hull_id) if hull_id else none %}{% if hb %}
+<details class="ms-chip"><summary title="마일스톤(중앙 milestone, 실적 → 전망 → 계획)">
+  {% if hb.next %}{{ hb.next.code }} {{ hb.next.date.strftime("%m/%d") }} · {% if hb.dday > 0 %}D-{{ hb.dday }}{% elif hb.dday == 0 %}D-day{% else %}진행 중{% endif %}{% elif hb.delivered %}인도 완료{% else %}남은 일정 없음{% endif %}
+  {% if hb.delivery and (not hb.next or hb.next.code != "DL") and not hb.delivered %}<span class="ms-dl">인도 {{ hb.delivery.date.strftime("%y/%m/%d") }} {{ hb.delivery.src }}</span>{% endif %}
+</summary>
+<table class="ms-table"><caption class="sr">{{ hull_id }} 마일스톤</caption>
+  <thead><tr><th scope="col">이벤트</th><th scope="col">날짜</th><th scope="col">출처</th></tr></thead>
+  <tbody>{% for e in hb.events %}<tr{% if hb.next and e.code == hb.next.code %} class="now"{% endif %}><td>{{ e.label }}</td>
+    <td class="mono">{{ e.date.strftime("%Y-%m-%d") }}{% if e.end and e.end != e.date %} ~ {{ e.end.strftime("%m-%d") }}{% endif %}</td>
+    <td class="small">{{ e.src }}</td></tr>{% endfor %}</tbody>
+</table></details>{% endif %}{% endmacro %}

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 홈 — 이번 주 할 일 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="v2.css">
+<style>
+/* 홈 — 역할별 이번 주 할 일. 왼쪽: 업데이트 필요 이슈(한 줄 바로 입력) · 종결 요청(기획 주관자) / 오른쪽: 다가오는 회의 · 부서 제출 현황 */
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.stat{display:grid;gap:2px;padding:12px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface);text-decoration:none;color:inherit}
+.stat:hover{border-color:var(--accent)}
+.stat .n{font-family:var(--display);font-size:var(--fs-5);font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+.stat .l{font-size:var(--fs-2);font-weight:600}
+.stat .d{font-size:var(--fs-1);color:var(--muted)}
+/* B8(2026-10-23, docs/08) — 카운터마다 왜(.d)·어떻게(.how) 한 문장, 부서 줄 → 그 부서 원장 */
+.stat .how{font-size:var(--fs-1);color:var(--accent);font-weight:600;margin-top:4px}
+a.dept{text-decoration:none;color:inherit;border-radius:4px}
+a.dept:hover{background:var(--accent-soft)}
+a.dept .stale{text-decoration:underline}
+.stat.warn .n{color:var(--signal)} .stat.bad .n{color:var(--danger)} .stat.acc .n{color:var(--accent)}
+.wrap{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:14px;align-items:start}
+.upd{display:grid;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+.upd .h{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.upd .h .t{font-weight:600}
+.upd .last{font-size:var(--fs-1);color:var(--muted)}
+.upd .last b{font-family:var(--mono);font-weight:500;margin-right:6px}
+.upd .in{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:6px}
+.upd.done{border-color:var(--ok);background:var(--ok-soft)}
+.upd.done .in{display:none}
+.upd .saved{display:none;font-size:var(--fs-1);color:var(--ok);font-weight:600}
+.upd.done .saved{display:block}
+.ai{font-size:var(--fs-1);color:var(--accent)}
+.submit-bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+.submit-bar .warn{color:var(--signal);font-size:var(--fs-2);font-weight:600}
+.dept{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--line);font-size:var(--fs-2)}
+.dept:last-child{border-bottom:0}
+.dept .stale{font-size:var(--fs-1);color:var(--signal)}
+.dept.mine{font-weight:700}
+.mtg{display:grid;gap:4px;padding:10px;border:1px solid var(--line);border-radius:6px;text-decoration:none;color:inherit}
+.mtg:hover{border-color:var(--accent)}
+.mtg b{font-size:var(--fs-2)}
+.close-req{display:grid;gap:6px;padding:10px 12px;border:1px solid var(--line);border-radius:6px}
+.close-req .act{font-size:var(--fs-2)}
+.close-req .act b{color:var(--muted);font-weight:500;margin-right:6px}
+.empty{font-size:var(--fs-2);color:var(--muted);padding:6px 0}
+@media (max-width:1100px){.wrap{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){.stats{grid-template-columns:repeat(2,minmax(0,1fr))}.upd .in{grid-template-columns:1fr 1fr}.upd .in input{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">커미셔닝팀 회의·지식</span>
+  <nav class="nav" aria-label="메뉴">
+    <a href="v2-home.html" aria-current="page">홈</a>
+    <a href="v2-issue-desk.html">이슈</a>
+    <a href="v2-meetings.html">회의</a>
+    <a href="v2-metrics.html">지표</a>
+    <a href="#">지식창고</a>
+    <a href="#">장비 허브</a>
+  </nav>
+  <div class="right">
+    <div class="seg" role="group" aria-label="시안 — 역할 바꿔 보기"><button aria-pressed="true" data-role="writer">부서 작성자</button><button aria-pressed="false" data-role="planner">기획 주관자</button></div>
+    <span class="small muted" id="who">시운전1부 · 김 대리</span>
+  </div>
+</header>
+<p class="v2-note">재설계 시안 v2 — 홈. 로그인하면 <b>이번 주 할 일</b>이 먼저 보입니다. 진행 중 이슈는 여기서 한 줄로 바로 업데이트하고, 끝나면 「이번 주 제출」. 숫자 칸은 무엇인지·어디로 가는지 한 줄로 설명하고, 부서 줄은 그 부서 원장으로 이어집니다(2026-10-23 B8). 데이터는 가상입니다.</p>
+
+<main class="page">
+  <div class="head">
+    <div><h1>이번 주 할 일</h1><span class="small muted mono">2026-W43 · 10.19–10.23</span></div>
+    <span class="small muted" id="scope">시운전1부 기준</span>
+  </div>
+
+  <div class="stats">
+    <a class="stat warn" href="#updH"><span class="n" id="cntUpd">3</span><span class="l">업데이트 필요</span><span class="d">진행 중인데 이번 주 한 줄이 없습니다. 비어도 제출은 되지만 공유회 자료에 「W43 한 줄 없음」으로 나갑니다</span><span class="how">아래 목록에서 한 줄 쓰거나 「변동 없음」 →</span></a>
+    <a class="stat" href="v2-issue-desk.html?f=map"><span class="n">4</span><span class="l">매핑 빈 곳</span><span class="d">원인·장비 같은 지식 칸이 비었습니다. 회의에는 지장 없고, 유사 사례·장비 허브에서 찾을 수 없게 됩니다</span><span class="how">원장 「매핑 빈 곳」 필터로 →</span></a>
+    <a class="stat acc" href="#closeH"><span class="n">1</span><span class="l">종결 요청</span><span class="d">부서 현안 공유회 또는 기획 주관자 승인을 기다립니다. 승인하면 사례 카드가 됩니다</span><span class="how">아래 「종결 요청」으로 →</span></a>
+    <a class="stat bad" href="v2-issue-desk.html?f=long"><span class="n">2</span><span class="l">장기 미결</span><span class="d">4주 넘게 진행 중입니다. 팀장 정보회의 후보에 자동으로 올라갑니다</span><span class="how">원장 「장기 미결」 필터로 →</span></a>
+  </div>
+
+  <div class="wrap">
+    <div style="display:grid;gap:14px">
+      <section class="panel" aria-labelledby="updH">
+        <div class="panel-h"><h2 id="updH">업데이트 필요</h2><span class="small muted">메모에 있던 것은 AI 가 채워 두었습니다 — 확인만 하세요</span></div>
+        <div class="list" id="updList">
+          <div class="upd">
+            <div class="h"><span class="pill p-issue">이슈</span><span class="t">SN2511 발전기 No.2 배기온도 편차</span><span class="id">ISS-2026-0001</span><span class="map"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i> 4/5</span></div>
+            <div class="last"><b>W42</b>신규 등록 — 3번 실린더 +38°C</div>
+            <div class="in"><input type="text" aria-label="이번 주 한 줄" value="연료밸브 입고 지연, 다음 주 교체"><button class="btn sm primary" data-save>저장</button><button class="btn sm" data-same>변동 없음</button></div>
+            <span class="ai">AI · 메모 MEMO-2026-00001 2행에서 채움</span>
+            <span class="saved">W43 진행에 저장했습니다</span>
+          </div>
+          <div class="upd">
+            <div class="h"><span class="pill p-issue">이슈</span><span class="t">SN2512 발전기 No.1 기동 지연</span><span class="id">ISS-2026-0004</span><span class="pill p-problem">장기 미결 5주</span></div>
+            <div class="last"><b>W42</b>제조사 회신 대기</div>
+            <div class="in"><input type="text" aria-label="이번 주 한 줄" placeholder="이번 주 진행 한 줄"><button class="btn sm primary" data-save>저장</button><button class="btn sm" data-same>변동 없음</button></div>
+            <span class="saved">W43 진행에 저장했습니다</span>
+          </div>
+          <div class="upd">
+            <div class="h"><span class="pill p-problem">문제점</span><span class="t">SN2514 카고펌프 No.3 메카니컬씰 누유</span><span class="id">PRB-2026-0001</span><span class="map"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i> 5/5</span></div>
+            <div class="last"><b>W42</b>씰 교체 완료, 시운전 대기</div>
+            <div class="in"><input type="text" aria-label="이번 주 한 줄" placeholder="이번 주 진행 한 줄"><button class="btn sm primary" data-save>저장</button><button class="btn sm" data-same>변동 없음</button></div>
+            <span class="saved">W43 진행에 저장했습니다</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" aria-labelledby="closeH" id="closePanel">
+        <div class="panel-h"><h2 id="closeH">종결 요청</h2><span class="small muted" id="closeNote">부서 현안 공유회에서 승인됩니다</span></div>
+        <div class="close-req">
+          <div class="row"><span class="pill p-problem">문제점</span><b>SN2514 카고펌프 No.3 메카니컬씰 누유</b><span class="id">PRB-2026-0001 · 시운전1부</span></div>
+          <div class="act"><b>조치</b>씰 교체 후 4시간 무누유 확인 (10/21)</div>
+          <div class="act"><b>원인</b>씰 면 손상 — 초기 건운전</div>
+          <div class="row" data-planner hidden><button class="btn sm primary">종결 승인 — 사례 카드로</button><button class="btn sm">보류</button><span class="small muted">기획 주관자는 회의 전에도 승인할 수 있습니다</span></div>
+        </div>
+      </section>
+    </div>
+
+    <div style="display:grid;gap:14px">
+      <section class="submit-bar" aria-label="이번 주 제출">
+        <div style="display:grid;gap:2px;flex:1;min-width:200px">
+          <b>시운전1부 · W43 제출</b>
+          <span class="warn" id="staleMsg">업데이트 안 한 이슈 3건 — 제출은 됩니다</span>
+        </div>
+        <button class="btn primary" id="submitBtn">이번 주 제출</button>
+      </section>
+
+      <section class="panel" aria-labelledby="mtgH">
+        <div class="panel-h"><h2 id="mtgH">다가오는 회의</h2><a class="small" href="v2-meetings.html">전체 보기</a></div>
+        <a class="mtg" href="v2-meeting-view.html"><span class="row"><span class="pill kind">부서 현안 공유회</span><span class="small muted">10/24(금) 09:00</span></span><b>W43 부서 현안 공유회</b><span class="small muted">제출 5/8 · 채택 14 · 종결 요청 1</span></a>
+        <a class="mtg" href="v2-meeting-view.html"><span class="row"><span class="pill kind">팀장 정보회의</span><span class="small muted">10/27(월) 08:30</span></span><b>W43 팀장 정보회의</b><span class="small muted">공유회 뒤 구성 · 핵심 5건</span></a>
+        <a class="mtg" href="#"><span class="row"><span class="pill kind">호선별 회의</span><span class="small muted">10/24(금) 14:00</span></span><b>SN2511 선주 협의</b><span class="small muted">채택 6 · 후보 9</span></a>
+      </section>
+
+      <section class="panel" aria-labelledby="subH">
+        <div class="panel-h"><h2 id="subH">부서 제출 현황</h2><span class="small muted mono">W43 · <span id="subCnt">5</span>/8</span></div>
+        <span class="small muted" style="margin-top:-6px">부서를 누르면 그 부서 이슈 원장으로 갑니다. 「미업데이트 n」은 한 줄이 빠진 이슈 수입니다</span>
+        <div>
+          <a class="dept" href="v2-issue-desk.html?dept=기획운영"><span>기획운영</span><span></span><span class="pill p-ok">제출</span></a>
+          <a class="dept" href="v2-issue-desk.html?dept=시운전기술"><span>시운전기술</span><span class="stale">미업데이트 1</span><span class="pill p-ok">제출</span></a>
+          <a class="dept mine" href="v2-issue-desk.html?dept=시운전1부" id="myDept"><span>시운전1부</span><span class="stale" id="myStale">미업데이트 3</span><span class="pill p-issue" id="myPill">작성 중</span></a>
+          <a class="dept" href="v2-issue-desk.html?dept=시운전2부"><span>시운전2부</span><span></span><span class="pill p-ok">제출</span></a>
+          <a class="dept" href="v2-issue-desk.html?dept=시운전3부"><span>시운전3부</span><span class="stale">미업데이트 2</span><span class="pill p-issue">작성 중</span></a>
+          <a class="dept" href="v2-issue-desk.html?dept=해운부"><span>해운부</span><span></span><span class="pill p-ok">제출</span></a>
+          <a class="dept" href="v2-issue-desk.html?dept=안벽의장그룹"><span>안벽의장그룹</span><span></span><span class="pill">미작성</span></a>
+          <a class="dept" href="v2-issue-desk.html?dept=친환경실증Lab"><span>친환경실증Lab</span><span></span><span class="pill p-ok">제출</span></a>
+        </div>
+      </section>
+    </div>
+  </div>
+</main>
+<script>
+// 시안용 — 한 줄 저장·변동 없음, 이번 주 제출, 역할 바꿔 보기
+const left = () => document.querySelectorAll('.upd:not(.done)').length;
+function refresh() {
+  const n = left();
+  document.getElementById('cntUpd').textContent = n;
+  document.getElementById('staleMsg').textContent = n ? `업데이트 안 한 이슈 ${n}건 — 제출은 됩니다` : '진행 중 이슈 모두 업데이트했습니다';
+  document.getElementById('staleMsg').style.color = n ? '' : 'var(--ok)';
+  document.getElementById('myStale').textContent = n ? `미업데이트 ${n}` : '';
+}
+document.querySelectorAll('.upd').forEach((u) => {
+  u.querySelector('[data-save]').addEventListener('click', () => { u.classList.add('done'); refresh(); });
+  u.querySelector('[data-same]').addEventListener('click', () => { u.querySelector('.saved').textContent = 'W43 「변동 없음」으로 남겼습니다'; u.classList.add('done'); refresh(); });
+});
+document.getElementById('submitBtn').addEventListener('click', (e) => {
+  const p = document.getElementById('myPill'); p.className = 'pill p-ok'; p.textContent = '제출';
+  document.getElementById('subCnt').textContent = '6';
+  e.target.textContent = '다시 제출'; e.target.classList.remove('primary');
+});
+document.querySelectorAll('[data-role]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-role]').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  const planner = b.dataset.role === 'planner';
+  document.getElementById('who').textContent = planner ? '기획운영 · 이 과장(기획 주관자)' : '시운전1부 · 김 대리';
+  document.getElementById('scope').textContent = planner ? '팀 전체 기준' : '시운전1부 기준';
+  document.querySelectorAll('[data-planner]').forEach((x) => { x.hidden = !planner; });
+  document.getElementById('closeNote').textContent = planner ? '회의 전에도 승인할 수 있습니다' : '부서 현안 공유회에서 승인됩니다';
+}));
+</script>
+</body>
+</html>

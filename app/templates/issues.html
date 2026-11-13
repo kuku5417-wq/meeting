@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% import "_ms.html" as ms with context %}
+{% block title %}이슈 원장 · {{ app_title }}{% endblock %}
+{% block content %}
+{# M9 이슈 원장 작업대(최종 시안 design/mockups/v2m-issue-desk) — 왼쪽 원장 · 오른쪽 이슈 하나를 위에서 아래로. 칸은 자동 저장 #}
+<div class="v-desk">
+  <section class="v-left" aria-labelledby="ledgerH">
+    <div class="v-ph"><h1 id="ledgerH">이슈</h1><a class="btn sm primary" href="/import?entry=memo{% if dept and dept != 'all' %}&dept={{ dept }}{% endif %}">＋ 가져오기</a></div>
+    <form class="v-filter" method="get" action="/issues">
+      <label class="sr" for="fq">찾기</label><input id="fq" name="q" type="search" value="{{ q }}" placeholder="찾기 — 2511 DG2 · 카고펌프">
+      <label class="sr" for="fdept">부서</label>
+      <select id="fdept" name="dept" onchange="this.form.submit()"><option value="all"{% if dept == 'all' %} selected{% endif %}>전 부서</option>{% for d in depts %}<option value="{{ d.id }}"{% if d.id == dept %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select>
+      {% if chip %}<input type="hidden" name="f" value="{{ chip }}">{% endif %}
+    </form>
+    <nav class="v-chips" aria-label="걸러 보기">
+      {% for k, label, n in chips %}<a class="v-fchip" href="?dept={{ dept }}{% if chip != k %}&f={{ k }}{% endif %}{% if q %}&q={{ q|urlencode }}{% endif %}"{% if chip == k %} aria-current="true"{% endif %}>{{ label }} {{ n }}</a>{% endfor %}
+    </nav>
+    <form method="post" action="/issues/bulk" id="bulkForm">
+      <input type="hidden" name="back" value="{{ cur.id if cur else '' }}">
+      <div class="v-bulk" id="bulkBar" hidden>
+        <b class="small" id="bulkN"></b>
+        <select name="action" aria-label="일괄 작업" id="bulkAct"><option value="adopt">회의자료에 넣기</option><option value="transfer">부서 이관</option><option value="status">상태 바꾸기</option></select>
+        <select name="value" aria-label="값" id="bulkVal">{% for x in adopt_to %}<option value="{{ x.id }}">{{ x.title }}</option>{% endfor %}</select>
+        <template id="deptOpts">{% for d in depts %}<option value="{{ d.id }}">{{ d.name }}</option>{% endfor %}</template>
+        <button class="btn sm primary" type="submit">한꺼번에 바꾸기</button>
+      </div>
+      <div class="v-list" role="list">
+        {% for r in rows %}{% set b = r.b %}
+        <div class="v-row{% if cur and b.id == cur.id %} on{% endif %}" role="listitem">
+          <input type="checkbox" name="ids" value="{{ b.id }}" aria-label="{{ b.id }} 고르기">
+          <a class="v-row-link" href="/issues?id={{ b.id }}&dept={{ dept }}{% if chip %}&f={{ chip }}{% endif %}">
+            <span class="t"><span class="v-tl {{ b.block_type }}">{{ type_label[b.block_type] }}</span> {{ b.title or b.id }}</span>
+            <span class="m"><span class="mono">{{ b.id }}</span>{% if r.hull %}<span class="mono">{{ r.hull }}{% if r.brief and r.brief.next %} · {{ r.brief.next.code }} D-{{ r.brief.dday }}{% endif %}</span>{% endif %}
+              <span>{{ b.status }}</span>{% if b.block_type in ('issue', 'problem') %}<span class="v-map{% if r.map_n < 5 %} gap{% endif %}">매핑 {{ r.map_n }}/5</span><span>{{ draft_label[b.draft_state] }}</span>{% endif %}
+              {% if r.needs_line %}<span class="v-late">한 줄 없음</span>{% endif %}{% if r.long_weeks %}<span class="v-late">{{ r.long_weeks }}주 미결</span>{% endif %}{% if r.alert and r.alert.level in ('기한 지남', '임박') %}<span class="v-late">{{ r.alert.chip }}</span>{% endif %}</span>
+          </a>
+        </div>
+        {% else %}
+        <p class="muted small" style="padding:12px">조건에 맞는 이슈가 없습니다 — 걸러 보기를 풀어 보세요.</p>
+        {% endfor %}
+      </div>
+    </form>
+  </section>
+
+  <section class="v-detail" aria-labelledby="dTitleLbl">
+    {% if msg %}<p class="flash ok" role="status">{{ msg }}</p>{% endif %}
+    {% if err %}<p class="flash bad" role="alert">{{ err }}</p>{% endif %}
+    {% if all_done %}<p class="flash ok" role="status">초안이 남은 이슈가 없습니다. 부서 자료는 부장·부서 스텝이 고릅니다 — <a href="/home">홈으로</a></p>{% endif %}
+    {% if cur %}{% set r = view.r %}{% set locked = false %}
+    <div class="v-head">
+      <div class="row"><span class="v-tl {{ cur.block_type }}">{{ type_label[cur.block_type] }}</span><span class="mono small">{{ cur.id }}</span><span class="small">{{ cur.status }}</span><span class="small muted" id="draftState">{{ draft_label[cur.draft_state] }}</span><span class="small muted">· {{ view.dept_name }}</span>
+        {% if r.hull %}{{ ms.ms_chip(r.hull) }}{% endif %}</div>
+      <label class="sr" for="dTitleLbl">제목</label><input id="dTitleLbl" class="v-title" type="text" value="{{ cur.title }}" data-field="title" data-id="{{ cur.id }}"{% if locked %} disabled{% endif %}>
+    </div>
+
+    <h2 class="v-sec">기본</h2>
+    <div class="panel v-grid4">
+      {% if cur.block_type in ('issue', 'problem') %}
+      <label class="f">상태<select data-field="status" data-id="{{ cur.id }}"{% if locked or cur.status not in ('신규', '진행') %} disabled{% endif %}>{% for st in ('신규', '진행') %}<option{% if st == cur.status %} selected{% endif %}>{{ st }}</option>{% endfor %}{% if cur.status not in ('신규', '진행') %}<option selected>{{ cur.status }}</option>{% endif %}</select></label>
+      {% endif %}
+      <label class="f">이번 주 한 줄<input type="text" id="wkLine" data-line data-id="{{ cur.id }}" value="{{ r.line }}" placeholder="{{ '비어 있음 — Enter 로 저장' if r.needs_line else '이번 주 진행' }}"{% if locked %} disabled{% endif %}></label>
+      <div class="f">담당 부서<span>{{ view.dept_name }}</span></div>
+      <div class="f">호선<span class="mono">{{ r.hull or '— (매핑에서 연결)' }}</span></div>
+    </div>
+
+    {% if cur.block_type in ('issue', 'problem') %}{% set al = r.alert %}
+    <h2 class="v-sec" id="due">일정 — 「~전 해결」 목표 · 경보 {% if al and al.level %}<span class="{{ 'v-late' if al.level in ('기한 지남', '임박') else 'muted' }}">{{ al.chip }}{% if al.level == '해제' %} · 해제됨{% endif %}</span>{% elif al %}<span class="muted">{{ al.chip }}</span>{% endif %}</h2>
+    <div class="panel v-due">
+      <form method="post" action="/issues/{{ cur.id }}/due" class="v-due-f">
+        <label class="f">~전 해결<select name="event">
+          <option value="">목표 없음</option>
+          {% for c, l in view.due_options %}<option value="{{ c }}"{% if cur.due_event == c or (not cur.due_event and c == view.due_suggest) %} selected{% endif %}>{{ l }}{% if not cur.due_event and c == view.due_suggest %} (추천){% endif %}</option>{% endfor %}
+        </select></label>
+        <label class="f">직접 날짜<input type="date" name="due" value="{{ cur.due_date or '' }}"></label>
+        <label class="f">경보 일수(D-n)<input type="number" min="0" max="180" name="days" value="{{ cur.alert_days if cur.alert_days is not none else '' }}" placeholder="기본 {{ al.days if al and al.days is not none else 14 }}"></label>
+        <button class="btn sm" type="submit">저장</button>
+      </form>
+      {% if al and al.target %}<p class="small">목표 <b>{{ al.target.label }}</b> {{ al.target.date.strftime('%Y-%m-%d') }}({{ al.target.src }}) · {% if al.left < 0 %}<span class="v-late">{{ -al.left }}일 지남</span>{% else %}{{ al.left }}일 남음{% endif %} · {{ al.days }}일 전부터 경보</p>
+      {% if al.level == '해제' %}<form method="post" action="/issues/{{ cur.id }}/alert-on" class="v-due-f"><span class="small">해제 사유: {{ al.off_reason }} — 날짜가 당겨지거나 목표를 바꾸면 다시 켜집니다</span><button class="btn sm" type="submit">다시 켜기</button></form>
+      {% elif al.level == '임박' %}<form method="post" action="/issues/{{ cur.id }}/alert-off" class="v-due-f"><label class="f">경보 끄기 — 사유 한 줄<input type="text" name="reason" maxlength="300" placeholder="예: 선주 합의로 인도 뒤 처리" required></label><button class="btn sm" type="submit">경보 해제</button></form>{% endif %}
+      {% elif al %}<p class="small muted">{{ al.chip }}</p>{% else %}<p class="small muted">목표를 정하면 마일스톤 날짜(실적 → 전망 → 계획)로 D-n 부터 「일정 임박」에 올라옵니다.</p>{% endif %}
+    </div>
+    {% endif %}
+    <h2 class="v-sec">내용 — 그대로 1차 초안 「상세 한 장」이 됩니다</h2>
+    <div class="panel v-grid3">
+      <label class="f">현상<textarea rows="3" data-field="body" data-id="{{ cur.id }}"{% if locked %} disabled{% endif %}>{{ cur.body }}</textarea>{% if 'body' in view.human %}<span class="small muted">사람이 고친 칸</span>{% endif %}</label>
+      <label class="f">원인<textarea rows="3" data-field="cause_text" data-id="{{ cur.id }}" placeholder="모르면 비워 두세요 — 「조사 중」으로 나갑니다"{% if locked %} disabled{% endif %}>{{ cur.cause_text }}</textarea></label>
+      <label class="f">조치 · 계획<textarea rows="3" data-field="action_text" data-id="{{ cur.id }}"{% if locked %} disabled{% endif %}>{{ cur.action_text }}</textarea></label>
+      <label class="f v-decide" style="grid-column:1/-1">결정 필요 — 회의에서 정할 것(없으면 비움)<input type="text" data-field="decision_needed" data-id="{{ cur.id }}" value="{{ cur.decision_needed }}"{% if locked %} disabled{% endif %}></label>
+    </div>
+
+    <h2 class="v-sec">지식 매핑 <span class="v-map{% if r.map_n < 5 %} gap{% endif %}">{{ r.map_n }}/5</span> — 비어도 회의에는 지장 없음. 유사 사례·장비 허브용</h2>
+    <div class="panel v-maps">
+      {% for c in view.maps %}<div class="v-mp{% if not c.value %} gap{% endif %}"><span class="k">{{ c.label }}</span>{% if c.value %}{{ c.value }}{% else %}<a href="#attach">＋ 아래에서 연결</a>{% endif %}</div>{% endfor %}
+    </div>
+
+    <h2 class="v-sec">1차 초안 — 칸을 고치면 바로 다시 그려집니다</h2>
+    <div class="panel v-draft">
+      <div class="v-stage-wrap"><div class="v-stage" id="pv">
+        <div class="sh"><span>{{ view.dept_name }}</span><span>{{ cur.id }}</span></div>
+        <div class="sb">
+          <div class="st1"><span class="lab {{ cur.block_type }}">{{ type_label[cur.block_type] }}</span><span data-pv="title">{{ cur.title }}</span></div>
+          <div class="g4"><div><b>현상</b><span data-pv="body">{{ cur.body or '—' }}</span></div><div><b>원인</b><span data-pv="cause_text">{{ cur.cause_text or '조사 중' }}</span></div><div><b>조치 · 계획</b><span data-pv="action_text">{{ cur.action_text or '—' }}</span></div><div><b>이번 주</b><span data-pv="line">{{ r.line or '—' }}</span></div></div>
+          <div class="dec"{% if not cur.decision_needed %} hidden{% endif %} id="pvDec"><b>결정 필요</b> <span data-pv="decision_needed">{{ cur.decision_needed }}</span></div>
+        </div>
+        <div class="sf"><span>{{ r.hull or '' }}</span><span>1차 초안 · {{ view.dept_name }}</span></div>
+      </div></div>
+      <div class="v-hist"><b class="small">주차별 진행</b>
+        {% for h in view.history | reverse %}<div class="small"><span class="mono">{{ h.week_id }}</span> {{ h.note or h.status }}</div>{% else %}<span class="small muted">아직 기록이 없습니다</span>{% endfor %}
+        {% for r in view.records %}<div class="small"><span class="mono">{{ r.week }}</span> {{ r.label }} — {{ r.text }}</div>{% endfor %}
+        <a class="small" href="#attach">사진·표 붙이기 ↓</a>
+      </div>
+    </div>
+    {% with b = cur, v = view.attach %}{% include "_attach.html" %}{% endwith %}
+    {% if view.similar is not none %}
+    <section class="panel" id="similar" aria-labelledby="simH">
+      <h3 class="v-sec" id="simH">유사 사례 — 같은 장비·모델·자매선·증상 <a class="small" href="/knowledge?q={{ (cur.title ~ ' 과거에 어떻게 조치했나?') | urlencode }}&ask=1">이 이슈로 물어보기 →</a></h3>
+      <div class="similar">
+      {% for x in view.similar %}
+        <a class="sim{% if x.sister %} sister{% endif %}" href="/knowledge?case={{ x.c.id }}#detail">
+          <span><b>{{ x.c.id }}</b> {% if x.eq %}{{ x.eq.hull_id }} {{ x.eq.name }}{% endif %}{% if x.sister %} <span class="pill p-issue">자매선</span>{% endif %}</span>
+          <span>{{ x.c.symptom_text }} → {{ x.c.cause_text }}</span>
+          <span class="meta">조치: {{ x.c.action_text }} · {{ x.why | join(", ") }}</span>
+        </a>
+      {% else %}<p class="muted small">비슷한 종결 사례가 아직 없습니다.</p>{% endfor %}
+      </div>
+    </section>
+    {% endif %}
+    {% else %}
+    <div class="panel"><p class="muted">이슈가 없습니다. 「＋ 메모로 만들기」로 메모를 붙여넣으면 AI 가 이슈로 정리합니다.</p></div>
+    {% endif %}
+  </section>
+</div>
+{% if cur %}
+<div class="v-actbar">
+  <span class="state" id="saveState" aria-live="polite">저장됨</span>
+  <span class="keys"><kbd>J</kbd>/<kbd>K</kbd> 다음·이전 이슈 · <kbd>Ctrl</kbd>+<kbd>S</kbd> 초안 완료</span>
+  {% if cur.block_type in ('issue', 'problem') and cur.status in ('신규', '진행') %}
+  <form method="post" action="/issues/{{ cur.id }}/close-request" class="inline" onsubmit="return !!this.action_text.value.trim() || (alert('종결 요청에는 「조치 · 계획」이 필요합니다 — 칸을 채워주세요'), false)"><input type="hidden" name="action_text" id="closeAct" value="{{ cur.action_text }}"><button class="btn" type="submit">종결 요청</button></form>
+  {% endif %}
+  {% if cur.block_type in ('issue', 'problem') %}
+  <form method="post" action="/issues/{{ cur.id }}/draft-done" class="inline" id="doneForm"><button class="btn primary" type="submit">{% if cur.draft_state == 'ok' %}초안 다시 완료{% else %}초안 완료 → 다음 초안{% endif %}</button></form>
+  {% endif %}
+</div>
+{% endif %}
+<script type="module" src="{{ url_for('static', path='js/issues.js') }}?v={{ asset_v }}"></script>
+<script type="module" src="{{ url_for('static', path='js/attach.js') }}?v={{ asset_v }}"></script>
+{% endblock %}

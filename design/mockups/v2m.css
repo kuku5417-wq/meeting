@@ -1,0 +1,45 @@
+/* 최종 시안 M — B안 틀 + C안 스튜디오 색·글자(2026-10-23, 바탕색 개정). v2b.css 위에 덮어쓰는 색 덮개 — 화면 구성은 B안 그대로.
+   사이드바 = 네이비 #1c2f4f(회의 슬라이드 띠와 같은 남색), 바탕 = 연한 청회색 #eef1f5, 카드 = 흰 종이(라이트·다크 모두), 주 색·선택 = Figma 파랑.
+   편집 스튜디오의 캔버스만 어둡게(#2b2d31) 둔다 — 장(슬라이드)이 돋보이게.
+   대비: 바탕 위 글자 #111114 17.6:1 · 섹션 머리 #555d6b 6.0:1 · 사이드바 글자 #dbe3ee 10.6:1 · 주 버튼(흰 글자) #0a6cd6 5.0:1 · 연한 파랑 위 #0857b0 6.1:1 */
+:root:not(#v2m){
+  --bg:#eef1f5; --fg:#111114; --muted:#48484d;
+  --surface:#ffffff; --fill:#e6e9ef; --fill-2:#f3f5f8; --sep:#d5dae2; --field:#f3f5f8;
+  --accent:#0a6cd6; --accent-fg:#ffffff; --accent-soft:#e5f0fd; --focus:#0a6cd6;
+  --warn-soft:#fff4dc; --ok-soft:#e3f4e8; --bad-soft:#fde8e6; --decide-soft:#efe8fb;
+  --shadow:0 1px 2px rgba(16,24,40,.06),0 0 0 1px rgba(16,24,40,.04); color-scheme:light;
+}
+body{background:var(--bg);color:var(--fg)}
+input,select,textarea{color:#111114}
+
+/* 사이드바 — 네이비, 밝은 글자, 현재 메뉴는 흰 반투명 칸 + 왼쪽 파란 막대 */
+.top{background:#1c2f4f;--fg:#dbe3ee;--muted:#a9b6c8;color:var(--fg)}
+.top .brand{color:#fff}
+.top .nav a{color:#dbe3ee}
+.top .nav a:hover{background:rgba(255,255,255,.08)}
+.top .nav a[aria-current="page"]{background:rgba(255,255,255,.14);color:#fff;box-shadow:inset 3px 0 0 #4c9bff}
+.top .right a{color:#9cc7ff}
+.top .seg{--fg:#111114}
+
+/* 바탕 위 — 제목은 남색, 섹션 머리는 스튜디오 프레임 라벨처럼 */
+h1{color:#1c2f4f}
+.sec-h{color:#555d6b;letter-spacing:.02em}
+.note{color:#555d6b}
+.page a:not(.btn):not(.cell){color:#0857b0}
+
+/* 선택 — 스튜디오처럼 파란 막대 */
+.cell.on{background:var(--accent-soft)!important;box-shadow:inset 3px 0 0 var(--accent)}
+.it.on,.cd:has(input:checked){box-shadow:inset 3px 0 0 var(--accent)}
+.stage-wrap{box-shadow:0 1px 4px rgba(16,24,40,.14)}
+
+/* 연한 파랑 위 파랑 글자는 진하게(6.1:1) */
+.btn:not(.primary):not(.gray):not(.quiet){color:#0857b0}
+.toc a[aria-current="true"],.cell.on a{color:#0857b0!important}
+
+/* 바닥 줄 — 흰 바탕, 위 얇은 선 */
+.actbar{background:#fff;box-shadow:0 -1px 0 var(--sep)}
+
+/* 편집 스튜디오 — 캔버스만 어둡게(장이 돋보이게), 도구줄·패널은 흰색 */
+.canvas{background:#2b2d31}
+.tb{background:#fff}
+.note summary{color:#4a5260}

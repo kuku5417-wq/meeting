@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 B안 회의자료 편집 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<style>
+/* 회의자료 편집 B안(iPadOS 그룹 목록) — 부서 자료·공유회·팀장 정보회의를 한 화면으로(?kind=). 왼쪽 후보 · 가운데 개요 · 오른쪽 미리보기(누른 항목 장으로 따라감) */
+.ed{display:grid;grid-template-columns:290px minmax(0,1fr) 380px;gap:20px;align-items:start}
+.colx{display:grid;gap:12px;align-content:start;min-width:0}
+.cd{grid-template-columns:auto minmax(0,1fr);align-items:start;cursor:pointer}
+.cd input,.it input[type=checkbox]{width:20px;height:20px;margin-top:3px;accent-color:var(--accent)}
+.cd .t{font-weight:600}
+.cd:has(input:checked){background:var(--accent-soft)}
+.dsub{grid-template-columns:minmax(0,1fr) auto}
+.it{grid-template-columns:auto minmax(0,1fr) auto;align-items:start}
+.it .mv{display:grid;gap:4px;justify-items:center}
+.it .mv button{font:inherit;font-size:var(--fs-1);min-height:30px;min-width:34px;border:0;border-radius:8px;background:var(--fill);color:var(--fg);cursor:pointer}
+.it .body{display:grid;gap:8px;min-width:0}
+.it .t{font-weight:600}
+.lnrow{display:grid;grid-template-columns:auto minmax(0,1fr);gap:8px;align-items:center}
+.ptag{font:inherit;font-size:var(--fs-2);font-weight:700;border:0;color:var(--t-decide);background:var(--decide-soft);border-radius:8px;padding:4px 10px;cursor:pointer;min-height:36px;white-space:nowrap}
+.ptag[aria-pressed="false"]{text-decoration:line-through;background:var(--fill);color:var(--muted)}
+.side{display:grid;gap:6px;justify-items:end}
+.side select{width:auto;min-height:36px;padding:4px 10px;font-size:var(--fs-2)}
+.fact{display:grid;gap:8px;padding:10px;border-radius:10px;background:var(--ok-soft)}
+.fact .lbl{font-size:var(--fs-1);font-weight:700;color:var(--t-ok)}
+.fact .lbl::before{content:"● "}
+.fact input{background:var(--surface)!important}
+.expr{font-size:var(--fs-1);color:var(--muted)} .expr::before{content:"○ "}
+.src{font-size:var(--fs-1);font-weight:600;color:var(--muted);background:var(--fill);border-radius:999px;padding:1px 8px}
+.prev{position:sticky;top:12px;display:grid;gap:10px}
+.pages{display:flex;gap:4px;flex-wrap:wrap}
+.pages button{font:inherit;font-size:var(--fs-2);min-height:34px;min-width:36px;padding:0 8px;border:0;border-radius:8px;background:var(--fill);color:var(--fg);cursor:pointer}
+.pages button[aria-current="true"]{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.startq{display:grid;gap:10px}
+@media (max-width:1320px){.ed{grid-template-columns:290px minmax(0,1fr)}.ed .pv{grid-column:1/-1}.prev{position:static}}
+@media (max-width:900px){.ed{grid-template-columns:minmax(0,1fr)}.it{grid-template-columns:minmax(0,1fr)}.it .mv{grid-auto-flow:column;justify-content:start}.side{justify-items:start}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">회의·지식</span>
+  <nav class="nav" aria-label="메뉴"><a href="v2b-home.html">홈</a><a href="v2b-issue-desk.html">이슈</a><a href="v2b-meetings.html" aria-current="page">회의</a><a href="v2-metrics.html">지표</a><a href="#">지식창고</a><a href="#">장비 허브</a></nav>
+  <div class="right"><span id="who"></span><a id="toA" href="#">A안 보기</a></div>
+</header>
+<details class="note"><summary>시안 설명 — B안 회의자료 편집</summary>부서 회의자료·부서 현안 공유회·팀장 정보회의·호선별 회의를 <b>같은 화면</b>에서 만듭니다(위 갈래 버튼은 시안 비교용). 후보를 체크하면 개요 끝에 들어가고 미리보기가 그 장으로 갑니다. ● 사실 칸은 이슈에 바로 반영(작성자 알림), ○ 회의용 한 줄·형태는 이 자료에만. 빼기·제출·발행은 확인 창 없이 하고 「되돌리기」로 취소합니다. 데이터는 가상입니다.</details>
+
+<main class="page">
+  <div class="ph">
+    <div style="display:grid;gap:4px"><span class="small muted" id="kChip"></span><h1 id="title"></h1><span class="small muted" id="sub"></span></div>
+    <nav class="seg" aria-label="시안 — 갈래" id="kinds"><button type="button" data-k="dept">부서 자료</button><button type="button" data-k="share">공유회</button><button type="button" data-k="exec">팀장 정보회의</button></nav>
+  </div>
+  <div class="ed">
+    <aside class="colx" aria-labelledby="cH"><div class="ph"><h2 id="cH">후보</h2><span class="small muted" id="cN"></span></div><div id="cands" class="colx"></div></aside>
+    <section class="colx" aria-labelledby="oH">
+      <div class="ph"><h2 id="oH">개요 <span class="mono small muted" id="oN" style="font-weight:400"></span></h2>
+        <div class="row"><button class="btn sm" type="button" id="sumBtn" disabled>고른 항목 한 장으로 요약</button><label class="sr" for="allF">형태 한꺼번에</label><select id="allF" style="width:auto;min-height:36px;font-size:var(--fs-2)"><option value="">형태 한꺼번에…</option><option value="line">한 줄</option><option value="card">카드</option><option value="detail">상세 한 장</option></select></div></div>
+      <div id="start"></div>
+      <div id="outline" class="group"></div>
+    </section>
+    <aside class="colx pv" aria-labelledby="pH">
+      <div class="prev"><div class="ph"><h2 id="pH">미리보기</h2><span class="small muted">= PPT · 발표 화면</span></div>
+        <div class="stage-wrap"><div class="stage" id="stg"></div></div>
+        <div class="pages" id="pages"></div></div>
+    </aside>
+  </div>
+</main>
+<div class="actbar"><span class="state" id="state"></span><span class="keys"><kbd>J</kbd>/<kbd>K</kbd> 항목 이동</span><button class="btn gray" type="button" id="ppt">PPT 내려받기</button><button class="btn primary" type="button" id="primary"></button></div>
+
+<script type="module">
+import {$, $$, esc, toast, keys, fitStages} from './v2b.js';
+import {ISSUES, KIND, SUBMIT, ptag, byId} from './v2b-data.js';
+const kind = new URLSearchParams(location.search).get('kind') || 'dept';
+$$('#kinds [data-k]').forEach((b) => { b.setAttribute('aria-pressed', b.dataset.k === kind); b.onclick = () => (location.search = '?kind=' + b.dataset.k); });
+const K = {
+  dept: {chip: '부서 회의자료', title: 'W43 시운전1부 회의자료', sub: '부장·부서 스텝 · 제출 마감 10/22(수) 14:00 → 부서 현안 공유회로', who: '시운전1부 · 부서 편집자', form: 'card', primary: '제출', after: ['공유회 자료 보기 →', 'v2b-meeting-view.html?m=share']},
+  share: {chip: '부서 현안 공유회', title: 'W43 부서 현안 공유회', sub: '기획 취합 · 10/23(목) 14:00 · 부서 제출본은 참조로 들어옵니다(내용 수정은 부서 자료에서)', who: '기획운영 · 팀 편집자', form: 'card', primary: '발행', after: ['회의 시작 →', 'v2b-meeting-run.html?m=share']},
+  exec: {chip: '팀장 정보회의', title: 'W43 팀장 정보회의', sub: '기획 구성 · 팀장 확인 · 10/27(월) 08:30 · 같은 이슈를 한 줄로 다시 구성', who: '기획운영 · 팀 편집자', form: 'line', primary: '발행', after: ['회의 시작 →', 'v2b-meeting-run.html?m=exec']},
+}[kind];
+$('#kChip').textContent = K.chip + ' · 회의자료 편집'; $('#title').textContent = K.title; $('#sub').textContent = K.sub; $('#who').textContent = K.who;
+// 후보 묶음 — 갈래마다 다르고, 나머지 동작은 같다
+const mine = ISSUES.filter((d) => d.dept === '시운전1부');
+const GROUPS = kind === 'dept' ? [['새 초안 — 초안 완료', mine.filter((d) => d.draft === 'ok' && !['ISS-2026-0001', 'PRB-2026-0001'].includes(d.id))], ['지난주 자료에 있던 것', mine.filter((d) => ['ISS-2026-0001', 'PRB-2026-0001'].includes(d.id))], ['초안 작성 중 — 넣으면 경고만', mine.filter((d) => d.draft !== 'ok')]]
+  : kind === 'share' ? [['종결 요청', ISSUES.filter((d) => d.st === 'req')], ['일정 임박 (D-14 이내)', ISSUES.filter((d) => d.dd !== null && d.dd <= 14 && d.st !== 'req')], ['그 밖의 열린 이슈', ISSUES.filter((d) => !(d.dd !== null && d.dd <= 14) && d.st !== 'req')]]
+  : [['공유회 채택분', ISSUES.filter((d) => ['ISS-2026-0001', 'PRB-2026-0001', 'ISS-2026-0009'].includes(d.id))], ['중요 표시', ISSUES.filter((d) => d.important)], ['장기 미결 (4주 이상)', ISSUES.filter((d) => d.weeks >= 4 && !d.important)]];
+// 처음 개요 — 부서 자료는 「지난주 이어받기 / 빈 자료」를 고르고 시작, 공유회는 제출본이 참조로, 팀장은 공유회 채택분
+let items = [];
+let started = kind !== 'dept';
+const mk = (d, src) => ({id: d.id, form: K.form, line: d.wk || d.last, tag: true, src});
+if (kind === 'share') items = ISSUES.filter((d) => SUBMIT[d.dept] === 'ok' || d.dept === '시운전1부').slice(0, 5).map((d) => mk(d, d.dept === '시운전1부' ? '시운전1부 제출' : d.dept + ' 제출'));
+if (kind === 'exec') items = GROUPS[0][1].concat(GROUPS[1][1]).map((d) => mk(d, '공유회'));
+let cur = items[0]?.id, page = 0;
+const pick = new Set();
+function renderCands() {
+  let h = '';
+  if (kind === 'share') h += `<div class="sec-h">부서 제출 — 마감 수 14:00 지남</div><div class="group">` + Object.entries(SUBMIT).map(([dpt, v]) => `<div class="cell dsub"><span>${dpt} <span class="st ${v === 'ok' ? 'done' : 'late'}">${v === 'ok' ? '제출' : v === 'wip' ? '작성 중' : '미작성'}</span></span>${v === 'ok' ? '' : `<button class="btn sm" type="button" data-fill="${dpt}">원장으로 채우기</button>`}</div>`).join('') + '</div>';
+  h += GROUPS.map(([g, xs]) => xs.length ? `<div class="sec-h">${g} ${xs.length}</div><div class="group">` + xs.map((d) => `<label class="cell cd"><input type="checkbox" data-c="${d.id}" ${items.some((i) => i.id === d.id) ? 'checked' : ''}><span class="t"><span class="tl ${d.t}">${KIND[d.t]}</span> ${esc(d.title)}</span><span class="meta" style="grid-column:2"><span class="id">${d.id}</span>${d.dept}${d.map < 3 ? ' · <b style="color:var(--t-issue)">매핑 ' + d.map + '/5</b>' : ''}</span></label>`).join('') + '</div>' : '').join('');
+  $('#cands').innerHTML = h;
+  $('#cN').textContent = `채택 ${items.length}`;
+}
+function renderStart() {
+  $('#start').innerHTML = started ? '' : `<div class="panel startq"><b>이번 주 자료를 어떻게 시작할까요?</b><div class="row"><button class="btn primary" type="button" data-start="carry">지난주 이어받기 — 2건 + 새 초안 ${GROUPS[0][1].length}건</button><button class="btn gray" type="button" data-start="blank">빈 자료에서</button></div><span class="small muted">다음 주에는 이번에 고른 방식으로 바로 시작합니다(부서별 기억).</span></div>`;
+}
+function renderOutline() {
+  $('#outline').innerHTML = items.map((it, n) => { const d = byId(it.id), p = ptag(d);
+    return `<div class="cell it ${it.id === cur ? 'on' : ''}" data-it="${it.id}">
+      <div class="mv"><input type="checkbox" data-pick="${it.id}" ${pick.has(it.id) ? 'checked' : ''} aria-label="${it.id} 요약용으로 고르기" style="width:18px;height:18px"><button type="button" data-mv="-1" aria-label="위로">▲</button><button type="button" data-mv="1" aria-label="아래로">▼</button></div>
+      <div class="body"><span class="t"><span class="tl ${d.t}">${KIND[d.t]}</span> ${esc(d.title)} ${it.src ? `<span class="src">${esc(it.src)}</span>` : ''}</span>
+        <div class="lnrow">${p ? `<button class="ptag" type="button" data-tag aria-pressed="${it.tag}">[${esc(p)}]</button>` : '<span></span>'}<label class="sr" for="ln-${it.id}">회의용 한 줄</label><input type="text" id="ln-${it.id}" data-line value="${esc(it.line)}"></div>
+        <span class="expr">회의용 한 줄·형태는 이 자료에만</span>
+        ${it.id === cur && kind === 'share' ? `<span class="small muted">사실 수정은 부서 자료나 이슈에서 — 여기서는 순서·형태·한 줄만 (<a href="v2b-issue-desk.html?id=${it.id}">이슈 열기</a>)</span>` : ''}
+        ${it.id === cur && kind === 'dept' ? `<div class="fact"><span class="lbl">사실 — 고치면 이슈에 바로 반영 · 작성자 알림</span><label class="f">원인<input type="text" data-fact="cause" value="${esc(d.cause || '')}" placeholder="조사 중"></label><label class="f">조치 · 계획<input type="text" data-fact="act" value="${esc(d.act || '')}"></label></div>` : ''}
+        ${d.map < 3 ? `<span class="small" style="color:var(--t-issue);font-weight:600">매핑 ${d.map}/5 — 회의에는 지장 없음</span>` : ''}</div>
+      <div class="side"><label class="sr" for="fm-${it.id}">형태</label><select id="fm-${it.id}" data-form><option value="line" ${it.form === 'line' ? 'selected' : ''}>한 줄</option><option value="card" ${it.form === 'card' ? 'selected' : ''}>카드</option><option value="detail" ${it.form === 'detail' ? 'selected' : ''}>상세 한 장</option></select><button class="btn sm quiet" type="button" data-drop>빼기</button></div></div>`; }).join('') || (started ? '<div class="cell muted">왼쪽 후보를 체크하면 여기에 들어갑니다</div>' : '');
+  $('#outline').hidden = !items.length && !started;
+  $('#oN').textContent = `${items.length}건`;
+  $('#sumBtn').disabled = pick.size < 2; $('#sumBtn').textContent = pick.size >= 2 ? `고른 ${pick.size}건 한 장으로 요약` : '고른 항목 한 장으로 요약';
+}
+// 미리보기 — 한 줄은 4개씩 한 장, 카드는 2개씩, 상세 한 장은 한 장씩(본문 26px 이상 유지)
+function pages() {
+  const ps = [{label: '표지'}]; let buf = [], cap = 0;
+  const flush = () => { if (buf.length) ps.push({label: buf.map((x) => byId(x.id).hull).join('·'), items: buf}); buf = []; };
+  items.forEach((it) => { if (it.form === 'detail') { flush(); ps.push({label: byId(it.id).hull, items: [it], detail: true}); return; } const c = it.form === 'line' ? 4 : 2; if (buf.length && (cap !== c || buf.length >= c)) flush(); cap = c; buf.push(it); });
+  flush(); return ps;
+}
+const lineHtml = (it) => { const d = byId(it.id), p = ptag(d); return (p && it.tag ? `<b style="display:inline;color:var(--t-decide)">[${esc(p)}]</b> ` : '') + esc(it.line); };
+function renderPrev() {
+  const ps = pages(); page = Math.min(page, ps.length - 1); const p = ps[page];
+  let body = '';
+  if (!p.items) body = `<div class="st1">${esc(K.title)}</div><div>채택 ${items.length}건 · ${esc(K.sub.split(' · ')[0])}</div>`;
+  else if (p.detail) { const it = p.items[0], d = byId(it.id); body = `<div class="st1"><span class="lab" style="background:var(--t-${d.t})">${KIND[d.t]}</span>${esc(d.title)}</div><div class="grid4"><div><b>현상</b>${esc(d.sym || '—')}</div><div><b>원인</b>${esc(d.cause || '조사 중')}</div><div><b>조치 · 계획</b>${esc(d.act || '—')}</div><div><b>이번 주</b>${lineHtml(it)}</div></div>${d.dec ? `<div class="decide"><b>결정 필요</b> ${esc(d.dec)}</div>` : ''}`; }
+  else body = p.items.map((it) => { const d = byId(it.id); return `<div class="li ${d.t}"><b>${esc(d.title)}</b>${lineHtml(it)}${it.form === 'card' ? `<div style="color:var(--slide-muted)">${d.dept} · ${d.hull} · ${esc(d.ev)}</div>` : ''}</div>`; }).join('');
+  const nx = ps[page + 1];
+  $('#stg').innerHTML = `<div class="sh"><span>${esc(K.chip)}</span><span class="mono">W43</span></div><div class="sb">${body}</div><div class="sf"><span>${page + 1} / ${ps.length}</span><span>${nx ? '다음: ' + esc(nx.label) : '마지막 장'}</span></div>`;
+  $('#pages').innerHTML = ps.map((x, i) => `<button type="button" data-pg="${i}" aria-current="${i === page}">${i + 1}</button>`).join('');
+  fitStages();
+}
+const pageOf = (id) => pages().findIndex((p) => p.items?.some((x) => x.id === id));
+const all = () => { renderCands(); renderStart(); renderOutline(); renderPrev(); $('#state').textContent = `${K.chip} · 채택 ${items.length}건 · 자동 저장됨`; };
+function focusItem(id) { cur = id; const pg = pageOf(id); if (pg >= 0) page = pg; all(); }
+document.addEventListener('change', (e) => {
+  const c = e.target.closest('[data-c]');
+  if (c) { const d = byId(c.dataset.c); if (c.checked) { items.push(mk(d)); started = true; focusItem(d.id); $(`[data-it="${d.id}"]`)?.scrollIntoView({block: 'nearest'}); } else { items = items.filter((i) => i.id !== d.id); all(); } }
+  if (e.target.matches('[data-form]')) { items.find((i) => i.id === e.target.closest('[data-it]').dataset.it).form = e.target.value; focusItem(e.target.closest('[data-it]').dataset.it); }
+  if (e.target.matches('[data-pick]')) { e.target.checked ? pick.add(e.target.dataset.pick) : pick.delete(e.target.dataset.pick); renderOutline(); }
+  if (e.target.id === 'allF' && e.target.value) { const v = e.target.value, before = items.map((i) => i.form); items.forEach((i) => (i.form = v)); e.target.value = ''; all(); toast(`모든 항목을 「${{line: '한 줄', card: '카드', detail: '상세 한 장'}[v]}」으로 바꿨습니다`, () => { items.forEach((i, n) => (i.form = before[n])); all(); }); }
+});
+document.addEventListener('input', (e) => {
+  if (e.target.matches('[data-line]')) { items.find((i) => i.id === e.target.closest('[data-it]').dataset.it).line = e.target.value; renderPrev(); }
+  if (e.target.matches('[data-fact]')) { byId(cur)[e.target.dataset.fact] = e.target.value; renderPrev(); $('#state').textContent = `● ${cur} ${e.target.dataset.fact === 'cause' ? '원인' : '조치'} — 이슈에 반영됨 · 작성자에게 알림`; }
+});
+document.addEventListener('click', (e) => {
+  const it = e.target.closest('[data-it]'), b = e.target.closest('button');
+  if (b?.dataset.start) { started = true; if (b.dataset.start === 'carry') items = GROUPS[1][1].concat(GROUPS[0][1]).map((d) => mk(d, GROUPS[1][1].includes(d) ? '지난주' : '새 초안')); cur = items[0]?.id; all(); toast(b.dataset.start === 'carry' ? `지난주 2건 + 새 초안 ${GROUPS[0][1].length}건으로 시작했습니다` : '빈 자료로 시작했습니다'); return; }
+  if (b?.dataset.fill) { const dpt = b.dataset.fill, add = ISSUES.filter((d) => d.dept === dpt && !items.some((i) => i.id === d.id)); add.forEach((d) => items.push(mk(d, dpt + ' · 원장 자동'))); all(); toast(add.length ? `${dpt} 미제출 — 열린 이슈 ${add.length}건을 원장에서 채웠습니다. 부서가 제출하면 바뀝니다` : `${dpt}: 원장에 열린 이슈가 없어 「미제출」로만 표시합니다`); return; }
+  if (b?.dataset.tag !== undefined && it) { const x = items.find((i) => i.id === it.dataset.it); x.tag = !x.tag; renderOutline(); renderPrev(); return; }
+  if (b?.dataset.mv && it) { const i = items.findIndex((x) => x.id === it.dataset.it), j = i + +b.dataset.mv; if (j >= 0 && j < items.length) { [items[i], items[j]] = [items[j], items[i]]; focusItem(it.dataset.it); } return; }
+  if (b?.dataset.drop !== undefined && it) { const i = items.findIndex((x) => x.id === it.dataset.it), x = items.splice(i, 1)[0]; cur = items[Math.min(i, items.length - 1)]?.id; all(); toast(`「${byId(x.id).title}」을 뺐습니다`, () => { items.splice(i, 0, x); focusItem(x.id); }); return; }
+  if (b?.dataset.pg) { page = +b.dataset.pg; renderPrev(); return; }
+  if (it && !e.target.closest('input,select,button')) focusItem(it.dataset.it);
+});
+$('#sumBtn').onclick = () => { const ids = [...pick], d0 = byId(ids[0]); const at = items.findIndex((i) => ids.includes(i.id)); const removed = items.filter((i) => ids.includes(i.id)); items = items.filter((i) => !ids.includes(i.id)); items.splice(at, 0, {id: d0.id, form: 'card', line: `${ids.length}건 묶음 — ${ids.map((x) => byId(x).hull).join('·')} 같은 원인 검토`, tag: true, src: `요약 · 이슈 ${ids.length}개 연결`}); pick.clear(); focusItem(d0.id); toast(`${ids.length}건을 한 장으로 묶었습니다 — 각 이슈는 그대로입니다`, () => { items.splice(at, 1, ...removed); all(); }); };
+let doneMain = false;
+$('#primary').textContent = K.primary;
+$('#primary').onclick = () => {
+  if (doneMain) { location.href = K.after[1]; return; }
+  doneMain = true; $('#primary').textContent = K.after[0];
+  toast(kind === 'dept' ? '제출했습니다 — 공유회 자료에 들어갔습니다. 고치면 「변경」으로 표시됩니다' : '발행했습니다 — 이 판은 고정되고, 이후 바뀐 사실은 「변경 n」으로 보입니다', () => { doneMain = false; $('#primary').textContent = K.primary; });
+};
+$('#ppt').onclick = () => toast('PPT 를 만들고 있습니다 — 미리보기와 같은 모양입니다(시안)');
+keys({next: () => { const i = items.findIndex((x) => x.id === cur); if (items[i + 1]) focusItem(items[i + 1].id); }, prev: () => { const i = items.findIndex((x) => x.id === cur); if (items[i - 1]) focusItem(items[i - 1].id); }, save: () => $('#primary').click()});
+all();
+</script>
+</body>
+</html>

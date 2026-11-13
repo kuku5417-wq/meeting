@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}이번 주 할 일 · {{ app_title }}{% endblock %}
+{% block content %}
+{# M9 홈(최종 시안 design/mockups/v2m-home) — 역할별 남은 일. 한 줄은 여기서 Enter 로 저장하고 다음 칸으로 #}
+<div class="v-ph">
+  <div><h1>이번 주 할 일</h1><span class="mono muted small">{{ week.label }}</span></div>
+  <form method="get" action="/home" class="row">
+    <nav class="v-seg" aria-label="역할">
+      {% for k, l in (('w', '작성자'), ('d', '부서 편집자'), ('p', '기획')) %}<a href="?role={{ k }}&dept={{ dept }}"{% if role == k %} aria-current="true"{% endif %}>{{ l }}</a>{% endfor %}
+    </nav>
+    <input type="hidden" name="role" value="{{ role }}">
+    {% if role != 'p' %}<label class="sr" for="hdept">부서</label><select id="hdept" name="dept" onchange="this.form.submit()">{% for d in depts %}<option value="{{ d.id }}"{% if d.id == dept %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select>{% endif %}
+  </form>
+</div>
+{% set msg = request.query_params.get('msg', '') %}{% set err = request.query_params.get('err', '') %}
+{% if msg %}<p class="flash ok" role="status">{{ msg }}</p>{% endif %}{% if err %}<p class="flash bad" role="alert">{{ err }}</p>{% endif %}
+<div class="v-home">
+  <section aria-labelledby="qH">
+    <h2 class="v-sec" id="qH">남은 일 <span class="mono" id="qN">{{ tasks | length }}</span></h2>
+    {% set ns = namespace(g='') %}
+    {% for t in tasks %}
+      {% if t.group != ns.g %}{% if ns.g %}</div>{% endif %}{% set ns.g = t.group %}<h3 class="v-sec sub">{{ t.group }}</h3><div class="v-list">{% endif %}
+      <div class="v-row v-task" data-kind="{{ t.kind }}">
+        <div class="v-row-link"><span class="t">{% if t.block %}<span class="v-tl {{ t.block.block_type }}">{{ {'issue': '이슈', 'problem': '문제점', 'share': '공유'}.get(t.block.block_type, '') }}</span> {% endif %}{{ t.title or t.sub }}</span><span class="m">{{ t.sub }}</span></div>
+        {% if t.kind == 'line' %}
+        <div class="v-line"><label class="sr" for="ln{{ loop.index }}">{{ t.block.id }} 이번 주 한 줄</label><input id="ln{{ loop.index }}" type="text" data-line data-id="{{ t.block.id }}" placeholder="이번 주 진행 한 줄 — Enter 로 저장하고 다음"><button class="btn sm primary" type="button" data-save>저장</button><button class="btn sm" type="button" data-same>변동 없음</button>{% if t.block.draft_state != 'ok' %}<a class="btn sm" href="/issues?id={{ t.block.id }}">초안도 열기</a>{% endif %}</div>
+        <span class="v-fin" hidden></span>
+        {% elif t.kind == 'close' %}
+        <form method="post" action="/closures/{{ t.extra.closure_id }}/approve" class="v-close">
+          {% if not t.extra.cause %}<label class="sr" for="cz{{ loop.index }}">{{ t.block.id }} 원인</label><input id="cz{{ loop.index }}" type="text" name="cause_text" placeholder="원인 — 사례 카드에 필요">{% endif %}
+          <button class="btn sm primary" type="submit">종결 승인</button>
+          <button class="btn sm" type="submit" formaction="/closures/{{ t.extra.closure_id }}/hold">보류</button>
+          <a class="btn sm" href="{{ t.href }}">이슈 열기</a>
+        </form>
+        {% else %}
+        <span class="row"><a class="btn sm{% if loop.first %} primary{% endif %}" href="{{ t.href }}">{{ {'draft': '초안 열기', 'deck': '부서 자료 열기', 'directive': '완료 보고하러', 'alert': '일정 보기', 'metrics': '지표 넣기', 'nudge': '이슈 열기', 'share': '공유회 자료 열기', 'exec': '정보회의 자료 열기'}[t.kind] }}</a></span>
+        {% endif %}
+      </div>
+      {% if loop.last %}</div>{% endif %}
+    {% else %}
+    <div class="panel"><b>이번 주 할 일을 마쳤습니다.</b><span class="muted small">{% if role == 'w' %}부서 자료는 부장·부서 스텝이 고릅니다.{% elif role == 'd' %}부서 자료를 제출하면 공유회 자료에 실립니다.{% else %}부서 자료가 모이면 회의를 시작할 수 있습니다.{% endif %}</span></div>
+    {% endfor %}
+    <p class="v-done panel" id="allDone" hidden><b>이번 주 할 일을 마쳤습니다.</b> <a href="/issues">이슈 원장 보기</a></p>
+  </section>
+  <aside aria-labelledby="sH">
+    <h2 class="v-sec" id="sH">부서 제출 {{ statuses | selectattr('done') | list | length }}/{{ statuses | length }}</h2>
+    <div class="v-list">
+      {% for d in statuses %}<a class="v-row v-sub" href="/issues?dept={{ d.id }}"><span>{{ d.name }}</span><span class="small {{ 'v-ok' if d.done else 'muted' }}">{{ ('✓ ' if d.done else '') ~ d.state }}</span></a>{% endfor %}
+    </div>
+    <p class="muted small" style="margin-top:8px">부서를 누르면 그 부서 이슈 원장으로 갑니다.</p>
+  </aside>
+</div>
+<script type="module" src="{{ url_for('static', path='js/home.js') }}?v={{ asset_v }}"></script>
+{% endblock %}

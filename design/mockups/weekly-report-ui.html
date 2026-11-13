@@ -1,0 +1,692 @@
+<title>커미셔닝 주간보고 시안</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: app shell — header, mode tabs, then one working view per mode (작성 / 회의 / 지식창고). Steel neutrals, sea-teal accent, amber reserved for "check this". */
+:root{
+  --bg:#eef2f3; --surface:#ffffff; --surface-2:#e6ecee; --fg:#14212b; --muted:#566570; --line:#cfd8dd;
+  --accent:#0b6e78; --accent-soft:#d8ecec; --accent-fg:#ffffff;
+  --signal:#b86e00; --signal-soft:#fbefd9;
+  --danger:#b83a26; --danger-soft:#f8e3df;
+  --ok:#2c7a4b; --ok-soft:#dff0e5;
+  --share:#35589c; --share-soft:#e2e9f6;
+  --photo-bg:#c9d3d8; --photo-metal:#8d9ba3; --photo-dark:#56646c;
+  --display:"Gothic A1","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e161b; --surface:#152128; --surface-2:#1c2b33; --fg:#e2eaee; --muted:#95a5af; --line:#2a3b44;
+  --accent:#4fb3bc; --accent-soft:#163a3e; --accent-fg:#06262a;
+  --signal:#f0a830; --signal-soft:#3a2c12;
+  --danger:#ef7a64; --danger-soft:#3a1f1a;
+  --ok:#5cb87f; --ok-soft:#173222;
+  --share:#8fa9e0; --share-soft:#1e2a44;
+  --photo-bg:#2b383f; --photo-metal:#56656d; --photo-dark:#8a99a1;
+  color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0e161b; --surface:#152128; --surface-2:#1c2b33; --fg:#e2eaee; --muted:#95a5af; --line:#2a3b44;
+  --accent:#4fb3bc; --accent-soft:#163a3e; --accent-fg:#06262a;
+  --signal:#f0a830; --signal-soft:#3a2c12;
+  --danger:#ef7a64; --danger-soft:#3a1f1a;
+  --ok:#5cb87f; --ok-soft:#173222;
+  --share:#8fa9e0; --share-soft:#1e2a44;
+  --photo-bg:#2b383f; --photo-metal:#56656d; --photo-dark:#8a99a1;
+  color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.55}
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-0.01em}
+h1{font-size:20px;font-weight:800}
+h2{font-size:16px;font-weight:700}
+h3{font-size:14px;font-weight:700}
+p{margin:0}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button{font:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-block:18px 12px}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.week{font-family:var(--mono);font-size:12px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+.sample{font-size:12px;color:var(--signal);background:var(--signal-soft);padding:3px 8px;border-radius:4px}
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:18px;overflow-x:auto}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;color:var(--muted);font-weight:600;white-space:nowrap}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--accent)}
+.tab small{font-family:var(--mono);font-weight:400;margin-left:6px;color:var(--muted)}
+
+/* common */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0}
+.panel-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:7px 12px;border-radius:6px;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-share{background:var(--share-soft);color:var(--share)}
+.p-problem{background:var(--danger-soft);color:var(--danger)}
+.p-issue{background:var(--signal-soft);color:var(--signal)}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-neutral{background:var(--surface-2);color:var(--muted)}
+.p-accent{background:var(--accent-soft);color:var(--accent)}
+.id{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+/* compose view */
+.compose{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:16px;align-items:start}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.step{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+.step.done{color:var(--ok);border-color:var(--ok)}
+.step.now{color:var(--accent-fg);background:var(--accent);border-color:var(--accent)}
+textarea,input[type=text],input[type=number],select{width:100%;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:8px 10px}
+textarea{resize:vertical;line-height:1.6}
+#memo{min-height:250px;font-family:var(--mono);font-size:13px}
+.thumbs{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.thumb{width:84px;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface-2);font-size:11px;text-align:center;color:var(--muted)}
+.thumb svg{display:block;width:100%;height:56px}
+.carry{margin-top:16px;display:grid;gap:8px}
+.carry-item{border:1px dashed var(--line);border-radius:6px;padding:10px;display:grid;gap:6px}
+
+.blocks{display:grid;gap:12px}
+.block{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden}
+.block-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:12px 14px;border-bottom:1px solid var(--line)}
+.block-h h3{flex:1 1 180px;min-width:0}
+.block-b{padding:12px 14px;display:grid;gap:10px}
+.body-text{background:var(--bg);border-radius:6px;padding:10px 12px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{display:inline-flex;gap:4px;align-items:baseline;font-size:12px;border:1px solid var(--line);border-radius:4px;padding:2px 7px;background:var(--surface)}
+.tag b{font-weight:500;color:var(--muted)}
+.tag.low{border-color:var(--signal);background:var(--signal-soft)}
+.tag.miss{border-color:var(--danger);background:var(--danger-soft);color:var(--danger)}
+.evidence{font-size:12px;color:var(--muted);border-left:2px solid var(--line);padding-left:8px}
+.evidence q{color:var(--fg)}
+.ask{display:grid;gap:6px;background:var(--danger-soft);border-radius:6px;padding:10px 12px}
+.ask label{font-size:13px;font-weight:600;color:var(--danger)}
+
+/* photo editor */
+.editor{border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.toolbar{display:flex;gap:2px;flex-wrap:wrap;padding:6px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+.tool{border:1px solid transparent;background:none;color:var(--fg);font-size:12px;padding:4px 8px;border-radius:4px}
+.tool[aria-pressed="true"]{background:var(--surface);border-color:var(--accent);color:var(--accent)}
+.tool.sep{margin-left:auto}
+.canvas{background:var(--photo-bg);display:block;width:100%;height:auto}
+.markers{display:grid;gap:6px;padding:10px 12px}
+.marker{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;font-size:13px}
+.num{width:20px;height:20px;border-radius:50%;background:var(--danger);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;font-family:var(--mono)}
+
+/* metric table */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;letter-spacing:.06em;color:var(--muted);font-weight:600;text-transform:uppercase}
+td.num-col,th.num-col{text-align:right;font-family:var(--mono);font-variant-numeric:tabular-nums}
+td input{padding:4px 6px;text-align:right;font-family:var(--mono);max-width:84px}
+.spark{width:96px;height:24px;display:block}
+
+/* meeting view */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.kpi .v{font-family:var(--display);font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;line-height:1.2}
+.kpi .l{font-size:12px;color:var(--muted)}
+.kpi.warn .v{color:var(--signal)}
+.kpi.bad .v{color:var(--danger)}
+.meet{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.dept-list{display:grid;gap:0}
+.dept{display:grid;grid-template-columns:28px minmax(0,1fr) auto auto;gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid var(--line)}
+.dept:last-child{border-bottom:0}
+.dept .ord{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.close-list{display:grid;gap:10px}
+.close-item{border:1px solid var(--line);border-radius:8px;padding:12px;display:grid;gap:8px}
+.close-item.approved{border-color:var(--ok);background:var(--ok-soft)}
+.close-item.held{border-color:var(--signal)}
+.action{font-size:13px;background:var(--bg);border-radius:6px;padding:8px 10px}
+.cands{display:grid;gap:8px;margin-top:10px}
+.cand{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:center;border:1px solid var(--line);border-radius:6px;padding:8px 10px;font-size:13px}
+.stack{display:grid;gap:16px}
+
+/* knowledge view */
+.search{display:flex;gap:8px;margin-bottom:12px}
+.search input{font-size:15px;padding:10px 12px}
+.lib{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.lib button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:6px 10px;font-size:13px;color:var(--fg)}
+.lib button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.lib .c{font-family:var(--mono);color:var(--muted);margin-left:4px}
+.kgrid{display:grid;grid-template-columns:200px minmax(0,1fr) minmax(0,340px);gap:16px;align-items:start}
+.facet{display:grid;gap:4px;margin-bottom:14px}
+.facet h3{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:2px}
+.facet label{display:flex;gap:6px;align-items:center;font-size:13px;cursor:pointer}
+.facet .c{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--muted)}
+.answer{border:1px solid var(--accent);background:var(--accent-soft);border-radius:8px;padding:14px;margin-bottom:12px;display:grid;gap:8px}
+.answer p{max-width:68ch}
+.cite{font-family:var(--mono);font-size:11px;background:var(--surface);border:1px solid var(--line);border-radius:3px;padding:0 4px;color:var(--accent)}
+.results{display:grid;gap:10px}
+.case{border:1px solid var(--line);border-radius:8px;background:var(--surface);padding:12px 14px;display:grid;gap:8px;cursor:pointer;text-align:left;color:var(--fg);width:100%}
+.case[aria-current="true"]{border-color:var(--accent);box-shadow:inset 3px 0 0 var(--accent)}
+.triple{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;font-size:13px}
+.triple div{background:var(--bg);border-radius:6px;padding:6px 8px;min-width:0}
+.triple b{display:block;font-size:11px;color:var(--muted);font-weight:600}
+.src{font-size:12px;color:var(--muted)}
+.timeline{list-style:none;margin:0;padding:0;display:grid;gap:0}
+.timeline li{display:grid;grid-template-columns:62px 14px minmax(0,1fr);gap:8px;font-size:13px;padding-bottom:12px;position:relative}
+.timeline .w{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--accent);margin-top:5px}
+.timeline li:not(:last-child)::after{content:"";position:absolute;left:74px;top:17px;bottom:0;width:2px;background:var(--line)}
+.graph{width:100%;height:auto;display:block}
+.graph text{font-family:var(--body);font-size:11px;fill:var(--fg)}
+.graph .edge{stroke:var(--line);stroke-width:1.5}
+.graph .n-eq{fill:var(--accent-soft);stroke:var(--accent)}
+.graph .n-sym{fill:var(--signal-soft);stroke:var(--signal)}
+.graph .n-cause{fill:var(--danger-soft);stroke:var(--danger)}
+.graph .n-hull{fill:var(--surface-2);stroke:var(--muted)}
+.graph .n-dept{fill:var(--share-soft);stroke:var(--share)}
+
+@media (max-width:1080px){
+  .kgrid{grid-template-columns:minmax(0,1fr)}
+  .facets{display:flex;flex-wrap:wrap;gap:16px}
+  .facet{margin-bottom:0;min-width:150px}
+}
+@media (max-width:900px){
+  .compose,.meet{grid-template-columns:minmax(0,1fr)}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media (max-width:520px){
+  .triple{grid-template-columns:minmax(0,1fr)}
+  .search{flex-direction:column}
+}
+@media (prefers-reduced-motion:no-preference){
+  .view{animation:fade .18s ease-out}
+  @keyframes fade{from{opacity:.4}to{opacity:1}}
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>커미셔닝팀 주간보고</h1>
+      <span class="week">2026-W42 · 10.12–10.16</span>
+    </div>
+    <span class="sample">화면 시안 · 예시 데이터</span>
+  </header>
+
+  <nav class="tabs" role="tablist" aria-label="화면">
+    <button class="tab" role="tab" id="t-write" aria-controls="v-write" aria-selected="true">부서 작성<small>부서 3</small></button>
+    <button class="tab" role="tab" id="t-meet" aria-controls="v-meet" aria-selected="false">회의 · 팀 보고서<small>5/7 확정</small></button>
+    <button class="tab" role="tab" id="t-know" aria-controls="v-know" aria-selected="false">지식창고<small>1,284</small></button>
+  </nav>
+
+  <!-- ===== 작성 ===== -->
+  <section class="view" id="v-write" role="tabpanel" aria-labelledby="t-write">
+    <div class="steps" aria-label="작성 단계">
+      <span class="step done">① 메모 입력</span>
+      <span class="step done">② AI 정리</span>
+      <span class="step now">③ 검토 · 수정</span>
+      <span class="step">④ 확정</span>
+    </div>
+
+    <div class="compose">
+      <!-- left: memo -->
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-h">
+            <h2>이번 주 메모</h2>
+            <span class="muted" style="font-size:12px">작성자 2명 · 마지막 입력 10.15 16:40</span>
+          </div>
+          <label for="memo" class="muted" style="font-size:12px;display:block;margin-bottom:6px">메모장 내용을 그대로 붙여넣으세요. 형식은 신경 쓰지 않아도 됩니다.</label>
+<textarea id="memo">- 2511 DG2 배기온도 편차 계속, 3번 실린더 +38도. 연료밸브 교체품 금요일 입고 예정. 정비업체 일정 조율중
+- 2514 카고펌프 No.3 씰 누유 발견(사진1). 메카니컬씰 하우징 쪽, 드레인 라인도 젖어있음(사진2). 일단 운전 정지
+- 선급 검사 일정 변경 : 2511 조타기 검사 10/21 → 10/23
+- 이번주 시운전 항목 완료율 74%, 신규 펀치 18건 미결 41건</textarea>
+          <div class="thumbs" aria-label="첨부 사진">
+            <div class="thumb">
+              <svg viewBox="0 0 84 56" aria-hidden="true"><rect width="84" height="56" fill="var(--photo-bg)"/><rect x="20" y="14" width="44" height="30" rx="4" fill="var(--photo-metal)"/><circle cx="42" cy="29" r="9" fill="var(--photo-dark)"/></svg>
+              사진1
+            </div>
+            <div class="thumb">
+              <svg viewBox="0 0 84 56" aria-hidden="true"><rect width="84" height="56" fill="var(--photo-bg)"/><rect x="6" y="24" width="72" height="8" fill="var(--photo-metal)"/><rect x="36" y="14" width="10" height="28" fill="var(--photo-dark)"/></svg>
+              사진2
+            </div>
+            <div class="thumb" style="display:grid;place-items:center;height:76px;border-style:dashed">+ 사진</div>
+          </div>
+          <div class="row" style="margin-top:12px">
+            <button class="btn primary" type="button">AI로 다시 정리</button>
+            <button class="btn" type="button">회의록에서 가져오기</button>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h">
+            <h2>지난주에서 이어온 항목</h2>
+            <span class="pill p-neutral">2건</span>
+          </div>
+          <div class="carry">
+            <div class="carry-item">
+              <div class="row"><span class="pill p-issue">이슈</span><span class="id">ISS-2026-0142</span><span class="muted" style="font-size:12px">3주차</span></div>
+              <strong>SN2511 발전기 No.2 배기온도 편차</strong>
+              <span class="muted" style="font-size:12px">메모에서 업데이트를 찾아 오른쪽 블록에 반영했습니다.</span>
+            </div>
+            <div class="carry-item">
+              <div class="row"><span class="pill p-problem">문제점</span><span class="id">PRB-2026-0097</span><span class="muted" style="font-size:12px">5주차 · 장기 미결</span></div>
+              <strong>SN2508 냉동기 고압 트립 반복</strong>
+              <label for="carry2" class="muted" style="font-size:12px">이번 주 메모에 언급이 없습니다. 한 줄 업데이트를 남겨주세요.</label>
+              <input type="text" id="carry2" placeholder="예: 부품 회신 대기, 다음 주 재시험">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- right: review -->
+      <div class="panel">
+        <div class="panel-h">
+          <h2>AI 정리 결과 · 블록 4개</h2>
+          <div class="row">
+            <span class="pill p-issue">확인 필요 3</span>
+            <span class="pill p-problem">빈 칸 1</span>
+          </div>
+        </div>
+
+        <div class="blocks">
+          <!-- block 1 -->
+          <article class="block">
+            <div class="block-h">
+              <span class="pill p-issue">이슈</span>
+              <h3>SN2511 발전기 No.2 배기온도 편차</h3>
+              <span class="id">ISS-2026-0142</span>
+              <label class="sr" for="st1" style="position:absolute;left:-9999px">상태</label>
+              <select id="st1" style="width:auto;padding:3px 6px;font-size:12px"><option>진행</option><option>종결 요청</option><option>신규</option></select>
+            </div>
+            <div class="block-b">
+              <p class="body-text">3번 실린더 배기온도가 평균 대비 +38℃. 연료분사밸브 교체품이 금요일 입고 예정이며 정비업체와 작업 일정을 조율 중.</p>
+              <div class="tags">
+                <span class="tag"><b>호선</b>SN2511</span>
+                <span class="tag"><b>선종</b>LNGC</span>
+                <span class="tag"><b>장비</b>발전기 No.2</span>
+                <span class="tag low" title="AI 확신 낮음"><b>분류</b>연소·배기 ?</span>
+                <span class="tag"><b>다음 액션</b>밸브 교체 후 부하시험</span>
+              </div>
+              <p class="evidence">근거: 메모 1행 <q>DG2 배기온도 편차 계속, 3번 실린더 +38도</q></p>
+            </div>
+          </article>
+
+          <!-- block 2 with photo editor -->
+          <article class="block">
+            <div class="block-h">
+              <span class="pill p-problem">문제점</span>
+              <h3>SN2514 카고펌프 No.3 메카니컬씰 누유</h3>
+              <span class="pill p-neutral">신규</span>
+            </div>
+            <div class="block-b">
+              <p class="body-text">메카니컬씰 하우징 부위 누유 발견, 드레인 라인까지 젖어 있음. 운전 정지 조치.</p>
+              <div class="tags">
+                <span class="tag"><b>호선</b>SN2514</span>
+                <span class="tag"><b>장비</b>카고펌프 No.3</span>
+                <span class="tag low"><b>부위</b>메카니컬씰 ?</span>
+                <span class="tag"><b>조치</b>운전 정지</span>
+                <span class="tag miss"><b>원인</b>미입력</span>
+              </div>
+
+              <div class="editor">
+                <div class="toolbar" role="toolbar" aria-label="사진 편집 도구">
+                  <button class="tool" type="button" aria-pressed="false">화살표</button>
+                  <button class="tool" type="button" aria-pressed="true">원</button>
+                  <button class="tool" type="button" aria-pressed="false">사각형</button>
+                  <button class="tool" type="button" aria-pressed="false">자유선</button>
+                  <button class="tool" type="button" aria-pressed="false">번호 ①</button>
+                  <button class="tool" type="button" aria-pressed="false">텍스트</button>
+                  <button class="tool" type="button" aria-pressed="false">확대 인셋</button>
+                  <button class="tool" type="button" aria-pressed="false">자르기</button>
+                  <button class="tool" type="button" aria-pressed="false">모자이크</button>
+                  <button class="tool sep" type="button" aria-pressed="false">조치 전/후</button>
+                </div>
+                <svg class="canvas" viewBox="0 0 560 250" role="img" aria-label="사진1 예시: 카고펌프 씰 하우징에 마킹 두 개">
+                  <rect width="560" height="250" fill="var(--photo-bg)"/>
+                  <rect x="40" y="150" width="480" height="26" fill="var(--photo-metal)"/>
+                  <rect x="190" y="60" width="180" height="110" rx="10" fill="var(--photo-metal)"/>
+                  <circle cx="280" cy="115" r="34" fill="var(--photo-dark)"/>
+                  <rect x="262" y="20" width="36" height="44" fill="var(--photo-dark)"/>
+                  <rect x="400" y="176" width="14" height="60" fill="var(--photo-dark)"/>
+                  <circle cx="320" cy="132" r="30" fill="none" stroke="var(--danger)" stroke-width="3"/>
+                  <circle cx="356" cy="102" r="12" fill="var(--danger)"/><text x="356" y="107" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="IBM Plex Mono,monospace">1</text>
+                  <rect x="388" y="186" width="38" height="52" fill="none" stroke="var(--danger)" stroke-width="3"/>
+                  <circle cx="440" cy="190" r="12" fill="var(--danger)"/><text x="440" y="195" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="IBM Plex Mono,monospace">2</text>
+                  <rect x="18" y="16" width="150" height="26" rx="4" fill="var(--surface)" opacity=".9"/>
+                  <text x="28" y="34" font-size="13" fill="var(--fg)" font-family="IBM Plex Sans KR,sans-serif">10/14 기관실 하부</text>
+                </svg>
+                <div class="markers">
+                  <div class="marker"><span class="num">1</span><span>씰 하우징 누유 지점</span><span class="tag"><b>태그</b>메카니컬씰</span></div>
+                  <div class="marker"><span class="num">2</span><span>드레인 라인 오염</span><span class="tag"><b>태그</b>드레인 배관</span></div>
+                </div>
+              </div>
+
+              <div class="ask">
+                <label for="cause2">원인이 확인됐나요? 모르면 "조사 중"으로 남겨도 됩니다.</label>
+                <input type="text" id="cause2" placeholder="예: 씰 면 손상 / 축 정렬 불량 / 조사 중">
+              </div>
+            </div>
+          </article>
+
+          <!-- block 3 -->
+          <article class="block">
+            <div class="block-h">
+              <span class="pill p-share">공유정보</span>
+              <h3>SN2511 조타기 선급 검사 일정 변경</h3>
+            </div>
+            <div class="block-b">
+              <p class="body-text">조타기 선급 검사 10/21 → 10/23으로 변경.</p>
+              <div class="tags">
+                <span class="tag"><b>호선</b>SN2511</span>
+                <span class="tag"><b>장비</b>조타기</span>
+                <span class="tag low"><b>관련</b>선급 검사 ?</span>
+              </div>
+            </div>
+          </article>
+
+          <!-- block 4 dashboard -->
+          <article class="block">
+            <div class="block-h">
+              <span class="pill p-accent">대시보드</span>
+              <h3>부서 3 시운전 지표</h3>
+              <span class="muted" style="font-size:12px">최근 6주 추이</span>
+            </div>
+            <div class="block-b">
+              <div class="tablewrap">
+                <table>
+                  <thead><tr><th>지표</th><th class="num-col">이번 주</th><th>단위</th><th>추이</th><th>코멘트</th></tr></thead>
+                  <tbody>
+                    <tr>
+                      <td>시운전 항목 완료율</td>
+                      <td class="num-col"><label for="m1" style="position:absolute;left:-9999px">완료율</label><input id="m1" type="number" value="74"></td>
+                      <td>%</td>
+                      <td><svg class="spark" viewBox="0 0 96 24" aria-hidden="true"><path d="M2 20 L20 17 L38 15 L56 12 L74 9 L92 6" fill="none" stroke="var(--accent)" stroke-width="1.6"/><circle cx="92" cy="6" r="2.6" fill="var(--accent)"/></svg></td>
+                      <td class="muted">계획 대비 -3%p</td>
+                    </tr>
+                    <tr>
+                      <td>신규 펀치</td>
+                      <td class="num-col"><label for="m2" style="position:absolute;left:-9999px">신규 펀치</label><input id="m2" type="number" value="18"></td>
+                      <td>건</td>
+                      <td><svg class="spark" viewBox="0 0 96 24" aria-hidden="true"><path d="M2 14 L20 15 L38 13 L56 14 L74 15 L92 4" fill="none" stroke="var(--signal)" stroke-width="1.6"/><circle cx="92" cy="4" r="2.6" fill="var(--signal)"/></svg></td>
+                      <td><span class="pill p-issue">평소보다 높음</span></td>
+                    </tr>
+                    <tr>
+                      <td>미결 펀치</td>
+                      <td class="num-col"><label for="m3" style="position:absolute;left:-9999px">미결 펀치</label><input id="m3" type="number" value="41"></td>
+                      <td>건</td>
+                      <td><svg class="spark" viewBox="0 0 96 24" aria-hidden="true"><path d="M2 8 L20 9 L38 11 L56 12 L74 13 L92 12" fill="none" stroke="var(--muted)" stroke-width="1.6"/><circle cx="92" cy="12" r="2.6" fill="var(--muted)"/></svg></td>
+                      <td class="muted">—</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <div class="row" style="margin-top:16px;justify-content:flex-end">
+          <button class="btn" type="button">블록 추가</button>
+          <button class="btn primary" type="button" id="confirmBtn">부서 섹션 확정</button>
+        </div>
+        <p id="confirmMsg" class="muted" style="text-align:right;margin-top:6px;font-size:12px" aria-live="polite"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 회의 ===== -->
+  <section class="view" id="v-meet" role="tabpanel" aria-labelledby="t-meet" hidden>
+    <div class="kpis">
+      <div class="kpi"><div class="v">6</div><div class="l">이번 주 신규</div></div>
+      <div class="kpi"><div class="v">14</div><div class="l">진행 중</div></div>
+      <div class="kpi warn"><div class="v" id="kpiClose">3</div><div class="l">종결 승인 대기</div></div>
+      <div class="kpi bad"><div class="v">2</div><div class="l">장기 미결 (4주 이상)</div></div>
+    </div>
+
+    <div class="meet">
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-h">
+            <h2>부서별 제출 현황</h2>
+            <div class="row">
+              <button class="btn sm" type="button">회의 화면 시작</button>
+              <button class="btn sm primary" type="button">PPT 내보내기</button>
+            </div>
+          </div>
+          <div class="dept-list">
+            <div class="dept"><span class="ord">01</span><span>부서 1</span><span class="muted mono" style="font-size:12px">블록 6</span><span class="pill p-ok">확정</span></div>
+            <div class="dept"><span class="ord">02</span><span>부서 2</span><span class="muted mono" style="font-size:12px">블록 4</span><span class="pill p-ok">확정</span></div>
+            <div class="dept"><span class="ord">03</span><span>부서 3</span><span class="muted mono" style="font-size:12px">블록 4</span><span class="pill p-issue" id="dept3state">검토 중</span></div>
+            <div class="dept"><span class="ord">04</span><span>부서 4</span><span class="muted mono" style="font-size:12px">블록 7</span><span class="pill p-ok">확정</span></div>
+            <div class="dept"><span class="ord">05</span><span>부서 5</span><span class="muted mono" style="font-size:12px">블록 3</span><span class="pill p-ok">확정</span></div>
+            <div class="dept"><span class="ord">06</span><span>부서 6</span><span class="muted mono" style="font-size:12px">블록 5</span><span class="pill p-ok">확정</span></div>
+            <div class="dept"><span class="ord">07</span><span>부서 7</span><span class="muted mono" style="font-size:12px">블록 0</span><span class="pill p-problem">미작성</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-h"><h2>회의 중 나온 이슈 등록</h2></div>
+          <div style="display:grid;gap:8px">
+            <label for="qTitle" class="muted" style="font-size:12px">바로 등록</label>
+            <div class="row" style="flex-wrap:nowrap">
+              <input type="text" id="qTitle" placeholder="이슈 제목">
+              <label for="qDept" style="position:absolute;left:-9999px">담당 부서</label>
+              <select id="qDept" style="width:auto"><option>부서 1</option><option>부서 2</option><option>부서 3</option><option>부서 4</option><option>부서 5</option><option>부서 6</option><option>부서 7</option></select>
+              <button class="btn primary" type="button" id="qAdd">등록</button>
+            </div>
+            <p id="qMsg" class="muted" style="font-size:12px" aria-live="polite"></p>
+            <label for="minutes" class="muted" style="font-size:12px;margin-top:6px">회의록 메모에서 추출</label>
+            <textarea id="minutes" rows="3">2514 카고펌프 동일 모델 타 호선도 점검 필요하다는 의견. 부서5에서 확인하기로. 냉동기 건은 제조사 엔지니어 방문 요청.</textarea>
+          </div>
+          <div class="cands" aria-label="AI가 찾은 이슈 후보">
+            <div class="cand"><span><strong>동일 모델 카고펌프 타 호선 점검</strong><br><span class="muted">담당 부서 5 · 회의 발생</span></span><button class="btn sm" type="button">등록</button></div>
+            <div class="cand"><span><strong>냉동기 제조사 엔지니어 방문 요청</strong><br><span class="muted">PRB-2026-0097에 연결 제안</span></span><button class="btn sm" type="button">연결</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-h">
+          <h2>종결 승인 대기</h2>
+          <span class="muted" style="font-size:12px">조치 내용이 있어야 종결됩니다</span>
+        </div>
+        <div class="close-list" id="closeList">
+          <div class="close-item">
+            <div class="row"><span class="pill p-issue">이슈</span><span class="id">ISS-2026-0118</span><span class="muted" style="font-size:12px">부서 2 · 4주</span></div>
+            <strong>SN2509 BOG 압축기 진동 경보</strong>
+            <p class="action"><span class="eyebrow">조치</span><br>커플링 정렬 재조정 후 진동 4.1 → 2.3 mm/s, 72시간 운전 이상 없음</p>
+            <div class="row"><button class="btn sm primary" type="button" data-act="ok">승인</button><button class="btn sm" type="button" data-act="hold">보류</button></div>
+          </div>
+          <div class="close-item">
+            <div class="row"><span class="pill p-problem">문제점</span><span class="id">PRB-2026-0102</span><span class="muted" style="font-size:12px">부서 4 · 2주</span></div>
+            <strong>SN2512 청수 발생기 생산량 부족</strong>
+            <p class="action"><span class="eyebrow">조치</span><br>진공 라인 체크밸브 교체, 생산량 정격 회복 (18.2 t/d)</p>
+            <div class="row"><button class="btn sm primary" type="button" data-act="ok">승인</button><button class="btn sm" type="button" data-act="hold">보류</button></div>
+          </div>
+          <div class="close-item">
+            <div class="row"><span class="pill p-issue">이슈</span><span class="id">ISS-2026-0125</span><span class="muted" style="font-size:12px">부서 6 · 3주</span></div>
+            <strong>SN2510 선교 경보 패널 오표시</strong>
+            <p class="action"><span class="eyebrow">조치</span><br>제조사 펌웨어 업데이트 적용, 전 채널 재확인 완료</p>
+            <div class="row"><button class="btn sm primary" type="button" data-act="ok">승인</button><button class="btn sm" type="button" data-act="hold">보류</button></div>
+          </div>
+        </div>
+        <p class="muted" style="font-size:12px;margin-top:12px">승인된 항목은 지식창고 사례로 자동 등록됩니다.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 지식창고 ===== -->
+  <section class="view" id="v-know" role="tabpanel" aria-labelledby="t-know" hidden>
+    <div class="search">
+      <label for="q" style="position:absolute;left:-9999px">지식창고 검색</label>
+      <input type="text" id="q" value="LNGC 발전기 배기온도 편차, 과거에 어떻게 조치했나?">
+      <button class="btn primary" type="button">검색</button>
+    </div>
+    <div class="lib" role="group" aria-label="지식 종류">
+      <button type="button" aria-pressed="true">전체<span class="c">1,284</span></button>
+      <button type="button" aria-pressed="false">사례<span class="c">412</span></button>
+      <button type="button" aria-pressed="false">공유정보<span class="c">538</span></button>
+      <button type="button" aria-pressed="false">지표 추이<span class="c">96</span></button>
+      <button type="button" aria-pressed="false">사진<span class="c">2,031</span></button>
+      <button type="button" aria-pressed="false">표준 용어집<span class="c">238</span></button>
+    </div>
+
+    <div class="kgrid">
+      <aside class="facets" aria-label="필터">
+        <div class="facet"><h3>호선</h3>
+          <label><input type="checkbox" checked> SN2511<span class="c">27</span></label>
+          <label><input type="checkbox"> SN2433<span class="c">19</span></label>
+          <label><input type="checkbox"> SN2402<span class="c">14</span></label>
+        </div>
+        <div class="facet"><h3>장비 · 시스템</h3>
+          <label><input type="checkbox" checked> 발전기<span class="c">63</span></label>
+          <label><input type="checkbox"> 카고펌프<span class="c">41</span></label>
+          <label><input type="checkbox"> 보일러<span class="c">38</span></label>
+        </div>
+        <div class="facet"><h3>선주 · 선종</h3>
+          <label><input type="checkbox" checked> LNGC<span class="c">208</span></label>
+          <label><input type="checkbox"> 컨테이너선<span class="c">131</span></label>
+          <label><input type="checkbox"> FLNG<span class="c">44</span></label>
+        </div>
+        <div class="facet"><h3>기간</h3>
+          <label><input type="radio" name="per" checked> 최근 2년</label>
+          <label><input type="radio" name="per"> 전체</label>
+        </div>
+      </aside>
+
+      <div style="min-width:0">
+        <div class="answer">
+          <div class="row"><span class="eyebrow" style="color:var(--accent)">AI 요약 · 사례 3건 근거</span></div>
+          <p>LNGC 발전기 배기온도 편차는 과거 3건 중 2건이 <strong>연료분사밸브 불량</strong>이었고, 밸브 교체 후 부하시험으로 종결했습니다 <span class="cite">CASE-0311</span> <span class="cite">CASE-0287</span>. 1건은 배기온도 센서 자체 오차로, 센서 교체로 해결됐습니다 <span class="cite">CASE-0352</span>. 밸브 교체 전 센서 교차 확인을 먼저 권장합니다.</p>
+        </div>
+
+        <div class="results" id="results">
+          <button class="case" type="button" aria-current="true" data-case="0311">
+            <div class="row"><span class="pill p-ok">종결 사례</span><span class="id">CASE-0311</span><strong style="flex:1 1 200px">SN2433 발전기 No.1 배기온도 편차</strong></div>
+            <div class="triple">
+              <div><b>증상</b>4번 실린더 +42℃</div>
+              <div><b>원인</b>연료분사밸브 노즐 마모</div>
+              <div><b>조치</b>밸브 교체, 부하시험 정상</div>
+            </div>
+            <span class="src">2025-W38 ~ W42 · 부서 3 → 부서 5 이관 · 사진 3</span>
+          </button>
+          <button class="case" type="button" aria-current="false" data-case="0287">
+            <div class="row"><span class="pill p-ok">종결 사례</span><span class="id">CASE-0287</span><strong style="flex:1 1 200px">SN2402 발전기 No.3 배기온도 불균형</strong></div>
+            <div class="triple">
+              <div><b>증상</b>2·5번 실린더 편차</div>
+              <div><b>원인</b>분사밸브 개방압 저하</div>
+              <div><b>조치</b>밸브 2개 교체</div>
+            </div>
+            <span class="src">2025-W11 ~ W13 · 부서 3 · 사진 2</span>
+          </button>
+          <button class="case" type="button" aria-current="false" data-case="0352">
+            <div class="row"><span class="pill p-ok">종결 사례</span><span class="id">CASE-0352</span><strong style="flex:1 1 200px">SN2433 발전기 No.2 배기온도 단일 실린더 이상</strong></div>
+            <div class="triple">
+              <div><b>증상</b>1번 실린더만 지시값 튐</div>
+              <div><b>원인</b>열전대 센서 오차</div>
+              <div><b>조치</b>센서 교체</div>
+            </div>
+            <span class="src">2025-W45 · 부서 6 · 사진 1</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="stack">
+        <div class="panel">
+          <div class="panel-h"><h2 id="tlTitle">CASE-0311 이력</h2></div>
+          <ol class="timeline" id="timeline">
+            <li><span class="w">W38</span><span class="dot"></span><span>부서 3 이슈 등록 · 4번 실린더 +42℃</span></li>
+            <li><span class="w">W39</span><span class="dot"></span><span>센서 교차 확인, 실제 편차 확인</span></li>
+            <li><span class="w">W40</span><span class="dot"></span><span>부서 5로 이관 · 밸브 분해 점검</span></li>
+            <li><span class="w">W41</span><span class="dot"></span><span>노즐 마모 확인, 교체품 발주</span></li>
+            <li><span class="w">W42</span><span class="dot" style="background:var(--ok)"></span><span>교체 · 부하시험 정상 · 회의 종결 승인</span></li>
+          </ol>
+        </div>
+        <div class="panel">
+          <div class="panel-h"><h2>연결된 지식</h2><span class="muted" style="font-size:12px">지식 그래프</span></div>
+          <svg class="graph" viewBox="0 0 320 200" role="img" aria-label="발전기, 배기온도 편차, 연료분사밸브 불량, 호선, 부서가 연결된 그래프">
+            <line class="edge" x1="160" y1="40" x2="160" y2="100"/>
+            <line class="edge" x1="160" y1="100" x2="70" y2="160"/>
+            <line class="edge" x1="160" y1="100" x2="250" y2="160"/>
+            <line class="edge" x1="160" y1="40" x2="60" y2="50"/>
+            <line class="edge" x1="160" y1="40" x2="262" y2="50"/>
+            <line class="edge" x1="250" y1="160" x2="280" y2="110"/>
+            <rect class="n-eq" x="108" y="26" width="104" height="28" rx="6"/><text x="160" y="44" text-anchor="middle">발전기</text>
+            <rect class="n-sym" x="98" y="86" width="124" height="28" rx="6"/><text x="160" y="104" text-anchor="middle">배기온도 편차</text>
+            <rect class="n-cause" x="12" y="146" width="124" height="28" rx="6"/><text x="74" y="164" text-anchor="middle">분사밸브 불량 ×2</text>
+            <rect class="n-cause" x="196" y="146" width="112" height="28" rx="6"/><text x="252" y="164" text-anchor="middle">센서 오차 ×1</text>
+            <rect class="n-hull" x="20" y="36" width="72" height="26" rx="6"/><text x="56" y="53" text-anchor="middle">SN2433</text>
+            <rect class="n-hull" x="226" y="36" width="72" height="26" rx="6"/><text x="262" y="53" text-anchor="middle">SN2511</text>
+            <rect class="n-dept" x="250" y="96" width="62" height="24" rx="6"/><text x="281" y="112" text-anchor="middle">부서 6</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  const tabs=[...document.querySelectorAll('.tab')];
+  function show(id){
+    tabs.forEach(t=>{const on=t.getAttribute('aria-controls')===id;t.setAttribute('aria-selected',on);document.getElementById(t.getAttribute('aria-controls')).hidden=!on;});
+    try{localStorage.setItem('wr-tab',id)}catch(e){}
+  }
+  tabs.forEach(t=>t.addEventListener('click',()=>show(t.getAttribute('aria-controls'))));
+  const hash=location.hash.replace('#','');
+  if(['v-write','v-meet','v-know'].includes(hash)) show(hash);
+
+  document.querySelectorAll('.toolbar').forEach(tb=>tb.addEventListener('click',e=>{
+    const b=e.target.closest('.tool'); if(!b||b.classList.contains('sep'))return;
+    tb.querySelectorAll('.tool:not(.sep)').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+  }));
+
+  document.getElementById('confirmBtn').addEventListener('click',()=>{
+    const cause=document.getElementById('cause2').value.trim();
+    const msg=document.getElementById('confirmMsg');
+    if(!cause){msg.style.color='var(--danger)';msg.textContent='카고펌프 블록의 원인 칸을 채워주세요. 모르면 "조사 중"이라고 적으면 됩니다.';document.getElementById('cause2').focus();return;}
+    msg.style.color='var(--ok)';msg.textContent='부서 3 섹션을 확정했습니다. 팀 보고서에 반영됐습니다.';
+    const s=document.getElementById('dept3state');s.className='pill p-ok';s.textContent='확정';
+    document.getElementById('t-meet').querySelector('small').textContent='6/7 확정';
+  });
+  document.getElementById('cause2').addEventListener('input',()=>{document.getElementById('confirmMsg').textContent='';});
+
+  let pending=3;
+  document.getElementById('closeList').addEventListener('click',e=>{
+    const b=e.target.closest('[data-act]'); if(!b)return;
+    const item=b.closest('.close-item'); const row=b.parentElement;
+    if(b.dataset.act==='ok'){item.className='close-item approved';row.innerHTML='<span class="pill p-ok">종결 승인 · 사례로 등록됨</span>';}
+    else{item.className='close-item held';row.innerHTML='<span class="pill p-issue">보류 · 다음 주 재검토</span>';}
+    pending--; document.getElementById('kpiClose').textContent=pending;
+  });
+
+  const qMsg=document.getElementById('qMsg');
+  document.getElementById('qAdd').addEventListener('click',()=>{
+    const t=document.getElementById('qTitle');
+    if(!t.value.trim()){qMsg.style.color='var(--danger)';qMsg.textContent='이슈 제목을 먼저 입력하세요.';t.focus();return;}
+    qMsg.style.color='var(--ok)';qMsg.textContent='"'+t.value.trim()+'"을(를) '+document.getElementById('qDept').value+'에 등록했습니다. 다음 주 해당 부서 섹션에 표시됩니다.';
+    t.value='';
+  });
+  document.getElementById('qTitle').addEventListener('input',()=>{qMsg.textContent='';});
+  document.querySelectorAll('.cand .btn').forEach(b=>b.addEventListener('click',()=>{b.outerHTML='<span class="pill p-ok">'+(b.textContent==='연결'?'연결됨':'등록됨')+'</span>';}));
+
+  document.querySelectorAll('.lib').forEach(g=>g.addEventListener('click',e=>{
+    const b=e.target.closest('button'); if(!b)return;
+    g.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true');
+  }));
+
+  const tl={
+    '0311':[['W38','부서 3 이슈 등록 · 4번 실린더 +42℃'],['W39','센서 교차 확인, 실제 편차 확인'],['W40','부서 5로 이관 · 밸브 분해 점검'],['W41','노즐 마모 확인, 교체품 발주'],['W42','교체 · 부하시험 정상 · 회의 종결 승인',1]],
+    '0287':[['W11','부서 3 이슈 등록 · 2·5번 실린더 편차'],['W12','분사밸브 개방압 측정, 기준 미달'],['W13','밸브 2개 교체 · 회의 종결 승인',1]],
+    '0352':[['W45','부서 6 등록 · 1번 실린더 지시값 튐'],['W45','휴대용 온도계 교차 측정, 실제 정상'],['W45','열전대 교체 · 당일 종결 승인',1]]
+  };
+  document.getElementById('results').addEventListener('click',e=>{
+    const c=e.target.closest('.case'); if(!c)return;
+    document.querySelectorAll('.case').forEach(x=>x.setAttribute('aria-current','false')); c.setAttribute('aria-current','true');
+    const id=c.dataset.case;
+    document.getElementById('tlTitle').textContent='CASE-'+id+' 이력';
+    document.getElementById('timeline').innerHTML=tl[id].map(r=>'<li><span class="w">'+r[0]+'</span><span class="dot"'+(r[2]?' style="background:var(--ok)"':'')+'></span><span>'+r[1]+'</span></li>').join('');
+  });
+})();
+</script>

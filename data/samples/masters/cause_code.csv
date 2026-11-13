@@ -1,0 +1,7 @@
+id,code,name,parent_id
+CA-FUEL,FUEL,연료 계통,
+CA-INJ,INJ,연료분사밸브 불량,CA-FUEL
+CA-FILTER,FILTER,연료 필터 막힘,CA-FUEL
+CA-SENSOR,SENSOR,센서 오차,
+CA-SEAL,SEAL,씰 손상,
+CA-INVEST,INVEST,조사 중,

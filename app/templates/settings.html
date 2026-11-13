@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}설정 · {{ app_title }}{% endblock %}
+{% block content %}
+<div class="stack settings">
+  <header><h2 class="page-title">설정</h2></header>
+  {% if msg %}<p class="flash ok" role="status">{{ msg }}</p>{% endif %}
+
+  <section class="panel" id="depts" aria-labelledby="deptH">
+    <div class="panel-h">
+      <h2 id="deptH">부서</h2>
+      <span class="muted small">이름을 바꿔도 지금까지의 기록은 그대로 새 이름으로 보입니다(부서 ID 는 바뀌지 않습니다)</span>
+    </div>
+    {% if errs %}
+    <div class="flash bad" role="alert"><b>저장하지 않았습니다.</b> 아래를 고친 뒤 다시 저장해주세요.
+      <ul>{% for e in errs %}<li>{{ e }}</li>{% endfor %}</ul></div>
+    {% endif %}
+    <form method="post" action="/settings/departments">
+      <div class="tablewrap"><table class="set-table">
+        <thead><tr><th scope="col">ID</th><th scope="col">부서 이름</th><th scope="col">코드</th><th scope="col">표시 순서</th><th scope="col">기록</th></tr></thead>
+        <tbody>
+        {% for d in (posted if posted is defined else depts) %}
+        <tr>
+          <td class="mono small">{{ d.id or "새 부서" }}<input type="hidden" name="id" value="{{ d.id }}"></td>
+          <td><label class="sr" for="dn{{ loop.index }}">부서 이름</label>
+            <input id="dn{{ loop.index }}" name="name" value="{{ d.name }}" maxlength="64" required></td>
+          <td><label class="sr" for="dc{{ loop.index }}">코드</label>
+            <input id="dc{{ loop.index }}" name="code" value="{{ d.code }}" maxlength="32" class="w-code"></td>
+          <td><label class="sr" for="do{{ loop.index }}">표시 순서</label>
+            <input id="do{{ loop.index }}" name="order_no" value="{{ d.order_no }}" inputmode="numeric" class="w-num"></td>
+          <td class="small muted">{% if d.id %}{{ usage.get(d.id, 0) }}건{% endif %}</td>
+        </tr>
+        {% endfor %}
+        <tr class="new-row">
+          <td class="mono small">새 부서<input type="hidden" name="id" value=""></td>
+          <td><label class="sr" for="dnNew">새 부서 이름</label><input id="dnNew" name="name" value="" maxlength="64" placeholder="추가할 때만 입력"></td>
+          <td><label class="sr" for="dcNew">새 부서 코드</label><input id="dcNew" name="code" value="" maxlength="32" class="w-code" placeholder="비우면 이름"></td>
+          <td><label class="sr" for="doNew">새 부서 순서</label><input id="doNew" name="order_no" value="{{ ((depts | length) + 1) * 10 }}" inputmode="numeric" class="w-num"></td>
+          <td></td>
+        </tr>
+        </tbody>
+      </table></div>
+      <div class="actions"><button class="btn primary" type="submit">부서 저장</button>
+        <span class="muted small">표시 순서가 작은 부서가 먼저 나옵니다. 부서는 지우지 않습니다 — 기록이 남아 있을 수 있어서입니다.</span></div>
+    </form>
+  </section>
+
+  <section class="panel" id="hulls" aria-labelledby="hullH">
+    <div class="panel-h">
+      <h2 id="hullH">호선 · 마일스톤 연계</h2>
+      <span class="muted small">호선은 중앙 pjtlist 가 정본입니다. 이 앱은 읽기만 하고 고치지 않습니다</span>
+    </div>
+    <dl class="id-list">
+      <dt>읽는 폴더</dt><dd class="mono small">{{ central.dir }}</dd>
+      {% for name, label in (("pjtlist", "호선 목록 (pjtlist)"), ("milestone", "이벤트 날짜 (milestone)")) %}
+      {% set c = central[name] %}
+      <dt>{{ label }}</dt>
+      <dd>{% if c.rows is not none %}<span class="pill p-ok">읽음</span> {{ c.rows }}행 · 수정 {{ c.mtime }}
+          {% else %}<span class="pill p-problem">못 읽음</span> <span class="small">{{ c.reason }}</span>{% endif %}</dd>
+      {% endfor %}
+      <dt>앱의 호선</dt><dd>{{ hull_n }}척 · 그중 pjtlist 에서 온 것 {{ hull_pj }}척</dd>
+      <dt>마지막 동기화</dt>
+      <dd>{% if last.at %}{{ last.at.strftime("%Y-%m-%d %H:%M") }} —
+          {% set r = last.report %}{% if r.ok %}새로 {{ r.created | length }} · 갱신 {{ r.updated | length }}{% if r.relinked %} · 미등록 표기 {{ r.relinked }}건 연결{% endif %}
+          {% else %}<span class="small">{{ r.reason }}</span>{% endif %}
+        {% else %}<span class="muted">이 서버를 켠 뒤 아직 없습니다</span>{% endif %}</dd>
+    </dl>
+    <form method="post" action="/settings/sync" class="actions">
+      <button class="btn primary" type="submit">지금 다시 읽기</button>
+      <span class="muted small">서버를 켤 때도 한 번 자동으로 읽습니다. 호선을 새로 만들거나 고치기만 하고 지우지는 않습니다.</span>
+    </form>
+    {% if not_in %}
+    <p class="small"><b>pjtlist 에 없는 호선 {{ not_in | length }}척</b> — 예전 기준정보 CSV 로 들어온 호선입니다. 기록이 이어져 있을 수 있어 그대로 둡니다.</p>
+    <p class="mono small muted">{{ not_in | join(" · ") }}</p>
+    {% endif %}
+    <p class="muted small">중앙 parquet 폴더는 사내망이면 NAS, 아니면 <span class="mono">DATA_PATH\parquet</span> 를 씁니다.
+      다른 곳을 읽게 하려면 <span class="mono">secret\.env</span> 에 <span class="mono">MEETING_CENTRAL_PARQUET=폴더</span> 를 넣어주세요.</p>
+  </section>
+  <section class="panel" id="alerts" aria-labelledby="alH">
+    <div class="panel-h"><h2 id="alH">일정 경보 — 이벤트별 기본 경보 일수</h2><span class="small muted">이슈의 「~전 해결」 목표가 D-n 이내면 「일정 임박」(이슈마다 따로 고칠 수 있음)</span></div>
+    <form method="post" action="/settings/alerts" class="al-grid">
+      {% for a in alert_defaults %}<label class="f">{{ a.label }}<input type="number" min="0" max="180" name="d_{{ a.code }}" value="{{ a.days }}"></label>{% endfor %}
+      <div class="row"><button class="btn primary sm" type="submit">저장</button><span class="small muted">처음 값은 모두 14일입니다.</span></div>
+    </form>
+  </section>
+  <section class="panel" id="metric-range" aria-labelledby="mrH">
+    <div class="panel-h"><h2 id="mrH">지표 — 평소 범위 기간</h2><span class="small muted">평소 범위를 정하지 않은 지표는 최근 n주 값의 평균 ± 2σ 를 벗어나면 「차이 사유」를 묻습니다</span></div>
+    <form method="post" action="/settings/metrics" class="row">
+      <label class="f">최근 몇 주<input type="number" min="3" max="52" name="range_weeks" value="{{ range_weeks }}"></label>
+      <button class="btn primary sm" type="submit">저장</button><span class="small muted">처음 값은 8주입니다(3~52주). 값이 3주보다 적게 쌓인 지표는 판단하지 않습니다.</span>
+    </form>
+  </section>
+</div>
+{% endblock %}

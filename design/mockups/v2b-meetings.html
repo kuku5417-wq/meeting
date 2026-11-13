@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 B안 회의 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<style>
+/* 회의 목록 B안(iPadOS 그룹 목록) — 행 하나 = 그 회의의 다음 할 일 링크. 카드 「설정」 없음, 수시 회의만 만든다 */
+.mc{grid-template-columns:minmax(0,1fr) auto;color:inherit}
+.mc b{font-weight:600}
+.mc .go{font-size:var(--fs-2);font-weight:600;color:var(--accent);white-space:nowrap}
+.mk .row{align-items:end}
+.mk .row label{min-width:180px}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">회의·지식</span>
+  <nav class="nav" aria-label="메뉴"><a href="v2b-home.html">홈</a><a href="v2b-issue-desk.html">이슈</a><a href="v2b-meetings.html" aria-current="page">회의</a><a href="v2-metrics.html">지표</a><a href="#">지식창고</a><a href="#">장비 허브</a></nav>
+  <div class="right"><span>기획운영</span><a id="toA" href="#">A안 보기</a></div>
+</header>
+<details class="note"><summary>시안 설명 — B안 회의</summary>카드를 누르면 그 회의의 다음 할 일로 바로 갑니다 — 작성 중인 부서 자료는 편집, 발행된 자료는 보기. 정기 회의(부서 자료·공유회·팀장 정보회의)는 매주 자동으로 생겨 「만들기」가 필요 없습니다. 데이터는 가상입니다.</details>
+<main class="page">
+  <div class="ph"><h1>회의</h1><span class="mono muted">2026-W43</span></div>
+  <div class="sec-h" id="uH">이번 주</div>
+  <div class="group" id="cards" aria-labelledby="uH"></div>
+  <div class="sec-h" id="nH">수시 회의 만들기</div>
+  <section class="panel" aria-labelledby="nH">
+    <div class="mk" style="display:grid;gap:12px">
+      <div class="row"><label class="f">종류<select><option>호선별 회의</option><option>문제점·장비 리뷰</option></select></label><label class="f">호선<select><option>SN2511</option><option>SN2514</option></select></label><label class="f">날짜<input type="text" value="10/24(금) 10:00" style="width:180px"></label></div>
+      <span class="small muted">후보는 그 호선·자매선의 열린 이슈로 자동으로 채워집니다. 만들면 바로 편집 화면이 열립니다.</span>
+      <div><a class="btn primary" href="v2b-studio.html?kind=dept">만들고 편집하기</a></div>
+    </div>
+  </section>
+  <div class="sec-h" id="pH">지난 회의</div>
+  <div class="group" aria-labelledby="pH"><a class="cell tap mc" href="v2b-meeting-view.html?m=share"><span style="display:grid;gap:2px"><b>W42 부서 현안 공유회</b><span class="meta"><span>부서 현안 공유회 · 10/16(목)</span><span>종료 · 안건 13 · 종결 2 · 지시 3</span></span></span><span class="go chev">기록 보기</span></a></div>
+</main>
+<script type="module">
+import {$, esc} from './v2b.js';
+import {MEETINGS} from './v2b-data.js';
+// 카드 하나 = 그 회의의 지금 다음 할 일
+const NEXT = {dept: ['편집 계속 →', 'v2b-studio.html?kind=dept'], share: ['취합·발행 →', 'v2b-studio.html?kind=share'], exec: ['구성하기 →', 'v2b-studio.html?kind=exec'], hull: ['자료 보기 →', 'v2b-meeting-view.html?m=hull']};
+$('#cards').innerHTML = MEETINGS.map((m) => `<a class="cell tap mc" href="${NEXT[m.id][1]}"><span style="display:grid;gap:2px"><b>${esc(m.title)}</b><span class="meta"><span>${m.kind} · ${esc(m.when)}</span><span>${esc(m.owner)} · ${esc(m.state)} · 안건 ${m.n}</span></span></span><span class="go chev">${NEXT[m.id][0].replace(' →', '')}</span></a>`).join('');
+</script>
+</body>
+</html>

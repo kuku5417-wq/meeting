@@ -1,0 +1,700 @@
+<title>회의자료 작성 화면</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: three-pane editor — left outline (sections, carry-over, block palette), center working canvas (memo → blocks), right output (slide preview, checklist, similar cases, export). A numbered feature strip on top maps every function to its place. */
+:root{
+  --bg:#eef2f3; --surface:#ffffff; --surface-2:#e6ecee; --fg:#14212b; --muted:#566570; --line:#cfd8dd;
+  --accent:#0b6e78; --accent-soft:#d8ecec; --accent-fg:#ffffff;
+  --signal:#b86e00; --signal-soft:#fbefd9;
+  --danger:#b83a26; --danger-soft:#f8e3df;
+  --ok:#2c7a4b; --ok-soft:#dff0e5;
+  --share:#35589c; --share-soft:#e2e9f6;
+  --anno:#6a3fb5; --anno-soft:#ece4f8;
+  --photo-bg:#c9d3d8; --photo-metal:#8d9ba3; --photo-dark:#56646c;
+  --slide:#ffffff; --slide-fg:#14212b; --slide-band:#0b6e78;
+  --display:"Gothic A1","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e161b; --surface:#152128; --surface-2:#1c2b33; --fg:#e2eaee; --muted:#95a5af; --line:#2a3b44;
+  --accent:#4fb3bc; --accent-soft:#163a3e; --accent-fg:#06262a;
+  --signal:#f0a830; --signal-soft:#3a2c12; --danger:#ef7a64; --danger-soft:#3a1f1a;
+  --ok:#5cb87f; --ok-soft:#173222; --share:#8fa9e0; --share-soft:#1e2a44;
+  --anno:#b9a0ec; --anno-soft:#2c2342;
+  --photo-bg:#2b383f; --photo-metal:#56656d; --photo-dark:#8a99a1;
+  --slide:#f4f7f8; --slide-fg:#14212b; --slide-band:#0b6e78; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0e161b; --surface:#152128; --surface-2:#1c2b33; --fg:#e2eaee; --muted:#95a5af; --line:#2a3b44;
+  --accent:#4fb3bc; --accent-soft:#163a3e; --accent-fg:#06262a;
+  --signal:#f0a830; --signal-soft:#3a2c12; --danger:#ef7a64; --danger-soft:#3a1f1a;
+  --ok:#5cb87f; --ok-soft:#173222; --share:#8fa9e0; --share-soft:#1e2a44;
+  --anno:#b9a0ec; --anno-soft:#2c2342;
+  --photo-bg:#2b383f; --photo-metal:#56656d; --photo-dark:#8a99a1;
+  --slide:#f4f7f8; --slide-fg:#14212b; --slide-band:#0b6e78; color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.55}
+.wrap{max-width:1440px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px;display:grid;gap:14px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-0.01em}
+h1{font-size:20px;font-weight:800}
+h2{font-size:15px;font-weight:700}
+h3{font-size:14px;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.small{font-size:12px}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sr{position:absolute;left:-9999px}
+textarea,input[type=text],input[type=number],select{width:100%;font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px}
+textarea{resize:vertical;line-height:1.6}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding-top:16px}
+.titleline{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px}
+.week{font-family:var(--mono);font-size:12px;padding:3px 8px;border:1px solid var(--line);border-radius:4px;background:var(--surface)}
+.sample{font-size:12px;color:var(--signal);background:var(--signal-soft);padding:3px 8px;border-radius:4px}
+.steps{display:flex;gap:6px;flex-wrap:wrap}
+.step{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--muted);background:var(--surface)}
+.step.done{color:var(--ok);border-color:var(--ok)}
+.step.now{color:var(--accent-fg);background:var(--accent);border-color:var(--accent)}
+
+/* feature strip */
+.fmap{background:var(--anno-soft);border:1px solid var(--anno);border-radius:8px;padding:12px 14px;display:grid;gap:10px}
+.fmap-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.fmap-h h2{color:var(--anno)}
+.switch{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--anno);font-weight:600}
+.flist{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px}
+.fitem{display:flex;gap:8px;align-items:flex-start;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:6px 8px;font-size:12px;line-height:1.4}
+.fitem:hover{border-color:var(--anno)}
+.fitem b{display:block;font-size:13px}
+.no{flex:none;display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;background:var(--anno);color:var(--surface);font-family:var(--mono);font-size:11px;font-weight:600}
+.fbadge{vertical-align:2px;margin-left:4px}
+body.hide-anno .fbadge{display:none}
+.hl{box-shadow:0 0 0 2px var(--anno)!important;transition:box-shadow .2s}
+
+/* layout */
+.editor{display:grid;grid-template-columns:250px minmax(0,1fr) 380px;gap:14px;align-items:start}
+.col{display:grid;gap:14px;min-width:0}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;min-width:0;scroll-margin-top:12px}
+.panel-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{border:1px solid var(--line);background:var(--surface);padding:7px 12px;border-radius:6px;font-weight:500}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-share{background:var(--share-soft);color:var(--share)}
+.p-problem{background:var(--danger-soft);color:var(--danger)}
+.p-issue{background:var(--signal-soft);color:var(--signal)}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-neutral{background:var(--surface-2);color:var(--muted)}
+.p-accent{background:var(--accent-soft);color:var(--accent)}
+.id{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+/* left */
+.depts{display:grid;gap:2px}
+.dept{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:6px;align-items:center;padding:6px 8px;border-radius:6px;font-size:13px}
+.dept.me{background:var(--accent-soft);color:var(--accent);font-weight:600}
+.dept .o{font-family:var(--mono);font-size:11px;color:var(--muted)}
+.sdot{width:8px;height:8px;border-radius:50%}
+.outline{display:grid;gap:4px;margin-top:6px;padding-left:10px;border-left:2px solid var(--line)}
+.outline a{font-size:12px;color:var(--fg);text-decoration:none;display:flex;gap:6px;align-items:center;padding:3px 4px;border-radius:4px}
+.outline a:hover{background:var(--surface-2)}
+.carry-item{border:1px dashed var(--line);border-radius:6px;padding:8px;display:grid;gap:6px;font-size:13px}
+.palette{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.palette button{border:1px solid var(--line);background:var(--surface);border-radius:6px;padding:8px 6px;font-size:12px;font-weight:600;display:grid;gap:2px;text-align:left}
+.palette button span{font-weight:400;color:var(--muted);font-size:11px}
+.palette button:hover{border-color:var(--accent)}
+
+/* memo */
+#memo{min-height:150px;font-family:var(--mono);font-size:13px}
+.authors{display:flex;gap:6px;flex-wrap:wrap}
+.au{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:2px 8px;background:var(--surface)}
+.au i{font-style:normal;display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.attach{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.th{width:64px;border:1px solid var(--line);border-radius:6px;overflow:hidden;font-size:11px;color:var(--muted);text-align:center;background:var(--surface-2)}
+.th svg{display:block;width:100%;height:auto}
+
+/* blocks */
+.block{border:1px solid var(--line);border-radius:8px;background:var(--surface);overflow:hidden;scroll-margin-top:12px}
+.block-h{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:10px 12px;border-bottom:1px solid var(--line);background:var(--bg)}
+.block-h h3{flex:1 1 200px;min-width:0}
+.block-h select{width:auto;padding:3px 6px;font-size:12px}
+.block-b{padding:12px;display:grid;gap:10px}
+.body-text{min-height:58px}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.tag{display:inline-flex;gap:4px;align-items:center;font-size:12px;border:1px solid var(--line);border-radius:4px;padding:2px 7px;background:var(--surface)}
+.tag b{font-weight:500;color:var(--muted)}
+.tag.low{border-color:var(--signal);background:var(--signal-soft)}
+.tag.low button{border:0;background:var(--signal);color:var(--surface);border-radius:3px;font-size:11px;padding:0 5px}
+.tag.ok{border-color:var(--ok);background:var(--ok-soft)}
+.tag.miss{border-color:var(--danger);background:var(--danger-soft);color:var(--danger)}
+.tag .link{font-family:var(--mono);font-size:11px;color:var(--accent)}
+.evidence{font-size:12px;color:var(--muted);border-left:2px solid var(--line);padding-left:8px}
+.evidence q{color:var(--fg)}
+.ask{display:grid;gap:6px;background:var(--danger-soft);border-radius:6px;padding:10px}
+.ask label{font-size:13px;font-weight:600;color:var(--danger)}
+.ask.done{background:var(--ok-soft)}
+.ask.done label{color:var(--ok)}
+.block-f{display:flex;gap:6px;flex-wrap:wrap;padding:8px 12px;border-top:1px solid var(--line)}
+
+/* photo editor */
+.ped{border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.toolbar{display:flex;gap:2px;flex-wrap:wrap;padding:6px;background:var(--surface-2);border-bottom:1px solid var(--line);align-items:center}
+.tgroup{display:flex;gap:2px;padding-right:6px;margin-right:4px;border-right:1px solid var(--line)}
+.tgroup:last-child{border-right:0}
+.tool{border:1px solid transparent;background:none;font-size:12px;padding:4px 7px;border-radius:4px}
+.tool[aria-pressed="true"]{background:var(--surface);border-color:var(--accent);color:var(--accent)}
+.swatch{width:16px;height:16px;border-radius:50%;border:2px solid var(--surface);box-shadow:0 0 0 1px var(--line);padding:0}
+.swatch[aria-pressed="true"]{box-shadow:0 0 0 2px var(--accent)}
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 150px}
+.canvas{display:block;width:100%;height:auto;background:var(--photo-bg);cursor:crosshair}
+.compare{border-left:1px solid var(--line);display:grid;grid-template-rows:auto 1fr auto 1fr;font-size:11px;color:var(--muted)}
+.compare span{padding:4px 6px;background:var(--surface-2)}
+.compare svg{display:block;width:100%;height:auto}
+.mlist{display:grid;gap:6px;padding:10px}
+.mrow{display:grid;grid-template-columns:auto minmax(0,1fr) 130px auto;gap:6px;align-items:center}
+.mrow input,.mrow select{padding:4px 6px;font-size:12px}
+.num{width:20px;height:20px;border-radius:50%;background:var(--danger);color:#fff;font-size:11px;font-weight:700;display:grid;place-items:center;font-family:var(--mono)}
+.hint{font-size:12px;color:var(--muted);padding:0 10px 10px}
+
+/* dashboard */
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:6px;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:11px;letter-spacing:.06em;color:var(--muted);font-weight:600;text-transform:uppercase;white-space:nowrap}
+td input{padding:4px 6px;text-align:right;font-family:var(--mono);max-width:76px}
+td input.cm{text-align:left;max-width:none;font-family:var(--body)}
+.spark{width:90px;height:24px;display:block}
+.dash-split{display:grid;grid-template-columns:minmax(0,1fr) 220px;gap:12px;align-items:start}
+.chart{width:100%;height:auto;display:block}
+.chart text{font-family:var(--mono);font-size:10px;fill:var(--muted)}
+
+/* right */
+.slide-wrap{display:grid;gap:8px}
+.slide{aspect-ratio:16/9;max-width:100%;background:var(--slide);color:var(--slide-fg);border:1px solid var(--line);border-radius:4px;overflow:hidden;display:grid;grid-template-rows:auto 1fr auto;font-size:9px;line-height:1.35}
+.slide .band{background:var(--slide-band);color:#fff;padding:5px 8px;display:flex;justify-content:space-between;font-family:var(--display);font-weight:700;font-size:10px}
+.slide .sb{display:grid;grid-template-columns:1.2fr 1fr;gap:6px;padding:6px 8px;min-height:0}
+.slide .it{border-left:2px solid #b86e00;padding-left:5px;margin-bottom:4px}
+.slide .it.p{border-color:#b83a26}
+.slide .it.s{border-color:#35589c}
+.slide .it b{display:block;font-size:9.5px}
+.slide svg{width:100%;height:auto;display:block;border-radius:2px}
+.slide .kp{display:flex;gap:10px;padding:4px 8px;border-top:1px solid #cfd8dd;font-family:var(--mono)}
+.slide .kp b{font-size:11px}
+.slide.lay-photo .sb{grid-template-columns:0.8fr 1.4fr}
+.slide.lay-table .sb{grid-template-columns:1fr}
+.slide.lay-table .ph{display:none}
+.pages{display:flex;gap:6px}
+.pg{flex:1;aspect-ratio:16/9;border:1px solid var(--line);border-radius:3px;background:var(--surface-2);font-size:10px;color:var(--muted);display:grid;place-items:center}
+.pg[aria-current="true"]{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.seg{display:flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.seg button{flex:1;border:0;background:var(--surface);padding:5px 6px;font-size:12px}
+.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.checks{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.checks li{display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;font-size:13px;align-items:start}
+.ck{width:16px;height:16px;border-radius:4px;border:1.5px solid var(--danger);margin-top:2px;display:grid;place-items:center;font-size:11px;color:var(--surface)}
+.ck.on{background:var(--ok);border-color:var(--ok)}
+.ck.on::after{content:"✓"}
+.case{border:1px solid var(--line);border-radius:6px;padding:8px 10px;display:grid;gap:4px;font-size:13px}
+.case .meta{font-size:11px;color:var(--muted)}
+.exports{display:grid;gap:6px}
+.exports .btn{width:100%;text-align:left;display:flex;justify-content:space-between;align-items:center}
+.msg{font-size:12px;min-height:1em}
+
+@media (max-width:1240px){
+  .editor{grid-template-columns:230px minmax(0,1fr)}
+  .col.right{grid-column:1 / -1;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+}
+@media (max-width:860px){
+  .editor{grid-template-columns:minmax(0,1fr)}
+  .col.left{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+  .stage{grid-template-columns:minmax(0,1fr)}
+  .compare{border-left:0;border-top:1px solid var(--line);grid-template-columns:1fr 1fr;grid-template-rows:auto auto}
+  .dash-split{grid-template-columns:minmax(0,1fr)}
+  .mrow{grid-template-columns:auto minmax(0,1fr) auto}
+  .mrow select{grid-column:2 / 3}
+}
+@media (prefers-reduced-motion:reduce){.hl{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="small muted">주간 회의자료 · 부서 섹션 작성</p>
+      <div class="titleline">
+        <h1>부서 3 회의자료</h1>
+        <span class="week">2026-W42 · 10.12–10.16</span>
+        <span class="sample">화면 시안 · 예시 데이터</span>
+      </div>
+    </div>
+    <div class="steps" aria-label="작성 단계">
+      <span class="step done">① 메모</span><span class="step done">② AI 정리</span><span class="step now">③ 검토·편집</span><span class="step">④ 확정·내보내기</span>
+    </div>
+  </header>
+
+  <!-- feature map -->
+  <section class="fmap" aria-labelledby="fmapH">
+    <div class="fmap-h">
+      <h2 id="fmapH">기능 지도 · 14개</h2>
+      <label class="switch"><input type="checkbox" id="annoToggle" checked> 화면에 기능 번호 표시</label>
+    </div>
+    <div class="flist" id="flist"></div>
+  </section>
+
+  <div class="editor">
+    <!-- ============ LEFT ============ -->
+    <div class="col left">
+      <nav class="panel" id="f-sections" aria-labelledby="secH">
+        <div class="panel-h"><h2 id="secH">회의자료 구성<span class="no fbadge">14</span></h2></div>
+        <div class="depts">
+          <div class="dept"><span class="o">01</span><span>부서 1</span><span class="sdot" style="background:var(--ok)" title="확정"></span></div>
+          <div class="dept"><span class="o">02</span><span>부서 2</span><span class="sdot" style="background:var(--ok)" title="확정"></span></div>
+          <div class="dept me"><span class="o">03</span><span>부서 3 · 작성 중</span><span class="sdot" style="background:var(--signal)" title="작성 중"></span></div>
+        </div>
+        <div class="outline" aria-label="부서 3 블록 목차">
+          <a href="#b-issue"><span class="pill p-issue">이슈</span>발전기 배기온도</a>
+          <a href="#b-problem"><span class="pill p-problem">문제</span>카고펌프 누유</a>
+          <a href="#b-share"><span class="pill p-share">공유</span>검사 일정 변경</a>
+          <a href="#b-dash"><span class="pill p-accent">지표</span>시운전 지표</a>
+        </div>
+        <div class="depts" style="margin-top:6px">
+          <div class="dept"><span class="o">04</span><span>부서 4</span><span class="sdot" style="background:var(--ok)"></span></div>
+          <div class="dept"><span class="o">05</span><span>부서 5</span><span class="sdot" style="background:var(--ok)"></span></div>
+          <div class="dept"><span class="o">06</span><span>부서 6</span><span class="sdot" style="background:var(--ok)"></span></div>
+          <div class="dept"><span class="o">07</span><span>부서 7</span><span class="sdot" style="background:var(--danger)" title="미작성"></span></div>
+        </div>
+        <p class="small muted" style="margin-top:8px">확정 5 · 작성 중 1 · 미작성 1</p>
+      </nav>
+
+      <section class="panel" id="f-carry" aria-labelledby="carryH">
+        <div class="panel-h"><h2 id="carryH">지난주에서 이어옴<span class="no fbadge">3</span></h2><span class="pill p-neutral">2</span></div>
+        <div style="display:grid;gap:8px">
+          <div class="carry-item">
+            <div class="row"><span class="pill p-issue">이슈</span><span class="id">ISS-0142</span></div>
+            <span>발전기 No.2 배기온도 편차</span>
+            <span class="small" style="color:var(--ok)">메모에서 업데이트 찾음 → 블록 반영</span>
+          </div>
+          <div class="carry-item">
+            <div class="row"><span class="pill p-problem">문제점</span><span class="id">PRB-0097</span><span class="pill p-problem">5주 미결</span></div>
+            <span>SN2508 냉동기 고압 트립</span>
+            <label for="carryIn" class="small muted">이번 주 언급 없음. 한 줄 남겨주세요.</label>
+            <input type="text" id="carryIn" placeholder="예: 제조사 회신 대기">
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="f-palette" aria-labelledby="palH">
+        <div class="panel-h"><h2 id="palH">블록 추가<span class="no fbadge">4</span></h2></div>
+        <div class="palette">
+          <button type="button" data-add="share">공유정보<span>알리고 끝</span></button>
+          <button type="button" data-add="problem">문제점<span>원인·조치 추적</span></button>
+          <button type="button" data-add="issue">이슈<span>차주 이월</span></button>
+          <button type="button" data-add="dash">대시보드<span>숫자·추이</span></button>
+          <button type="button" data-add="photo">사진<span>기존 블록에 연결</span></button>
+          <button type="button" data-add="free">자유 글<span>AI가 유형 제안</span></button>
+        </div>
+        <p class="msg muted" id="palMsg" aria-live="polite" style="margin-top:6px"></p>
+      </section>
+    </div>
+
+    <!-- ============ CENTER ============ -->
+    <div class="col">
+      <section class="panel" id="f-memo" aria-labelledby="memoH">
+        <div class="panel-h">
+          <h2 id="memoH">메모 붙여넣기<span class="no fbadge">1</span></h2>
+          <div class="authors"><span class="au"><i style="background:var(--accent)"></i>김○○ 3건</span><span class="au"><i style="background:var(--share)"></i>박○○ 1건</span></div>
+        </div>
+        <label for="memo" class="sr">이번 주 메모</label>
+<textarea id="memo">- 2511 DG2 배기온도 편차 계속, 3번 실린더 +38도. 연료밸브 교체품 금요일 입고 예정
+- 2514 카고펌프 No.3 씰 누유(사진1). 하우징 쪽, 드레인 라인도 젖음(사진2). 운전 정지
+- 선급 검사 일정 변경 : 2511 조타기 10/21 → 10/23
+- 시운전 완료율 74%, 신규 펀치 18 미결 41</textarea>
+        <div class="row" style="margin-top:10px;justify-content:space-between">
+          <div class="attach">
+            <div class="th"><svg viewBox="0 0 64 40" aria-hidden="true"><rect width="64" height="40" fill="var(--photo-bg)"/><rect x="16" y="9" width="32" height="22" rx="3" fill="var(--photo-metal)"/><circle cx="32" cy="20" r="7" fill="var(--photo-dark)"/></svg>사진1</div>
+            <div class="th"><svg viewBox="0 0 64 40" aria-hidden="true"><rect width="64" height="40" fill="var(--photo-bg)"/><rect x="4" y="17" width="56" height="6" fill="var(--photo-metal)"/><rect x="26" y="9" width="8" height="22" fill="var(--photo-dark)"/></svg>사진2</div>
+            <button class="btn sm" type="button">+ 사진</button>
+            <button class="btn sm" type="button">회의록에서 가져오기</button>
+          </div>
+          <button class="btn primary" type="button" id="aiBtn">AI로 정리<span class="no fbadge" style="background:var(--surface);color:var(--anno)">2</span></button>
+        </div>
+        <p class="msg muted" id="aiMsg" aria-live="polite" style="margin-top:6px">메모 4줄을 블록 4개로 나눴습니다. 확인 필요 2 · 빈 칸 1</p>
+      </section>
+
+      <!-- issue block -->
+      <article class="block" id="b-issue">
+        <div class="block-h">
+          <label class="sr" for="type1">블록 유형</label>
+          <select id="type1"><option>이슈</option><option>문제점</option><option>공유정보</option></select>
+          <h3>SN2511 발전기 No.2 배기온도 편차</h3>
+          <span class="id">ISS-0142 · 3주차</span>
+          <label class="sr" for="st1">상태</label>
+          <select id="st1"><option>진행</option><option>종결 요청</option></select>
+        </div>
+        <div class="block-b">
+          <label class="sr" for="body1">본문</label>
+          <textarea id="body1" class="body-text">3번 실린더 배기온도 평균 대비 +38℃. 연료분사밸브 교체품 금요일 입고 예정, 정비업체와 작업 일정 조율 중.</textarea>
+          <div class="tags" id="f-tags">
+            <span class="tag ok"><b>호선</b>SN2511</span>
+            <span class="tag ok"><b>장비</b>발전기 No.2 <span class="link">← DG2</span></span>
+            <span class="tag ok"><b>시스템</b>발전 시스템</span>
+            <span class="tag low" data-check="tag"><b>분류</b>연소·배기 ? <button type="button">확인</button></span>
+            <span class="tag"><b>다음 액션</b>밸브 교체 후 부하시험</span>
+            <span class="no fbadge" title="AI 태그 · 기준정보 연결">5</span>
+          </div>
+          <p class="evidence" id="f-evidence">근거 · 메모 1행 <q>DG2 배기온도 편차 계속, 3번 실린더 +38도</q><span class="no fbadge">6</span></p>
+        </div>
+        <div class="block-f">
+          <button class="btn sm" type="button">사진 연결</button>
+          <button class="btn sm" type="button">부서 이관</button>
+          <button class="btn sm" type="button">종결 요청</button>
+          <button class="btn sm" type="button">유사 사례 3건</button>
+        </div>
+      </article>
+
+      <!-- problem block with photo editor -->
+      <article class="block" id="b-problem">
+        <div class="block-h">
+          <label class="sr" for="type2">블록 유형</label>
+          <select id="type2"><option>문제점</option><option>이슈</option><option>공유정보</option></select>
+          <h3>SN2514 카고펌프 No.3 메카니컬씰 누유</h3>
+          <span class="pill p-neutral">신규</span>
+        </div>
+        <div class="block-b">
+          <label class="sr" for="body2">본문</label>
+          <textarea id="body2" class="body-text">메카니컬씰 하우징 부위 누유, 드레인 라인까지 젖음. 운전 정지 조치.</textarea>
+          <div class="tags">
+            <span class="tag ok"><b>호선</b>SN2514</span>
+            <span class="tag ok"><b>장비</b>카고펌프 No.3</span>
+            <span class="tag low" data-check="tag"><b>부위</b>메카니컬씰 ? <button type="button">확인</button></span>
+            <span class="tag ok"><b>조치</b>운전 정지</span>
+            <span class="tag miss" id="causeTag"><b>원인</b>미입력</span>
+          </div>
+          <div class="ask" id="f-ask">
+            <label for="cause">원인이 확인됐나요? 모르면 "조사 중"이라고 적어주세요.<span class="no fbadge">7</span></label>
+            <input type="text" id="cause" placeholder="예: 씰 면 손상 / 축 정렬 불량 / 조사 중">
+          </div>
+
+          <div class="ped" id="f-photo">
+            <div class="toolbar" role="toolbar" aria-label="사진 편집 도구">
+              <div class="tgroup" data-group="draw">
+                <button class="tool" type="button" aria-pressed="false">화살표</button>
+                <button class="tool" type="button" aria-pressed="false">원</button>
+                <button class="tool" type="button" aria-pressed="false">사각형</button>
+                <button class="tool" type="button" aria-pressed="false">자유선</button>
+              </div>
+              <div class="tgroup" data-group="draw2">
+                <button class="tool" type="button" aria-pressed="true">번호 ①</button>
+                <button class="tool" type="button" aria-pressed="false">텍스트</button>
+                <button class="tool" type="button" aria-pressed="false">확대 인셋</button>
+              </div>
+              <div class="tgroup" data-group="edit">
+                <button class="tool" type="button" aria-pressed="false">자르기</button>
+                <button class="tool" type="button" aria-pressed="false">회전</button>
+                <button class="tool" type="button" aria-pressed="false">밝기</button>
+                <button class="tool" type="button" aria-pressed="false">모자이크</button>
+              </div>
+              <div class="tgroup" data-group="color" aria-label="색">
+                <button class="swatch" type="button" aria-pressed="true" aria-label="빨강" style="background:#d4402a"></button>
+                <button class="swatch" type="button" aria-pressed="false" aria-label="노랑" style="background:#f0b400"></button>
+                <button class="swatch" type="button" aria-pressed="false" aria-label="파랑" style="background:#2f6fd6"></button>
+              </div>
+              <span class="no fbadge" style="margin-left:auto">8</span>
+            </div>
+            <div class="stage">
+              <svg class="canvas" id="canvas" viewBox="0 0 560 260" role="img" aria-label="사진1 편집 영역. 클릭하면 번호 마커가 추가됩니다">
+                <rect width="560" height="260" fill="var(--photo-bg)"/>
+                <rect x="40" y="160" width="480" height="26" fill="var(--photo-metal)"/>
+                <rect x="190" y="66" width="180" height="110" rx="10" fill="var(--photo-metal)"/>
+                <circle cx="280" cy="121" r="34" fill="var(--photo-dark)"/>
+                <rect x="262" y="24" width="36" height="46" fill="var(--photo-dark)"/>
+                <rect x="400" y="186" width="14" height="64" fill="var(--photo-dark)"/>
+                <rect x="60" y="30" width="56" height="44" rx="4" fill="var(--photo-dark)" opacity=".55"/>
+                <g id="mosaic" aria-hidden="true">
+                  <rect x="60" y="30" width="14" height="11" fill="var(--photo-metal)"/><rect x="74" y="30" width="14" height="11" fill="var(--photo-bg)"/><rect x="88" y="30" width="14" height="11" fill="var(--photo-metal)"/><rect x="102" y="30" width="14" height="11" fill="var(--photo-bg)"/>
+                  <rect x="60" y="41" width="14" height="11" fill="var(--photo-bg)"/><rect x="74" y="41" width="14" height="11" fill="var(--photo-metal)"/><rect x="88" y="41" width="14" height="11" fill="var(--photo-bg)"/><rect x="102" y="41" width="14" height="11" fill="var(--photo-metal)"/>
+                  <rect x="60" y="52" width="14" height="11" fill="var(--photo-metal)"/><rect x="74" y="52" width="14" height="11" fill="var(--photo-bg)"/><rect x="88" y="52" width="14" height="11" fill="var(--photo-metal)"/><rect x="102" y="52" width="14" height="11" fill="var(--photo-bg)"/>
+                  <rect x="60" y="63" width="14" height="11" fill="var(--photo-bg)"/><rect x="74" y="63" width="14" height="11" fill="var(--photo-metal)"/><rect x="88" y="63" width="14" height="11" fill="var(--photo-bg)"/><rect x="102" y="63" width="14" height="11" fill="var(--photo-metal)"/>
+                </g>
+                <rect x="420" y="18" width="120" height="78" fill="var(--surface)" stroke="var(--danger)" stroke-width="2"/>
+                <circle cx="480" cy="57" r="28" fill="var(--photo-dark)"/><path d="M462 70 q 18 14 36 0" fill="none" stroke="var(--danger)" stroke-width="3"/>
+                <line x1="420" y1="96" x2="350" y2="140" stroke="var(--danger)" stroke-width="1.5" stroke-dasharray="4 3"/>
+                <rect x="18" y="222" width="130" height="24" rx="4" fill="var(--surface)" opacity=".92"/>
+                <text x="26" y="239" font-size="12" fill="var(--fg)" font-family="IBM Plex Sans KR,sans-serif">10/14 기관실 하부</text>
+                <g id="markers"></g>
+              </svg>
+              <div class="compare">
+                <span>조치 전</span>
+                <svg viewBox="0 0 150 90" aria-hidden="true"><rect width="150" height="90" fill="var(--photo-bg)"/><rect x="45" y="20" width="60" height="44" rx="6" fill="var(--photo-metal)"/><circle cx="75" cy="42" r="13" fill="var(--photo-dark)"/><circle cx="88" cy="50" r="12" fill="none" stroke="var(--danger)" stroke-width="2"/></svg>
+                <span>조치 후 · 비어 있음</span>
+                <svg viewBox="0 0 150 90" aria-hidden="true"><rect width="150" height="90" fill="var(--surface-2)"/><text x="75" y="50" text-anchor="middle" font-size="11" fill="var(--muted)" font-family="IBM Plex Sans KR,sans-serif">사진 끌어놓기</text></svg>
+              </div>
+            </div>
+            <div class="mlist" id="mlist"></div>
+            <p class="hint">사진을 클릭하면 번호 마커가 추가됩니다. 마커마다 부위 태그를 달면 지식창고 사진 검색에 쓰입니다. 왼쪽 위는 모자이크, 오른쪽 위는 확대 인셋 예시입니다.</p>
+          </div>
+        </div>
+        <div class="block-f">
+          <button class="btn sm" type="button">사진 추가</button>
+          <button class="btn sm" type="button">부서 이관</button>
+          <button class="btn sm" type="button">유사 사례 1건</button>
+        </div>
+      </article>
+
+      <!-- share block -->
+      <article class="block" id="b-share">
+        <div class="block-h">
+          <span class="pill p-share">공유정보</span>
+          <h3>SN2511 조타기 선급 검사 일정 변경</h3>
+          <span class="small muted">유효기간 10/23까지</span>
+        </div>
+        <div class="block-b">
+          <p>조타기 선급 검사 10/21 → 10/23 변경.</p>
+          <div class="tags"><span class="tag ok"><b>호선</b>SN2511</span><span class="tag ok"><b>장비</b>조타기</span><span class="tag"><b>관련</b>선급 검사</span></div>
+        </div>
+      </article>
+
+      <!-- dashboard block -->
+      <article class="block" id="b-dash">
+        <div class="block-h">
+          <span class="pill p-accent">대시보드</span>
+          <h3>부서 3 시운전 지표<span class="no fbadge">9</span></h3>
+          <span class="small muted">숫자 입력 → 차트 자동</span>
+        </div>
+        <div class="block-b dash-split">
+          <div class="tablewrap">
+            <table>
+              <thead><tr><th>지표</th><th>값</th><th>단위</th><th>6주 추이</th><th>코멘트</th></tr></thead>
+              <tbody>
+                <tr><td>완료율</td><td><label class="sr" for="m1">완료율</label><input id="m1" type="number" value="74"></td><td>%</td><td><svg class="spark" viewBox="0 0 90 24" aria-hidden="true"><path d="M2 20 L19 17 L36 15 L53 12 L70 9 L87 6" fill="none" stroke="var(--accent)" stroke-width="1.6"/><circle cx="87" cy="6" r="2.6" fill="var(--accent)"/></svg></td><td><label class="sr" for="c1">코멘트</label><input id="c1" class="cm" type="text" value="계획 대비 -3%p"></td></tr>
+                <tr><td>신규 펀치</td><td><label class="sr" for="m2">신규 펀치</label><input id="m2" type="number" value="18"></td><td>건</td><td><svg class="spark" viewBox="0 0 90 24" aria-hidden="true"><path d="M2 14 L19 15 L36 13 L53 14 L70 15 L87 4" fill="none" stroke="var(--signal)" stroke-width="1.6"/><circle cx="87" cy="4" r="2.6" fill="var(--signal)"/></svg></td><td><span class="pill p-issue">평소보다 높음</span></td></tr>
+                <tr><td>미결 펀치</td><td><label class="sr" for="m3">미결 펀치</label><input id="m3" type="number" value="41"></td><td>건</td><td><svg class="spark" viewBox="0 0 90 24" aria-hidden="true"><path d="M2 8 L19 9 L36 11 L53 12 L70 13 L87 12" fill="none" stroke="var(--muted)" stroke-width="1.6"/><circle cx="87" cy="12" r="2.6" fill="var(--muted)"/></svg></td><td><label class="sr" for="c3">코멘트</label><input id="c3" class="cm" type="text" placeholder="코멘트"></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div>
+            <p class="eyebrow" style="margin-bottom:4px">완료율 · 주차별</p>
+            <svg class="chart" id="chart" viewBox="0 0 220 120" role="img" aria-label="완료율 주차별 막대 차트"></svg>
+          </div>
+        </div>
+      </article>
+    </div>
+
+    <!-- ============ RIGHT ============ -->
+    <div class="col right">
+      <section class="panel" id="f-preview" aria-labelledby="pvH">
+        <div class="panel-h"><h2 id="pvH">슬라이드 미리보기<span class="no fbadge">11</span></h2><span class="small muted">PPT 출력 모양</span></div>
+        <div class="slide-wrap">
+          <div class="seg" role="group" aria-label="레이아웃">
+            <button type="button" aria-pressed="true" data-lay="">기존 양식</button>
+            <button type="button" aria-pressed="false" data-lay="lay-photo">사진 강조</button>
+            <button type="button" aria-pressed="false" data-lay="lay-table">표 중심</button>
+          </div>
+          <div class="slide" id="slide">
+            <div class="band"><span>부서 3 · 주간 현황</span><span>2026-W42</span></div>
+            <div class="sb">
+              <div>
+                <div class="it"><b>[이슈] SN2511 발전기 No.2 배기온도 편차</b>+38℃, 분사밸브 교체 예정</div>
+                <div class="it p"><b>[문제] SN2514 카고펌프 No.3 씰 누유</b>운전 정지 · 원인 <span id="slideCause">미입력</span></div>
+                <div class="it s"><b>[공유] SN2511 조타기 검사 10/23</b>일정 변경</div>
+              </div>
+              <div class="ph">
+                <svg viewBox="0 0 560 260" aria-hidden="true" id="slidePhoto">
+                  <rect width="560" height="260" fill="#c9d3d8"/>
+                  <rect x="40" y="160" width="480" height="26" fill="#8d9ba3"/>
+                  <rect x="190" y="66" width="180" height="110" rx="10" fill="#8d9ba3"/>
+                  <circle cx="280" cy="121" r="34" fill="#56646c"/>
+                  <rect x="262" y="24" width="36" height="46" fill="#56646c"/>
+                  <rect x="400" y="186" width="14" height="64" fill="#56646c"/>
+                  <g id="slideMarkers"></g>
+                </svg>
+              </div>
+            </div>
+            <div class="kp"><span>완료율 <b id="sk1">74</b>%</span><span>신규 펀치 <b id="sk2">18</b></span><span>미결 <b id="sk3">41</b></span></div>
+          </div>
+          <div class="pages" aria-label="부서 3 슬라이드">
+            <button class="pg" type="button" aria-current="true">1 현황</button>
+            <button class="pg" type="button" aria-current="false">2 사진</button>
+            <button class="pg" type="button" aria-current="false">3 지표</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel" id="f-check" aria-labelledby="ckH">
+        <div class="panel-h"><h2 id="ckH">확정 전 체크<span class="no fbadge">12</span></h2><span class="pill p-issue" id="ckCount">남은 4</span></div>
+        <ul class="checks" id="checks">
+          <li data-k="cause"><span class="ck"></span><span>카고펌프 원인 입력 (조사 중 가능)</span></li>
+          <li data-k="tag"><span class="ck"></span><span>AI가 확신 낮은 태그 2개 확인</span></li>
+          <li data-k="carry"><span class="ck"></span><span>PRB-0097 한 줄 업데이트</span></li>
+          <li data-k="marker"><span class="ck"></span><span>사진 마커에 부위 태그 달기</span></li>
+        </ul>
+        <button class="btn primary" type="button" id="confirm" style="width:100%;margin-top:12px">부서 섹션 확정</button>
+        <p class="msg" id="confirmMsg" aria-live="polite" style="margin-top:6px"></p>
+      </section>
+
+      <section class="panel" id="f-similar" aria-labelledby="simH">
+        <div class="panel-h"><h2 id="simH">작성 중 유사 사례<span class="no fbadge">10</span></h2><span class="small muted">발전기 블록 기준</span></div>
+        <div style="display:grid;gap:8px">
+          <div class="case"><div class="row"><span class="pill p-ok">종결</span><span class="id">CASE-0398</span><span class="pill p-issue">자매선</span></div><span>SN2510 발전기 No.2 배기온도 편차</span><span class="meta">원인 분사밸브 노즐 마모 · 조치 밸브 교체</span></div>
+          <div class="case"><div class="row"><span class="pill p-ok">종결</span><span class="id">CASE-0352</span></div><span>SN2433 발전기 No.2 단일 실린더 이상</span><span class="meta">원인 열전대 센서 오차 · 센서 먼저 확인할 것</span></div>
+          <button class="btn sm" type="button">본문에 "참고 사례" 링크 넣기</button>
+        </div>
+      </section>
+
+      <section class="panel" id="f-export" aria-labelledby="exH">
+        <div class="panel-h"><h2 id="exH">내보내기<span class="no fbadge">13</span></h2></div>
+        <div class="exports">
+          <button class="btn" type="button" data-ex="PPT">편집 가능한 PPT<span class="small muted">.pptx · 7개 부서 합본</span></button>
+          <button class="btn" type="button" data-ex="웹 회의 화면">웹 회의 화면 열기<span class="small muted">부서 순서대로 넘기기</span></button>
+          <button class="btn" type="button" data-ex="부서 3만 PPT">부서 3만 PPT<span class="small muted">.pptx · 3장</span></button>
+        </div>
+        <p class="msg muted" id="exMsg" aria-live="polite" style="margin-top:6px"></p>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const F=[
+    ['f-memo','메모 붙여넣기','메모장 글 그대로, 여러 명 입력'],
+    ['aiBtn','AI 정리','블록 분할·유형 제안'],
+    ['f-carry','지난주 이어받기','진행 건 자동 등장'],
+    ['f-palette','블록 유형','공유·문제·이슈·대시보드'],
+    ['f-tags','태그·기준정보 연결','DG2 → 발전기 No.2'],
+    ['f-evidence','근거 표시','메모의 어느 줄인지'],
+    ['f-ask','빈 칸 질문','필수 항목만 되묻기'],
+    ['f-photo','사진 편집','마킹·번호·인셋·모자이크'],
+    ['b-dash','대시보드 블록','숫자 입력, 추이 자동'],
+    ['f-similar','유사 사례 추천','작성 중 바로 참고'],
+    ['f-preview','슬라이드 미리보기','PPT 레이아웃 선택'],
+    ['f-check','확정 전 체크','남은 할 일과 확정'],
+    ['f-export','내보내기','PPT · 웹 회의 화면'],
+    ['f-sections','회의자료 구성','부서별 현황·목차']
+  ];
+  const fl=document.getElementById('flist');
+  fl.innerHTML=F.map((f,i)=>'<button class="fitem" type="button" data-t="'+f[0]+'"><span class="no">'+(i+1)+'</span><span><b>'+f[1]+'</b><span class="muted">'+f[2]+'</span></span></button>').join('');
+  const smooth=()=>!matchMedia('(prefers-reduced-motion: reduce)').matches;
+  fl.addEventListener('click',e=>{
+    const b=e.target.closest('.fitem'); if(!b) return;
+    const el=document.getElementById(b.dataset.t); if(!el) return;
+    el.scrollIntoView({behavior:smooth()?'smooth':'auto',block:'center'});
+    el.classList.add('hl'); setTimeout(()=>el.classList.remove('hl'),1600);
+  });
+  document.getElementById('annoToggle').addEventListener('change',e=>document.body.classList.toggle('hide-anno',!e.target.checked));
+
+  /* checklist */
+  const state={cause:false,tag:0,carry:false,marker:false};
+  function refresh(){
+    const done={cause:state.cause,tag:state.tag>=2,carry:state.carry,marker:state.marker};
+    let left=0;
+    document.querySelectorAll('#checks li').forEach(li=>{const on=done[li.dataset.k];li.querySelector('.ck').classList.toggle('on',on);if(!on)left++;});
+    const c=document.getElementById('ckCount');
+    c.textContent=left?'남은 '+left:'준비 완료'; c.className='pill '+(left?'p-issue':'p-ok');
+    return left;
+  }
+  const cause=document.getElementById('cause');
+  cause.addEventListener('input',()=>{
+    const v=cause.value.trim(); state.cause=!!v;
+    const t=document.getElementById('causeTag');
+    t.className='tag '+(v?'ok':'miss'); t.innerHTML='<b>원인</b>'+(v?v.replace(/[<>&]/g,''):'미입력');
+    document.getElementById('f-ask').classList.toggle('done',!!v);
+    document.getElementById('slideCause').textContent=v||'미입력';
+    document.getElementById('confirmMsg').textContent='';
+    refresh();
+  });
+  document.getElementById('carryIn').addEventListener('input',e=>{state.carry=!!e.target.value.trim();refresh();});
+  document.querySelectorAll('[data-check="tag"] button').forEach(b=>b.addEventListener('click',()=>{
+    const t=b.parentElement; t.className='tag ok'; b.remove(); t.innerHTML=t.innerHTML.replace(' ?',''); state.tag++; refresh();
+  }));
+
+  /* photo tools */
+  document.querySelectorAll('.toolbar').forEach(tb=>tb.addEventListener('click',e=>{
+    const b=e.target.closest('.tool,.swatch'); if(!b) return;
+    if(b.classList.contains('swatch')){tb.querySelectorAll('.swatch').forEach(s=>s.setAttribute('aria-pressed','false'));}
+    else{tb.querySelectorAll('.tool').forEach(s=>s.setAttribute('aria-pressed','false'));}
+    b.setAttribute('aria-pressed','true');
+  }));
+  const NS='http://www.w3.org/2000/svg';
+  const canvas=document.getElementById('canvas'), mg=document.getElementById('markers'), smg=document.getElementById('slideMarkers'), ml=document.getElementById('mlist');
+  const parts=['부위 선택','메카니컬씰','씰 하우징','드레인 배관','축','케이싱'];
+  let n=0;
+  function markerSVG(g,x,y,k,r){
+    const c=document.createElementNS(NS,'circle');c.setAttribute('cx',x);c.setAttribute('cy',y);c.setAttribute('r',r||22);c.setAttribute('fill','none');c.setAttribute('stroke','#d4402a');c.setAttribute('stroke-width','3');g.appendChild(c);
+    const d=document.createElementNS(NS,'circle');d.setAttribute('cx',x+18);d.setAttribute('cy',y-18);d.setAttribute('r',12);d.setAttribute('fill','#d4402a');g.appendChild(d);
+    const t=document.createElementNS(NS,'text');t.setAttribute('x',x+18);t.setAttribute('y',y-13.5);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','13');t.setAttribute('font-weight','700');t.setAttribute('fill','#fff');t.setAttribute('font-family','IBM Plex Mono,monospace');t.textContent=k;g.appendChild(t);
+  }
+  function addMarker(x,y,label,part){
+    n++; const k=n;
+    markerSVG(mg,x,y,k); markerSVG(smg,x,y,k,26);
+    const row=document.createElement('div'); row.className='mrow';
+    row.innerHTML='<span class="num">'+k+'</span><label class="sr" for="ml'+k+'">마커 '+k+' 설명</label><input id="ml'+k+'" type="text" value="'+(label||'')+'" placeholder="설명 (본문과 연결)"><label class="sr" for="mp'+k+'">마커 '+k+' 부위</label><select id="mp'+k+'">'+parts.map(p=>'<option'+(p===part?' selected':'')+'>'+p+'</option>').join('')+'</select><button class="btn sm" type="button" aria-label="마커 '+k+' 삭제">삭제</button>';
+    ml.appendChild(row);
+    row.querySelector('select').addEventListener('change',checkMarkers);
+    row.querySelector('button').addEventListener('click',()=>{row.remove();checkMarkers();});
+    checkMarkers();
+  }
+  function checkMarkers(){
+    const sels=[...ml.querySelectorAll('select')];
+    state.marker=sels.length>0&&sels.every(s=>s.selectedIndex>0); refresh();
+  }
+  canvas.addEventListener('click',e=>{
+    const r=canvas.getBoundingClientRect();
+    const x=Math.round((e.clientX-r.left)/r.width*560), y=Math.round((e.clientY-r.top)/r.height*260);
+    addMarker(Math.max(24,Math.min(520,x)),Math.max(32,Math.min(236,y)),'','부위 선택');
+  });
+  addMarker(322,138,'씰 하우징 누유 지점','메카니컬씰');
+  addMarker(407,214,'드레인 라인 오염','부위 선택');
+
+  /* dashboard chart */
+  const weeks=['W37','W38','W39','W40','W41','W42'], base=[52,58,63,67,70];
+  function chart(){
+    const v=parseFloat(document.getElementById('m1').value); const vals=base.concat([isNaN(v)?0:Math.max(0,Math.min(100,v))]);
+    const svg=document.getElementById('chart'); const H=90, top=12, bw=24, gap=10, x0=24;
+    let s='';
+    [0,50,100].forEach(t=>{const y=top+H-t/100*H; s+='<line x1="'+x0+'" x2="216" y1="'+y+'" y2="'+y+'" stroke="var(--line)" stroke-width="1"/><text x="'+(x0-4)+'" y="'+(y+3)+'" text-anchor="end">'+t+'</text>';});
+    vals.forEach((val,i)=>{const h=val/100*H, x=x0+6+i*(bw+gap), last=i===vals.length-1;
+      s+='<rect x="'+x+'" y="'+(top+H-h)+'" width="'+bw+'" height="'+h+'" rx="2" fill="'+(last?'var(--accent)':'var(--surface-2)')+'" stroke="'+(last?'var(--accent)':'var(--line)')+'"/>';
+      s+='<text x="'+(x+bw/2)+'" y="'+(top+H+12)+'" text-anchor="middle">'+weeks[i]+'</text>';
+      if(last) s+='<text x="'+(x+bw/2)+'" y="'+(top+H-h-4)+'" text-anchor="middle" style="fill:var(--accent)">'+val+'</text>';});
+    svg.innerHTML=s;
+  }
+  ['m1','m2','m3'].forEach((id,i)=>document.getElementById(id).addEventListener('input',e=>{document.getElementById('sk'+(i+1)).textContent=e.target.value||'—'; if(id==='m1') chart();}));
+  chart();
+
+  /* layout + pages */
+  document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed','false')); b.setAttribute('aria-pressed','true');
+    document.getElementById('slide').className='slide '+b.dataset.lay;
+  }));
+  document.querySelectorAll('.pg').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.pg').forEach(x=>x.setAttribute('aria-current','false'));b.setAttribute('aria-current','true');}));
+
+  /* palette, ai, export, confirm */
+  const names={share:'공유정보',problem:'문제점',issue:'이슈',dash:'대시보드',photo:'사진',free:'자유 글'};
+  document.querySelectorAll('[data-add]').forEach(b=>b.addEventListener('click',()=>{document.getElementById('palMsg').textContent=names[b.dataset.add]+' 블록을 맨 아래에 추가합니다 (시안에서는 표시만).';}));
+  document.getElementById('aiBtn').addEventListener('click',()=>{
+    const m=document.getElementById('aiMsg'); const lines=document.getElementById('memo').value.split('\n').filter(l=>l.trim()).length;
+    if(!lines){m.style.color='var(--danger)';m.textContent='메모를 먼저 붙여넣으세요.';return;}
+    m.style.color='';m.textContent='메모 '+lines+'줄을 다시 정리했습니다. 직접 고친 내용은 유지됩니다.';
+  });
+  document.querySelectorAll('[data-ex]').forEach(b=>b.addEventListener('click',()=>{
+    const m=document.getElementById('exMsg');
+    m.textContent=refresh()?'확정 전이라 부서 3은 "작성 중" 표시로 들어갑니다. '+b.dataset.ex+' 준비 (시안).':b.dataset.ex+' 준비 완료 (시안).';
+  }));
+  document.getElementById('confirm').addEventListener('click',()=>{
+    const left=refresh(), m=document.getElementById('confirmMsg');
+    if(left){m.style.color='var(--danger)';m.textContent='체크 항목 '+left+'개가 남았습니다. 빨간 칸부터 채워주세요.';
+      if(!state.cause){cause.focus();} return;}
+    m.style.color='var(--ok)';m.textContent='부서 3 섹션을 확정했습니다. 회의자료에 반영됐습니다.';
+    const me=document.querySelector('.dept.me'); me.lastElementChild.style.background='var(--ok)'; me.children[1].textContent='부서 3 · 확정';
+  });
+  refresh();
+})();
+</script>

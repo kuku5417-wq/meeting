@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "extraction.schema.json",
+  "title": "extract_blocks 출력",
+  "description": "메모 → 회의자료 블록 추출 결과. docs/04_AI처리.md 참고. ID는 서버가 발급하므로 여기에는 없다.",
+  "type": "object",
+  "required": ["blocks", "questions"],
+  "additionalProperties": false,
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "required": ["line", "quote"],
+      "additionalProperties": false,
+      "properties": {
+        "line": { "type": "integer", "minimum": 1, "description": "메모 줄 번호 (L1부터)" },
+        "quote": { "type": "string", "description": "그 줄에 실제로 있는 문자열" }
+      }
+    },
+    "tag": {
+      "type": "object",
+      "required": ["kind", "raw_text", "confidence"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "enum": ["hull", "installed_equipment", "system", "component", "test_item", "symptom", "cause", "action", "owner_person", "next_action", "related"] },
+        "raw_text": { "type": "string", "description": "메모에 쓰인 표기 그대로 (예: DG2)" },
+        "normalized": { "type": "string", "description": "AI가 읽은 뜻 (예: 발전기 No.2). ID 확정은 서버 별칭 사전이 한다" },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "evidence": { "$ref": "#/$defs/evidence" }
+      }
+    }
+  },
+  "properties": {
+    "blocks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["block_type", "title", "body", "tags", "evidence"],
+        "additionalProperties": false,
+        "properties": {
+          "block_type": { "enum": ["share", "problem", "issue", "dashboard"] },
+          "type_confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+          "title": { "type": "string", "maxLength": 80 },
+          "body": { "type": "string", "description": "작성자 표현을 살린 본문" },
+          "status": { "enum": ["신규", "진행", "종결요청", null] },
+          "carried_block_ref": { "type": ["string", "null"], "description": "지난주 이어온 블록의 ID와 같은 건이면 그 ID" },
+          "valid_until": { "type": ["string", "null"], "format": "date", "description": "공유정보 유효기간" },
+          "photo_refs": { "type": "array", "items": { "type": "string" }, "description": "메모의 '사진1' 같은 언급" },
+          "metrics": {
+            "type": "array",
+            "description": "dashboard 블록일 때만",
+            "items": {
+              "type": "object",
+              "required": ["name", "value", "unit"],
+              "additionalProperties": false,
+              "properties": {
+                "name": { "type": "string" },
+                "value": { "type": "number" },
+                "unit": { "type": "string" },
+                "evidence": { "$ref": "#/$defs/evidence" }
+              }
+            }
+          },
+          "tags": { "type": "array", "items": { "$ref": "#/$defs/tag" } },
+          "evidence": { "type": "array", "items": { "$ref": "#/$defs/evidence" }, "minItems": 1 }
+        }
+      }
+    },
+    "questions": {
+      "type": "array",
+      "maxItems": 3,
+      "items": {
+        "type": "object",
+        "required": ["block_index", "field", "question"],
+        "additionalProperties": false,
+        "properties": {
+          "block_index": { "type": "integer", "minimum": 0 },
+          "field": { "enum": ["title", "status", "cause", "action", "hull", "installed_equipment"] },
+          "question": { "type": "string" },
+          "placeholder": { "type": "string" }
+        }
+      }
+    }
+  }
+}

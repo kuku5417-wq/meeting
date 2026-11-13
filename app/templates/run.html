@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{{ mt.title }} · {{ '발표' if present else '회의 진행' }} · {{ app_title }}{% endblock %}
+{% block content %}
+{# 회의 진행(최종 시안 design/mockups/v2m-meeting-run) — M12. 진행자: 왼쪽 지금 장 · 오른쪽 이 안건 기록. ?view=present 는 장만, 진행자 쪽을 따라감 #}
+{% if present %}
+<div class="rn-present"><div class="v-stage-wrap"><div class="v-stage" id="stage"></div></div></div>
+{% else %}
+<div class="st-bar">
+  <a class="btn sm" href="/meetings/{{ mt.id }}">‹ 보기</a>
+  <div class="st-ttl"><b>{{ mt.title }}</b><span class="small muted" id="rnSub"></span></div>
+  <button class="btn sm" type="button" id="openP">발표 화면 열기</button>
+  <button class="btn sm" type="button" id="finishBtn">회의 마치기</button>
+</div>
+<div class="rn-wrap">
+  <section class="rn-left" aria-label="지금 장">
+    <div class="v-stage-wrap rn-stage"><div class="v-stage" id="stage"></div></div>
+    <nav class="rn-thumbs" id="thumbs" aria-label="쪽 고르기"></nav>
+  </section>
+  <aside class="panel rn-card" id="card" aria-label="이 안건 기록"></aside>
+</div>
+<details class="panel rn-more" id="more"><summary><b>회의 중 등록 · 회의록</b> <span class="small muted">새 이슈는 다음 주 그 부서 회의자료 후보에 나옵니다</span></summary>
+  <div class="rn-more-in">
+    <form id="regForm" class="rn-reg"><label class="f">새 이슈 제목<input type="text" name="title" maxlength="80" required></label>
+      <label class="f">담당 부서<select name="dept_id" id="regDept"></select></label>
+      <label class="f">종류<select name="block_type"><option value="issue">이슈</option><option value="problem">문제점</option></select></label>
+      <button class="btn sm primary" type="submit">등록</button></form>
+    <form id="minForm" class="rn-min"><label class="f">회의록 메모 붙여넣기 — AI 가 새 이슈·기존 이슈 연결 후보로 나눕니다<textarea name="raw_text" rows="4"></textarea></label>
+      <button class="btn sm" type="submit">후보 뽑기</button></form>
+    <div id="cands" class="v-list"></div>
+  </div>
+</details>
+<div class="v-actbar rn-bar"><span class="state" id="rnState" aria-live="polite"></span><span class="keys"><kbd>Enter</kbd> 기록하고 다음 · <kbd>←</kbd>/<kbd>→</kbd> 장 이동</span>
+  <button class="btn" type="button" id="prev">← 이전</button><button class="btn primary" type="button" id="next">기록하고 다음 →</button></div>
+<div class="st-toast" id="toast" role="status" hidden></div>
+{% endif %}
+<script id="rnState0" type="application/json">{{ run_json | safe }}</script>
+<script type="module" src="{{ url_for('static', path='js/run.js') }}?v={{ asset_v }}"></script>
+{% endblock %}

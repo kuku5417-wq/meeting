@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "answer_knowledge.schema.json",
+  "title": "answer_knowledge 출력",
+  "description": "지식창고 자연어 질문 → 근거 사례 인용 답변. 인용은 주어진 사례 ID 만 쓴다(서버가 다시 확인한다).",
+  "type": "object",
+  "required": ["answer", "citations"],
+  "additionalProperties": false,
+  "properties": {
+    "answer": { "type": "string", "maxLength": 1200, "description": "본문 안에 [CASE-0000] 형태로 인용을 단다" },
+    "citations": { "type": "array", "items": { "type": "string", "pattern": "^CASE-[0-9]{4}$" }, "maxItems": 10 },
+    "insufficient": { "type": "boolean", "description": "주어진 사례로 답할 수 없으면 true" }
+  }
+}

@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>최종 시안 — 회의</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<link rel="stylesheet" href="v2s.css">
+<style>
+/* 최종 시안 — 회의(스튜디오 틀). 회의 목록 + 회의자료 보기를 한 화면으로: 왼쪽 회의 · 가운데 그 회의의 장 전부(읽기 전용) · 오른쪽 회의 정보와 동작 */
+.mt{grid-template-columns:minmax(0,1fr) auto;cursor:pointer;font-size:var(--fs-2)}
+.mt .t{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mt .m{grid-column:1/-1;font-size:var(--fs-1);color:var(--muted)}
+.chg .stage-wrap{outline:3px solid #f0a830!important;outline-offset:2px}
+.chg .lbl b::after{content:" · 변경 1";color:#f0a830}
+.info{display:grid;grid-template-columns:72px minmax(0,1fr);gap:4px 10px;font-size:var(--fs-2)}
+.info dt{color:var(--muted)} .info dd{margin:0}
+.subg{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;font-size:var(--fs-1);padding:4px}
+.mk{display:grid;gap:6px}
+</style>
+</head>
+<body>
+<header class="tb" id="tb"></header>
+<div class="studio">
+  <aside class="pane left" aria-label="회의 목록"><div id="list"></div>
+    <div class="sec-h">수시 회의 만들기</div>
+    <div class="mk"><select aria-label="종류"><option>호선별 회의</option><option>문제점·장비 리뷰</option></select><select aria-label="호선"><option>SN2511</option><option>SN2514</option></select><a class="btn sm primary" href="v2s-studio.html?kind=dept">만들고 스튜디오로</a><span class="small muted">정기 회의(부서 자료·공유회·팀장 정보회의)는 매주 자동으로 생깁니다.</span></div>
+  </aside>
+  <main class="canvas" id="canvas" aria-label="장 보기"></main>
+  <aside class="pane right" aria-label="회의 정보" id="props"></aside>
+</div>
+<script type="module">
+import {$, $$, esc, toast, fitStages} from './v2b.js';
+import {MEETINGS, SUBMIT, MEETING, deckOf, coverSlide} from './v2b-data.js';
+import {toolbar, slide, frame} from './v2s.js';
+toolbar('meet', 'v2b-meetings.html');
+const LIST = [...MEETINGS, {id: 'past', kind: '부서 현안 공유회', title: 'W42 부서 현안 공유회', when: '10/16(목) 14:00', owner: '기획(팀 스텝)', state: '종료 · 종결 2 · 지시 3', n: 13, past: true}];
+const DECK = {dept: 'hull', share: 'share', exec: 'exec', hull: 'hull', past: 'share'};
+const KIND_OF = {dept: 'dept', share: 'share', exec: 'exec', hull: 'dept', past: 'share'};
+let cur = new URLSearchParams(location.search).get('m') || 'share', zoomW = 360;
+function renderList() {
+  const row = (m) => `<div class="cell mt ${m.id === cur ? 'on' : ''}" data-m="${m.id}"><span class="t">${esc(m.title)}</span><span></span><span class="m">${esc(m.kind)} · ${esc(m.when)} · ${esc(m.state)}</span></div>`;
+  $('#list').innerHTML = `<div class="sec-h">이번 주</div><div class="group">${LIST.filter((m) => !m.past).map(row).join('')}</div><div class="sec-h">지난 회의</div><div class="group">${LIST.filter((m) => m.past).map(row).join('')}</div>`;
+}
+function renderCanvas() {
+  const m = LIST.find((x) => x.id === cur), its = deckOf(DECK[cur]), total = its.length + 1, title = m.title;
+  let h = `<p class="cv-h">${esc(title)} — ${m.past ? '회의 기록' : '지금 자료'} · 장 ${total} · 장을 누르면 그 장부터 스튜디오에서 엽니다</p><div class="rowf">${frame(coverSlide(title, its, total), '<b>1 · 표지</b>', '', 'data-p="0"', zoomW)}`;
+  h += its.map((x, i) => frame(slide({id: x.d.id, line: x.line, form: x.d.dec && cur !== 'exec' ? 'detail' : cur === 'exec' ? 'line' : 'card'}, i + 2, total, title), `<b>${i + 2} · ${esc(x.d.title.slice(0, 22))}</b>`, cur === 'share' && x.d.id === 'ISS-2026-0001' ? 'chg' : '', `data-p="${i + 1}"`, zoomW)).join('') + '</div>';
+  $('#canvas').innerHTML = h; fitStages();
+}
+function renderProps() {
+  const m = LIST.find((x) => x.id === cur), its = deckOf(DECK[cur]);
+  $('#title').textContent = m.title; $('#sub').textContent = `${m.kind} · ${m.when}`;
+  const k = KIND_OF[cur];
+  $('#act').innerHTML = `<div class="zoom"><button type="button" id="zOut" aria-label="작게">−</button><button type="button" id="zIn" aria-label="크게">＋</button></div><button class="btn sm gray" type="button" id="ppt">PPT</button>` + (m.past ? `<button class="btn sm primary" type="button" id="rec">기록 내보내기</button>` : `<a class="btn sm gray" href="v2s-studio.html?kind=${k}">스튜디오에서 편집</a><a class="btn sm primary" href="v2s-run.html?m=${cur === 'exec' ? 'exec' : 'share'}">회의 시작</a>`);
+  let h = `<div class="sec-h">회의 정보</div><dl class="info"><dt>종류</dt><dd>${esc(m.kind)}</dd><dt>일시</dt><dd>${esc(m.when)}</dd><dt>주관</dt><dd>${esc(m.owner)}</dd><dt>상태</dt><dd>${esc(m.state)}</dd><dt>안건</dt><dd>${its.length}건 · 결정 필요 ${its.filter((x) => x.d.dec).length} · 종결 대기 ${its.filter((x) => x.d.st === 'req').length}</dd></dl>`;
+  if (cur === 'share') h += `<div class="sec-h">발행 뒤 바뀐 장 1</div><div class="prop"><span class="small">ISS-2026-0001 원인이 바뀜(시운전1부 10/22 16:02)</span><a class="btn sm" href="v2s-studio.html?kind=share">스튜디오에서 반영 → 2판</a></div>`;
+  if (cur === 'share' || cur === 'exec') h += `<div class="sec-h">부서 제출 ${Object.values(SUBMIT).filter((v) => v === 'ok').length}/8</div><div class="subg">${Object.entries(SUBMIT).map(([d, v]) => `<span>${d}</span><span class="st ${v === 'ok' ? 'done' : v === 'wip' ? 'go' : 'late'}">${v === 'ok' ? '제출' : v === 'wip' ? '작성 중' : '미작성'}</span>`).join('')}</div>`;
+  if (m.past) h += `<div class="sec-h">회의 기록</div><div class="prop small">종결 승인 2 · 지시 3(완료 1) · 코멘트 9 — 모두 이슈 이력에 들어 있습니다</div>`;
+  $('#props').innerHTML = h;
+  $('#zIn').onclick = () => { zoomW = Math.min(720, zoomW + 80); renderCanvas(); };
+  $('#zOut').onclick = () => { zoomW = Math.max(200, zoomW - 80); renderCanvas(); };
+  $('#ppt').onclick = () => toast('PPT 를 만들고 있습니다 — 캔버스와 같은 모양입니다(시안)');
+  $('#rec') && ($('#rec').onclick = () => toast('회의 기록(코멘트·결정·지시)을 내보냅니다(시안)'));
+}
+const all = () => { renderList(); renderCanvas(); renderProps(); };
+document.addEventListener('click', (e) => {
+  const m = e.target.closest('[data-m]'), p = e.target.closest('[data-p]');
+  if (m) { cur = m.dataset.m; history.replaceState(null, '', '?m=' + cur); all(); }
+  if (p && !LIST.find((x) => x.id === cur).past) location.href = `v2s-studio.html?kind=${KIND_OF[cur]}`;
+});
+all();
+</script>
+</body>
+</html>

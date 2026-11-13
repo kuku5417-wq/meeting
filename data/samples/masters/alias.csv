@@ -1,0 +1,15 @@
+text,target_kind,target_id,scope_hull_id,source
+DG2,installed_equipment,EQ-SN2511-GE-02,SN2511,seed
+D/G #2,installed_equipment,EQ-SN2511-GE-02,SN2511,seed
+2번 발전기,installed_equipment,EQ-SN2511-GE-02,SN2511,seed
+G/E No.2,installed_equipment,EQ-SN2511-GE-02,SN2511,seed
+DG1,installed_equipment,EQ-SN2511-GE-01,SN2511,seed
+카고펌프 No.3,installed_equipment,EQ-SN2514-CP-03,SN2514,seed
+C/P #3,installed_equipment,EQ-SN2514-CP-03,SN2514,seed
+조타기,installed_equipment,EQ-SN2511-SG-01,SN2511,seed
+메카니컬씰,component,CP-CP-MSEAL,,seed
+씰,component,CP-CP-MSEAL,,seed
+연료밸브,component,CP-GE-INJ,,seed
+분사밸브,component,CP-GE-INJ,,seed
+배기온도 편차,symptom,SY-EXH-DEV,,seed
+누유,symptom,SY-LEAK,,seed

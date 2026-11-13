@@ -1,0 +1,366 @@
+<title>장비 허브 시안</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one equipment hub page — alias search bar, identity card + link map, then evidence panels (history, same model, causes, photos). Same tokens as the weekly report mockup. */
+:root{
+  --bg:#eef2f3; --surface:#ffffff; --surface-2:#e6ecee; --fg:#14212b; --muted:#566570; --line:#cfd8dd;
+  --accent:#0b6e78; --accent-soft:#d8ecec; --accent-fg:#ffffff;
+  --signal:#b86e00; --signal-soft:#fbefd9;
+  --danger:#b83a26; --danger-soft:#f8e3df;
+  --ok:#2c7a4b; --ok-soft:#dff0e5;
+  --share:#35589c; --share-soft:#e2e9f6;
+  --photo-bg:#c9d3d8; --photo-metal:#8d9ba3; --photo-dark:#56646c;
+  --display:"Gothic A1","IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e161b; --surface:#152128; --surface-2:#1c2b33; --fg:#e2eaee; --muted:#95a5af; --line:#2a3b44;
+  --accent:#4fb3bc; --accent-soft:#163a3e; --accent-fg:#06262a;
+  --signal:#f0a830; --signal-soft:#3a2c12; --danger:#ef7a64; --danger-soft:#3a1f1a;
+  --ok:#5cb87f; --ok-soft:#173222; --share:#8fa9e0; --share-soft:#1e2a44;
+  --photo-bg:#2b383f; --photo-metal:#56656d; --photo-dark:#8a99a1; color-scheme:dark;}}
+:root[data-theme="dark"]{
+  --bg:#0e161b; --surface:#152128; --surface-2:#1c2b33; --fg:#e2eaee; --muted:#95a5af; --line:#2a3b44;
+  --accent:#4fb3bc; --accent-soft:#163a3e; --accent-fg:#06262a;
+  --signal:#f0a830; --signal-soft:#3a2c12; --danger:#ef7a64; --danger-soft:#3a1f1a;
+  --ok:#5cb87f; --ok-soft:#173222; --share:#8fa9e0; --share-soft:#1e2a44;
+  --photo-bg:#2b383f; --photo-metal:#56656d; --photo-dark:#8a99a1; color-scheme:dark;}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:14px;line-height:1.55}
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px;display:grid;gap:16px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;letter-spacing:-0.01em}
+h1{font-size:22px;font-weight:800}
+h2{font-size:15px;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.eyebrow{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:600}
+button{font:inherit;cursor:pointer;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;padding-top:18px}
+.crumb{font-size:12px;color:var(--muted);margin-bottom:4px}
+.titleline{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px}
+.sample{font-size:12px;color:var(--signal);background:var(--signal-soft);padding:3px 8px;border-radius:4px}
+.pill{display:inline-flex;align-items:center;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.p-issue{background:var(--signal-soft);color:var(--signal)}
+.p-ok{background:var(--ok-soft);color:var(--ok)}
+.p-problem{background:var(--danger-soft);color:var(--danger)}
+.p-neutral{background:var(--surface-2);color:var(--muted)}
+.p-accent{background:var(--accent-soft);color:var(--accent)}
+.id{font-family:var(--mono);font-size:12px;color:var(--muted)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;min-width:0;scroll-margin-top:12px;transition:box-shadow .2s}
+.panel.flash{box-shadow:0 0 0 2px var(--accent)}
+.panel-h{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+
+/* alias bar */
+.alias{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;align-items:center}
+.alias input{width:100%;font:inherit;font-size:15px;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:10px 12px;font-family:var(--mono)}
+.resolve{display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:13px;margin-top:10px}
+.resolve .arrow{color:var(--muted)}
+.chip{font-family:var(--mono);font-size:12px;border:1px solid var(--line);border-radius:4px;padding:2px 7px;background:var(--surface)}
+.chip.hit{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+.btn{border:1px solid var(--line);background:var(--surface);padding:8px 12px;border-radius:6px;font-weight:500}
+.btn.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+
+/* identity + map */
+.row1{display:grid;grid-template-columns:330px minmax(0,1fr);gap:16px;align-items:start}
+dl.id-list{display:grid;grid-template-columns:96px minmax(0,1fr);gap:0;margin:0}
+dl.id-list dt,dl.id-list dd{padding:8px 0;border-bottom:1px solid var(--line);margin:0;font-size:13px}
+dl.id-list dt{color:var(--muted)}
+dl.id-list dd{min-width:0}
+dl.id-list dt:last-of-type,dl.id-list dd:last-of-type{border-bottom:0}
+.path{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.path span:not(:last-child)::after{content:"›";margin-left:4px;color:var(--muted)}
+.codes{display:flex;flex-wrap:wrap;gap:4px}
+
+.map-wrap{overflow-x:auto}
+svg.map{display:block;width:100%;min-width:620px;height:auto}
+.map .edge{stroke:var(--line);stroke-width:1.6;fill:none}
+.map .edge.strong{stroke:var(--accent);stroke-width:2}
+.map .edge.dash{stroke-dasharray:5 4}
+.map .node{cursor:pointer}
+.map .node rect{stroke-width:1.2}
+.map .node:hover rect,.map .node:focus-visible rect{stroke-width:2.4}
+.map .node:focus{outline:none}
+.map .k{font-family:var(--body);font-size:11px}
+.map .n{font-family:var(--display);font-size:13px;font-weight:700}
+.n-center rect{fill:var(--accent);stroke:var(--accent)} .n-center .k{fill:var(--accent-fg);opacity:.85} .n-center .n{fill:var(--accent-fg)}
+.n-master rect{fill:var(--surface-2);stroke:var(--muted)} .n-master .k{fill:var(--muted)} .n-master .n{fill:var(--fg)}
+.n-model rect{fill:var(--share-soft);stroke:var(--share)} .n-model .k{fill:var(--share)} .n-model .n{fill:var(--fg)}
+.n-issue rect{fill:var(--signal-soft);stroke:var(--signal)} .n-issue .k{fill:var(--signal)} .n-issue .n{fill:var(--fg)}
+.n-cause rect{fill:var(--danger-soft);stroke:var(--danger)} .n-cause .k{fill:var(--danger)} .n-cause .n{fill:var(--fg)}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-top:10px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;border:1px solid}
+
+.callout{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;border:1px solid var(--signal);background:var(--signal-soft);border-radius:8px;padding:12px 14px;margin-top:14px}
+.callout .badge{font-family:var(--display);font-weight:800;color:var(--signal);font-size:13px;white-space:nowrap}
+.callout p{font-size:13px}
+
+/* evidence row */
+.row2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.7fr) minmax(0,1fr);gap:16px;align-items:start}
+.timeline{list-style:none;margin:0;padding:0}
+.timeline li{display:grid;grid-template-columns:44px 14px minmax(0,1fr);gap:8px;font-size:13px;padding-bottom:12px;position:relative}
+.timeline .w{font-family:var(--mono);font-size:12px;color:var(--muted)}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--signal);margin-top:5px}
+.dot.plan{background:var(--surface);border:2px solid var(--muted)}
+.timeline li:not(:last-child)::after{content:"";position:absolute;left:56px;top:17px;bottom:0;width:2px;background:var(--line)}
+
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;letter-spacing:.06em;color:var(--muted);font-weight:600;text-transform:uppercase;white-space:nowrap}
+tr.sister td{background:var(--signal-soft)}
+tr.sister td:first-child{box-shadow:inset 3px 0 0 var(--signal)}
+.hull{font-family:var(--mono);font-weight:500;white-space:nowrap}
+.tag-s{display:block;font-size:11px;color:var(--signal);font-weight:600}
+
+.bars{display:grid;gap:10px}
+.bar-row{display:grid;gap:4px;font-size:13px}
+.bar-row .lab{display:flex;justify-content:space-between;gap:8px}
+.bar-row .lab b{font-family:var(--mono);font-weight:500}
+.track{height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.fill{height:100%;background:var(--danger);border-radius:4px}
+.fill.alt{background:var(--muted)}
+.photos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:4px}
+.ph{border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface-2);font-size:11px;color:var(--muted)}
+.ph svg{display:block;width:100%;height:auto}
+.ph span{display:block;padding:4px 6px;line-height:1.35}
+.ph b{color:var(--fg);font-weight:600}
+.stack{display:grid;gap:16px}
+
+@media (max-width:1000px){
+  .row1{grid-template-columns:minmax(0,1fr)}
+  .row2{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+  .row2 .wide{grid-column:1 / -1;order:-1}
+}
+@media (max-width:640px){
+  .row2{grid-template-columns:minmax(0,1fr)}
+  .alias{grid-template-columns:minmax(0,1fr)}
+  .callout{grid-template-columns:minmax(0,1fr)}
+}
+@media (prefers-reduced-motion:reduce){.panel{transition:none}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <p class="crumb">지식창고 › 장비 허브</p>
+      <div class="titleline">
+        <h1 id="hubTitle">SN2511 발전기 No.2</h1>
+        <span class="pill p-issue">진행 이슈 1</span>
+        <span class="id">EQ-SN2511-GE-02</span>
+      </div>
+    </div>
+    <span class="sample">화면 시안 · 예시 데이터</span>
+  </header>
+
+  <!-- alias resolution -->
+  <section class="panel" aria-labelledby="aliasH">
+    <div class="panel-h">
+      <h2 id="aliasH">현장 표기로 찾기</h2>
+      <span class="muted" style="font-size:12px">메모에 쓴 그대로 입력하면 기준정보로 연결합니다</span>
+    </div>
+    <div class="alias">
+      <label for="aliasIn" style="position:absolute;left:-9999px">장비 표기</label>
+      <input id="aliasIn" type="text" value="2511 DG2" autocomplete="off">
+      <button class="btn primary" type="button" id="aliasBtn">연결 확인</button>
+    </div>
+    <div class="resolve" id="resolve" aria-live="polite"></div>
+  </section>
+
+  <div class="row1">
+    <!-- identity -->
+    <section class="panel" id="sec-id" aria-labelledby="idH">
+      <div class="panel-h"><h2 id="idH">기준정보</h2><span class="pill p-neutral">마스터 연결</span></div>
+      <dl class="id-list">
+        <dt>호선</dt><dd><span class="hull">SN2511</span> · 시운전 2단계 (해상)</dd>
+        <dt>선종 · 선주</dt><dd>LNGC 174K · 선주 A</dd>
+        <dt>자매선</dt><dd><span class="mono">SN2510 · SN2511 · SN2512</span></dd>
+        <dt>시스템</dt><dd><div class="path"><span>기관</span><span>발전 시스템</span><span>주발전기</span></div></dd>
+        <dt>장비 모델</dt><dd>제조사 A · 6L 이중연료 발전엔진</dd>
+        <dt>시운전 항목</dt><dd>발전기 부하시험 · 병렬운전 시험</dd>
+        <dt>담당 부서</dt><dd>부서 3 (협업 부서 5)</dd>
+        <dt>별칭</dt><dd><div class="codes"><span class="chip">DG2</span><span class="chip">D/G #2</span><span class="chip">2번 발전기</span><span class="chip">G/E No.2</span></div></dd>
+      </dl>
+    </section>
+
+    <!-- link map -->
+    <section class="panel" aria-labelledby="mapH">
+      <div class="panel-h">
+        <h2 id="mapH">연결 지도</h2>
+        <span class="muted" style="font-size:12px">노드를 누르면 근거로 이동합니다</span>
+      </div>
+      <div class="map-wrap">
+        <svg class="map" viewBox="0 0 720 380" role="img" aria-label="SN2511 발전기 No.2를 중심으로 호선, 자매선, 시스템, 진행 이슈, 시운전 항목, 장비 모델, 동일 모델 탑재 호선, 주요 원인이 연결된 지도">
+          <line class="edge" x1="360" y1="190" x2="130" y2="80"/>
+          <line class="edge" x1="360" y1="190" x2="130" y2="190"/>
+          <line class="edge" x1="360" y1="190" x2="130" y2="300"/>
+          <line class="edge strong" x1="360" y1="190" x2="360" y2="50"/>
+          <line class="edge" x1="360" y1="190" x2="360" y2="330"/>
+          <line class="edge strong" x1="360" y1="190" x2="590" y2="80"/>
+          <line class="edge" x1="590" y1="80" x2="590" y2="190"/>
+          <line class="edge" x1="590" y1="190" x2="590" y2="300"/>
+          <line class="edge dash" x1="130" y1="80" x2="130" y2="190"/>
+          <path class="edge dash" d="M205 190 C 300 260, 470 250, 515 200"/>
+
+          <g class="node n-master" tabindex="0" role="button" data-go="sec-id" aria-label="호선 SN2511 기준정보">
+            <rect x="55" y="58" width="150" height="44" rx="6"/>
+            <text class="k" x="130" y="75" text-anchor="middle">호선</text>
+            <text class="n" x="130" y="93" text-anchor="middle">SN2511 · LNGC</text>
+          </g>
+          <g class="node n-master" tabindex="0" role="button" data-go="sec-same" aria-label="자매선 이력">
+            <rect x="55" y="168" width="150" height="44" rx="6"/>
+            <text class="k" x="130" y="185" text-anchor="middle">자매선</text>
+            <text class="n" x="130" y="203" text-anchor="middle">SN2510 · SN2512</text>
+          </g>
+          <g class="node n-master" tabindex="0" role="button" data-go="sec-id" aria-label="시스템 계층">
+            <rect x="55" y="278" width="150" height="44" rx="6"/>
+            <text class="k" x="130" y="295" text-anchor="middle">시스템</text>
+            <text class="n" x="130" y="313" text-anchor="middle">발전 시스템</text>
+          </g>
+          <g class="node n-issue" tabindex="0" role="button" data-go="sec-hist" aria-label="진행 이슈 ISS-2026-0142">
+            <rect x="275" y="28" width="170" height="44" rx="6"/>
+            <text class="k" x="360" y="45" text-anchor="middle">진행 이슈 · ISS-0142</text>
+            <text class="n" x="360" y="63" text-anchor="middle">배기온도 편차 +38℃</text>
+          </g>
+          <g class="node n-center" tabindex="0" role="button" data-go="sec-id" aria-label="탑재 장비 SN2511 발전기 No.2">
+            <rect x="265" y="162" width="190" height="56" rx="8"/>
+            <text class="k" x="360" y="183" text-anchor="middle">탑재 장비</text>
+            <text class="n" x="360" y="203" text-anchor="middle">SN2511 발전기 No.2</text>
+          </g>
+          <g class="node n-master" tabindex="0" role="button" data-go="sec-hist" aria-label="시운전 항목 발전기 부하시험">
+            <rect x="275" y="308" width="170" height="44" rx="6"/>
+            <text class="k" x="360" y="325" text-anchor="middle">시운전 항목 · W44 예정</text>
+            <text class="n" x="360" y="343" text-anchor="middle">발전기 부하시험</text>
+          </g>
+          <g class="node n-model" tabindex="0" role="button" data-go="sec-id" aria-label="장비 모델">
+            <rect x="505" y="58" width="170" height="44" rx="6"/>
+            <text class="k" x="590" y="75" text-anchor="middle">장비 모델 · 제조사 A</text>
+            <text class="n" x="590" y="93" text-anchor="middle">6L 이중연료 엔진</text>
+          </g>
+          <g class="node n-model" tabindex="0" role="button" data-go="sec-same" aria-label="동일 모델 탑재 호선">
+            <rect x="505" y="168" width="170" height="44" rx="6"/>
+            <text class="k" x="590" y="185" text-anchor="middle">동일 모델 탑재</text>
+            <text class="n" x="590" y="203" text-anchor="middle">5척 · 사례 5건</text>
+          </g>
+          <g class="node n-cause" tabindex="0" role="button" data-go="sec-cause" aria-label="주요 원인">
+            <rect x="505" y="278" width="170" height="44" rx="6"/>
+            <text class="k" x="590" y="295" text-anchor="middle">주요 원인 1위</text>
+            <text class="n" x="590" y="313" text-anchor="middle">연료분사밸브 불량 3</text>
+          </g>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--surface-2);border-color:var(--muted)"></i>기준정보</span>
+        <span><i style="background:var(--share-soft);border-color:var(--share)"></i>장비 모델</span>
+        <span><i style="background:var(--signal-soft);border-color:var(--signal)"></i>이슈</span>
+        <span><i style="background:var(--danger-soft);border-color:var(--danger)"></i>원인</span>
+        <span>점선 = 자매선 관계</span>
+      </div>
+      <div class="callout" role="note">
+        <span class="badge">선행 사례</span>
+        <p>자매선 <b class="mono">SN2510</b>의 같은 위치 발전기에서 W30에 같은 증상이 있었고, 연료분사밸브 노즐 마모로 확인됐습니다. 밸브 교체 전에 센서 교차 확인부터 하세요.</p>
+        <button class="btn" type="button" data-go="sec-same">사례 보기</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="row2">
+    <section class="panel" id="sec-hist" aria-labelledby="histH">
+      <div class="panel-h"><h2 id="histH">이 장비의 이력</h2><span class="pill p-neutral">주간보고 3주</span></div>
+      <ol class="timeline">
+        <li><span class="w">W40</span><span class="dot"></span><span><b>ISS-0142 등록</b> · 부서 3<br><span class="muted">3번 실린더 배기온도 +38℃</span></span></li>
+        <li><span class="w">W41</span><span class="dot"></span><span>센서 교차 확인, 실제 편차 확인<br><span class="muted">사진 2 · 마커 ① 배기 매니폴드</span></span></li>
+        <li><span class="w">W42</span><span class="dot"></span><span>연료분사밸브 교체품 발주<br><span class="muted">금요일 입고, 정비업체 일정 조율</span></span></li>
+        <li><span class="w">W44</span><span class="dot plan"></span><span class="muted">발전기 부하시험 (시운전 항목 예정)</span></li>
+      </ol>
+    </section>
+
+    <section class="panel wide" id="sec-same" aria-labelledby="sameH">
+      <div class="panel-h"><h2 id="sameH">동일 모델, 다른 호선</h2><span class="muted" style="font-size:12px">장비 모델 기준 연결</span></div>
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>호선 · 장비</th><th>증상</th><th>원인</th><th>상태</th></tr></thead>
+          <tbody>
+            <tr class="sister"><td><span class="hull">SN2510</span> No.2<span class="tag-s">자매선 · 같은 위치</span></td><td>배기온도 편차 +35℃</td><td>분사밸브 노즐 마모</td><td><span class="pill p-ok">종결</span><br><span class="id">CASE-0398</span></td></tr>
+            <tr class="sister"><td><span class="hull">SN2512</span> No.1<span class="tag-s">자매선</span></td><td>기동 실패</td><td>연료 필터 막힘</td><td><span class="pill p-issue">진행</span><br><span class="id">ISS-0151</span></td></tr>
+            <tr><td><span class="hull">SN2433</span> No.1</td><td>배기온도 편차 +42℃</td><td>분사밸브 노즐 마모</td><td><span class="pill p-ok">종결</span><br><span class="id">CASE-0311</span></td></tr>
+            <tr><td><span class="hull">SN2433</span> No.2</td><td>단일 실린더 지시값 튐</td><td>열전대 센서 오차</td><td><span class="pill p-ok">종결</span><br><span class="id">CASE-0352</span></td></tr>
+            <tr><td><span class="hull">SN2402</span> No.3</td><td>배기온도 불균형</td><td>분사밸브 개방압 저하</td><td><span class="pill p-ok">종결</span><br><span class="id">CASE-0287</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="stack">
+      <section class="panel" id="sec-cause" aria-labelledby="causeH">
+        <div class="panel-h"><h2 id="causeH">이 모델의 원인 순위</h2><span class="muted mono" style="font-size:12px">사례 5건</span></div>
+        <div class="bars">
+          <div class="bar-row"><div class="lab"><span>연료분사밸브 불량</span><b>3건</b></div><div class="track"><div class="fill" style="width:60%"></div></div></div>
+          <div class="bar-row"><div class="lab"><span>열전대 센서 오차</span><b>1건</b></div><div class="track"><div class="fill alt" style="width:20%"></div></div></div>
+          <div class="bar-row"><div class="lab"><span>연료 필터 막힘</span><b>1건</b></div><div class="track"><div class="fill alt" style="width:20%"></div></div></div>
+        </div>
+      </section>
+      <section class="panel" aria-labelledby="phH">
+        <div class="panel-h"><h2 id="phH">부위별 사진</h2><span class="muted mono" style="font-size:12px">마커 태그 6</span></div>
+        <div class="photos">
+          <div class="ph"><svg viewBox="0 0 90 60" aria-hidden="true"><rect width="90" height="60" fill="var(--photo-bg)"/><rect x="38" y="8" width="14" height="44" rx="3" fill="var(--photo-metal)"/><rect x="42" y="46" width="6" height="10" fill="var(--photo-dark)"/><circle cx="45" cy="52" r="8" fill="none" stroke="var(--danger)" stroke-width="2"/></svg><span><b>분사밸브</b><br>3장</span></div>
+          <div class="ph"><svg viewBox="0 0 90 60" aria-hidden="true"><rect width="90" height="60" fill="var(--photo-bg)"/><rect x="6" y="22" width="78" height="16" rx="6" fill="var(--photo-metal)"/><rect x="18" y="38" width="8" height="14" fill="var(--photo-dark)"/><rect x="40" y="38" width="8" height="14" fill="var(--photo-dark)"/><rect x="62" y="38" width="8" height="14" fill="var(--photo-dark)"/></svg><span><b>배기 매니폴드</b><br>2장</span></div>
+          <div class="ph"><svg viewBox="0 0 90 60" aria-hidden="true"><rect width="90" height="60" fill="var(--photo-bg)"/><rect x="10" y="26" width="70" height="8" fill="var(--photo-metal)"/><rect x="42" y="10" width="4" height="22" fill="var(--photo-dark)"/><circle cx="44" cy="10" r="4" fill="var(--photo-dark)"/></svg><span><b>열전대</b><br>1장</span></div>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  function go(id){
+    const el=document.getElementById(id); if(!el) return;
+    const smooth=!matchMedia('(prefers-reduced-motion: reduce)').matches;
+    el.scrollIntoView({behavior:smooth?'smooth':'auto',block:'start'});
+    el.classList.add('flash'); setTimeout(()=>el.classList.remove('flash'),1400);
+  }
+  document.querySelectorAll('[data-go]').forEach(n=>{
+    n.addEventListener('click',()=>go(n.dataset.go));
+    n.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();go(n.dataset.go);}});
+  });
+
+  const hulls=['SN2510','SN2511','SN2512','SN2433','SN2402'];
+  const eq=[
+    {re:/(d\/?g|g\/?e|발전기)\s*#?\s*(no\.?)?\s*(\d)|(\d)\s*번\s*발전기/i,name:'발전기',code:'GE'},
+    {re:/(카고\s*펌프|c\/?p)\s*#?\s*(no\.?)?\s*(\d)/i,name:'카고펌프',code:'CP'}
+  ];
+  const out=document.getElementById('resolve');
+  function chip(t,c){return '<span class="chip'+(c?' hit':'')+'">'+t+'</span>';}
+  function esc(s){return s.replace(/[&<>"]/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[ch]));}
+  function resolve(){
+    const raw=document.getElementById('aliasIn').value.trim();
+    if(!raw){out.innerHTML='<span style="color:var(--danger)">찾을 장비 표기를 입력하세요. 예: 2511 DG2</span>';return;}
+    const hm=raw.match(/(?:SN|H)?\s*(\d{4})/i);   // 2511 · SN2511 · 옛 표기 H2511 모두 SN2511 로
+    const hull=hm&&hulls.includes('SN'+hm[1])?'SN'+hm[1]:null;
+    let found=null,num=null;
+    for(const e of eq){const m=raw.match(e.re);if(m){found=e;num=m[3]||m[4];break;}}
+    let html=chip(esc(raw))+'<span class="arrow">→</span>';
+    if(hull) html+=chip('호선 '+hull,true); else html+='<span class="pill p-problem">호선 미확인</span>';
+    if(found&&num) html+=chip(found.name+' No.'+num,true); else html+='<span class="pill p-problem">장비 미확인</span>';
+    if(hull&&found&&num){
+      html+='<span class="arrow">=</span>'+chip('EQ-'+hull+'-'+found.code+'-0'+num,true)+'<span class="muted">별칭 사전으로 연결됨</span>';
+      document.getElementById('hubTitle').textContent=hull+' '+found.name+' No.'+num;
+    } else {
+      html+='<span class="muted">검토 화면에서 작성자가 고르면 별칭 사전에 추가됩니다</span>';
+    }
+    out.innerHTML=html;
+  }
+  document.getElementById('aliasBtn').addEventListener('click',resolve);
+  document.getElementById('aliasIn').addEventListener('keydown',e=>{if(e.key==='Enter')resolve();});
+  resolve();
+})();
+</script>

@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 최종 홈 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<link rel="stylesheet" href="v2m.css?v=2">
+<style>
+/* 홈 B안(iPadOS 그룹 목록) — 「남은 일」을 묶음별 흰 카드로. 한 줄은 Enter 로 저장하고 다음 칸, 다 끝나면 다음 할 일 안내 */
+.home{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+.col{display:grid;gap:12px;align-content:start}
+.qi{grid-template-columns:minmax(0,1fr) auto}
+.qi .what{display:grid;gap:2px;min-width:0}
+.qi .t{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qi .do{display:flex;gap:6px}
+.qi .line{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px}
+.qi.fin{background:var(--ok-soft)}
+.qi.fin .line,.qi.fin .do{display:none}
+.qi .fin-msg{display:none;grid-column:1/-1;font-size:var(--fs-2);font-weight:600;color:var(--t-ok)}
+.qi .fin-msg::before{content:"✓ "}
+.qi.fin .fin-msg{display:block}
+.done-all{display:grid;gap:4px;padding:20px;background:var(--ok-soft);border-radius:var(--r)}
+.mt{grid-template-columns:minmax(0,1fr) auto;color:inherit}
+.mt b{font-weight:600}
+.sub{grid-template-columns:minmax(0,1fr) auto;min-height:36px;padding:8px 16px}
+@media (max-width:1150px){.home{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){.qi{grid-template-columns:minmax(0,1fr)}.qi .line{grid-template-columns:1fr 1fr}.qi .line input{grid-column:1/-1}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">회의·지식</span>
+  <nav class="nav" aria-label="메뉴"><a href="v2m-home.html" aria-current="page">홈</a><a href="v2m-issue-desk.html">이슈</a><a href="v2m-meetings.html">회의</a><a href="v2-metrics.html">지표</a><a href="#">지식창고</a><a href="#">장비 허브</a></nav>
+  <div class="right">
+    <div class="seg" role="group" aria-label="시안 — 역할 바꿔 보기"><button aria-pressed="true" data-role="w">작성자</button><button aria-pressed="false" data-role="d">부서 편집자</button><button aria-pressed="false" data-role="p">기획</button></div>
+    <a id="toA" href="#">A안 보기</a>
+  </div>
+</header>
+<details class="note"><summary>시안 설명 — B안 홈</summary>로그인하면 이번 주에 <b>내가 할 일만</b> 순서대로 나옵니다. 한 줄은 여기서 바로 쓰고 Enter — 다음 칸으로 넘어갑니다. 초안·부서 자료처럼 화면이 필요한 일은 버튼 하나로 그 자리로 갑니다. 다 끝나면 다음에 할 일을 알려 줍니다. 데이터는 가상입니다.</details>
+
+<main class="page">
+  <div class="ph"><h1 id="hello">이번 주 할 일</h1><span class="mono muted">2026-W43 · 10.19–10.23 · <span id="scope">시운전1부</span></span></div>
+  <div class="home">
+    <div class="col" aria-labelledby="qH">
+      <div class="ph"><h2 id="qH">남은 일 <span id="qN" class="mono muted" style="font-weight:400"></span></h2><span class="small muted" id="qHint"></span></div>
+      <div id="queue" class="col"></div>
+    </div>
+    <div class="col">
+      <div class="sec-h">다가오는 회의 · <a href="v2m-meetings.html">전체</a></div>
+      <div class="group" id="mtgs"></div>
+      <div class="sec-h" style="margin-top:12px">부서 제출 <span class="mono" id="subN"></span> · 마감 수 14:00</div>
+      <div class="group" id="subs"></div>
+      <p class="small muted" style="margin:0 16px">늦은 부서는 기획이 공유회 자료에서 「원장으로 채우기」를 합니다.</p>
+    </div>
+  </div>
+</main>
+<div class="actbar"><span class="state" id="state"></span><span class="keys"><kbd>Enter</kbd> 저장하고 다음 · <kbd>J</kbd>/<kbd>K</kbd> 이동</span><a class="btn primary" id="primary" href="#"></a></div>
+
+<script type="module">
+import {$, $$, esc, toast, keys} from './v2b.js';
+import {ISSUES, MEETINGS, SUBMIT, KIND} from './v2b-data.js';
+let role = 'w';
+const done = new Map();   // 끝낸 일 → 남길 문구
+// 역할별 대기열 — 실제 구현: 업데이트 필요·초안 미완료·종결 요청·제출 상태를 서버가 계산
+function items() {
+  const mine = ISSUES.filter((d) => d.dept === '시운전1부');
+  // 같은 이슈의 한 줄·초안은 한 행으로 — 한 번에 끝내고 넘어간다
+  if (role === 'w') return [
+    ...mine.filter((d) => !d.wk && d.st !== 'post').map((d) => ({k: 'line', d, draft: d.draft !== 'ok', g: '이번 주 한 줄 — 진행 중인데 비어 있음'})),
+    ...mine.filter((d) => d.draft !== 'ok' && (d.wk || d.st === 'post')).map((d) => ({k: 'draft', d, g: '1차 초안 마무리 — 부서 자료의 재료'})),
+  ];
+  if (role === 'd') return [
+    {k: 'deck', g: '부서 회의자료', title: 'W43 시운전1부 회의자료', sub: `초안 완료 ${mine.filter((d) => d.draft === 'ok').length} · 작성 중 ${mine.filter((d) => d.draft !== 'ok').length} · 마감 오늘 14:00`},
+    ...mine.filter((d) => d.draft !== 'ok').map((d) => ({k: 'nudge', d, g: '초안을 기다리는 이슈 — 작성자에게 보완 요청'})),
+  ];
+  return [
+    ...ISSUES.filter((d) => d.st === 'req').map((d) => ({k: 'close', d, g: '종결 요청 — 승인하면 사례 카드'})),
+    {k: 'share', g: '부서 현안 공유회 자료', title: 'W43 부서 현안 공유회', sub: `제출 ${Object.values(SUBMIT).filter((v) => v === 'ok').length}/8 · 미제출 ${Object.entries(SUBMIT).filter(([, v]) => v !== 'ok').map(([k]) => k).join('·')}`},
+  ];
+}
+const key = (it) => it.k + (it.d ? it.d.id : '');
+function render() {
+  const all = items(), left = all.filter((it) => !done.has(key(it)));
+  const groups = [];
+  all.forEach((it, i) => { if (!groups.length || groups.at(-1).g !== it.g) groups.push({g: it.g, rows: []}); groups.at(-1).rows.push([it, i]); });
+  $('#queue').innerHTML = groups.map(({g, rows}) => `<div class="sec-h">${esc(g)}</div><div class="group">` + rows.map(([it, i]) => {
+    const d = it.d, isDone = done.has(key(it));
+    const what = d ? `<div class="what"><span class="t"><span class="tl ${d.t}">${KIND[d.t]}</span> ${esc(d.title)}</span><span class="meta"><span class="id">${d.id}</span><span>${d.hull}</span><span class="dd ${d.dd !== null && d.dd <= 14 ? 'soon' : ''}">${esc(d.ev)}${d.dd !== null ? ' · D-' + d.dd : ''}</span><span>지난주: ${esc(d.last)}</span></span></div>`
+      : `<div class="what"><span class="t">${esc(it.title)}</span><span class="meta">${esc(it.sub)}</span></div>`;
+    let act = '', line = '';
+    if (it.k === 'line') line = `<div class="line"><label class="sr" for="ln${i}">${d.id} 이번 주 한 줄</label><input id="ln${i}" type="text" data-line="${i}" placeholder="이번 주 진행 한 줄 — Enter 로 저장하고 다음"><button class="btn sm primary" type="button" data-save="${i}">저장</button><button class="btn sm gray" type="button" data-same="${i}">변동 없음</button></div>`;
+    if (it.k === 'line' && it.draft) act = `<a class="btn sm" href="v2m-issue-desk.html?id=${d.id}">초안도 마무리 — 열기</a>`;
+    if (it.k === 'draft') act = `<a class="btn sm primary" href="v2m-issue-desk.html?id=${d.id}">초안 열기</a>`;
+    if (it.k === 'deck') act = `<a class="btn sm primary" href="v2m-studio.html?kind=dept">부서 자료 열기</a>`;
+    if (it.k === 'nudge') act = `<button class="btn sm" type="button" data-nudge="${i}">보완 요청</button>`;
+    if (it.k === 'close') act = `<button class="btn sm primary" type="button" data-close="${i}">종결 승인</button><button class="btn sm gray" type="button" data-hold="${i}">보류</button>`;
+    if (it.k === 'share') act = `<a class="btn sm primary" href="v2m-studio.html?kind=share">공유회 자료 열기</a>`;
+    return `<div class="cell qi ${isDone ? 'fin' : ''}" data-i="${i}">${what}<div class="do">${act}</div>${line}<span class="fin-msg">${esc(done.get(key(it)) || '끝냈습니다')}</span></div>`;
+  }).join('') + '</div>').join('');
+  $('#qN').textContent = `${left.length} / ${all.length}`;
+  $('#qHint').textContent = role === 'w' ? '한 줄은 여기서 끝내고, 초안은 버튼으로 이동' : role === 'd' ? '부서 자료를 열면 초안 완료 이슈가 이미 들어 있습니다' : '종결 승인은 회의 전에도 할 수 있습니다';
+  if (!left.length) $('#queue').insertAdjacentHTML('beforeend', `<div class="done-all"><b>이번 주 할 일을 마쳤습니다.</b><span class="muted">${role === 'w' ? '부서 자료는 부장·부서 스텝이 고릅니다. 고친 내용이 있으면 알림으로 옵니다.' : role === 'd' ? '제출하면 공유회 자료에 자동으로 들어갑니다.' : '공유회 자료를 발행하면 회의를 시작할 수 있습니다.'}</span></div>`);
+  // 주 버튼 — 지금 가장 먼저 할 일
+  const first = left[0], p = $('#primary');
+  if (!first) { p.textContent = role === 'p' ? '공유회 자료 열기' : '이슈 원장 보기'; p.href = role === 'p' ? 'v2m-studio.html?kind=share' : 'v2m-issue-desk.html'; }
+  else if (first.k === 'line') { p.textContent = '첫 빈칸으로'; p.href = '#'; p.onclick = (e) => { e.preventDefault(); $('[data-line]').focus(); }; }
+  else { const b = $(`.qi[data-i="${all.indexOf(first)}"] .do .btn`); p.textContent = b ? b.textContent : '열기'; p.href = b?.getAttribute('href') || '#'; p.onclick = b && !b.getAttribute('href') ? (e) => { e.preventDefault(); b.click(); } : null; }
+  $('#state').textContent = left.length ? `남은 일 ${left.length}건` : '이번 주 할 일 없음';
+}
+function finish(i, msg, focusNext = true) {
+  const it = items()[i], k = key(it);
+  done.set(k, msg); render();
+  toast(msg, () => { done.delete(k); render(); });
+  if (focusNext) { const n = $$('[data-line]').find((x) => !x.closest('.fin')); if (n) n.focus(); }
+}
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.matches('[data-line]') && e.target.value.trim()) finish(+e.target.dataset.line, `W43 진행에 저장했습니다 — 「${e.target.value.trim()}」`);
+});
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return;
+  if (b.dataset.save) { const v = $(`[data-line="${b.dataset.save}"]`).value.trim(); if (v) finish(+b.dataset.save, `W43 진행에 저장했습니다 — 「${v}」`); else $(`[data-line="${b.dataset.save}"]`).focus(); }
+  if (b.dataset.same) finish(+b.dataset.same, 'W43 「변동 없음」으로 남겼습니다');
+  if (b.dataset.nudge) finish(+b.dataset.nudge, '작성자에게 초안 보완을 요청했습니다', false);
+  if (b.dataset.close) finish(+b.dataset.close, '종결 승인 — 사례 카드를 만들었습니다', false);
+  if (b.dataset.hold) finish(+b.dataset.hold, '보류 — 공유회에서 다시 봅니다', false);
+  if (b.dataset.role) { role = b.dataset.role; $$('[data-role]').forEach((x) => x.setAttribute('aria-pressed', x === b)); $('#scope').textContent = role === 'p' ? '팀 전체' : '시운전1부'; render(); }
+});
+keys({next: () => { const xs = $$('[data-line]'); const i = xs.indexOf(document.activeElement); (xs[i + 1] || xs[0])?.focus(); }, prev: () => { const xs = $$('[data-line]'); (xs[xs.indexOf(document.activeElement) - 1] || xs[0])?.focus(); }});
+$('#mtgs').innerHTML = MEETINGS.slice(1, 4).map((m) => `<a class="cell tap mt" href="v2m-meeting-view.html?m=${m.id}"><span style="display:grid;gap:2px"><b>${esc(m.title)}</b><span class="meta"><span>${m.kind}</span><span>${esc(m.when)}</span></span></span><span class="chev"></span></a>`).join('');
+$('#subs').innerHTML = Object.entries(SUBMIT).map(([k, v]) => `<div class="cell sub"><span>${k}</span><span class="st ${v === 'ok' ? 'done' : v === 'wip' ? 'go' : 'late'}">${v === 'ok' ? '제출' : v === 'wip' ? '작성 중' : '미작성'}</span></div>`).join('');
+$('#subN').textContent = `${Object.values(SUBMIT).filter((v) => v === 'ok').length}/8`;
+render();
+</script>
+</body>
+</html>

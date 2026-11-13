@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 회의 진행 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="v2.css">
+<style>
+/* 회의 진행 — 진행자 화면(슬라이드 + 이 항목 기록) / 발표 화면(?view=present, 슬라이드만). 두 창은 같은 쪽을 따라간다(BroadcastChannel) */
+.bar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:8px}
+.bar h1{font-size:var(--fs-4)}
+.bar .right{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.clock{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:var(--fs-2);color:var(--muted)}
+.run{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;align-items:start}
+.stage{display:grid;gap:10px}
+.big{font-size:15px}
+.big .band{font-size:16px;padding:10px 16px}
+.big .sb{padding:14px 18px;gap:10px;font-size:15px;line-height:1.45}
+.big .foot{font-size:11px;padding:6px 16px}
+.big .it b{font-size:18px}
+.big .it{border-left-width:5px;padding-left:10px}
+.big .kv{display:grid;grid-template-columns:70px minmax(0,1fr);gap:4px 10px;font-size:14px}
+.big .kv dt{color:var(--slide-muted)} .big .kv dd{margin:0}
+.big .phs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.big .ph{min-height:110px;position:relative}
+.big .ph span{position:absolute;left:6px;bottom:4px;font-size:11px;color:var(--slide-fg)}
+.nav2{display:flex;gap:8px;align-items:center}
+.nav2 .pg{font-family:var(--mono);font-size:var(--fs-2);font-variant-numeric:tabular-nums}
+.order{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.order button{flex:0 0 auto;display:grid;gap:2px;text-align:left;font:inherit;font-size:var(--fs-1);width:150px;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);color:var(--fg);cursor:pointer}
+.order button[aria-current="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.order button .s{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.order button.done .s::after{content:" · 기록됨";color:var(--ok)}
+.log{display:grid;gap:10px}
+.log textarea{min-height:64px}
+.decpill{border:0;cursor:pointer;font:inherit;font-size:var(--fs-1);font-weight:600}
+.dec-box{display:grid;gap:6px;padding:10px;border:1px dashed var(--decide);background:var(--decide-soft);border-radius:6px}
+.dec-box b{color:var(--decide)}
+.big .kv dd.dec{color:var(--slide-decide);font-weight:700}
+.close-box{display:grid;gap:8px;padding:10px;border:1px solid var(--ok);background:var(--ok-soft);border-radius:6px}
+.close-box .act{font-size:var(--fs-2)}
+.hist{display:grid;gap:4px;font-size:var(--fs-1)}
+#hist{display:grid;gap:4px}
+#hist>div{display:grid;grid-template-columns:44px minmax(0,1fr);gap:6px}
+.hist b{font-family:var(--mono);font-weight:500;color:var(--muted)}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,100%);background:var(--surface);border-left:1px solid var(--line);box-shadow:-8px 0 24px rgb(0 0 0 / .12);padding:16px;display:grid;gap:10px;align-content:start;z-index:20}
+.toast{font-size:var(--fs-2);color:var(--ok);font-weight:600}
+/* 발표 화면 — 슬라이드만 */
+body.present{background:#000}
+body.present .top,body.present .v2-note,body.present .bar,body.present .side,body.present .order,body.present .nav2{display:none}
+body.present .page{max-width:none;padding:0;min-height:100vh;place-items:center}
+body.present .run{grid-template-columns:1fr;width:min(100vw,177.78vh)}
+body.present .slide{border:0;border-radius:0;font-size:22px}
+body.present .big .band{font-size:24px;padding:14px 24px}
+body.present .big .sb{font-size:22px;padding:20px 28px}
+body.present .big .it b{font-size:28px}
+body.present .big .kv{font-size:20px;grid-template-columns:110px minmax(0,1fr)}
+body.present .big .ph{min-height:200px}
+@media (max-width:1100px){.run{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:640px){body:not(.present) .big.slide{aspect-ratio:auto}body:not(.present) .big .sb{font-size:13px}body:not(.present) .big .it b{font-size:15px}body:not(.present) .big .kv{font-size:13px;grid-template-columns:58px minmax(0,1fr)}body:not(.present) .big .ph{min-height:70px}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">커미셔닝팀 회의·지식</span>
+  <nav class="nav" aria-label="메뉴">
+    <a href="v2-home.html">홈</a>
+    <a href="v2-issue-desk.html">이슈</a>
+    <a href="v2-meetings.html" aria-current="page">회의</a>
+    <a href="v2-metrics.html">지표</a>
+    <a href="#">지식창고</a>
+    <a href="#">장비 허브</a>
+  </nav>
+  <div class="right"><span class="small muted">기획운영 · 이 과장(진행)</span></div>
+</header>
+<p class="v2-note">재설계 시안 v2 — 회의 진행(진행자 화면). 빔프로젝터에는 「발표 화면 열기」로 슬라이드만 띄우고, 진행자는 이 화면에서 코멘트·결정·종결 승인을 남깁니다. 남긴 것은 <b>이슈 이력</b>에 쌓입니다.</p>
+
+<main class="page">
+  <div class="bar">
+    <span class="pill kind">부서 현안 공유회</span><h1>W43 부서 현안 공유회</h1>
+    <span class="clock" id="clock">진행 00:12:40</span><button class="pill p-decide decpill" id="decJump" type="button">결정 필요 2건 남음</button>
+    <div class="right">
+      <button class="btn" id="newBtn">+ 회의 중 새 이슈</button>
+      <a class="btn" href="?view=present" target="present">발표 화면 열기</a>
+      <button class="btn primary">회의 마치기</button>
+    </div>
+  </div>
+
+  <div class="run">
+    <div class="stage">
+      <div class="slide big" id="slide" aria-live="polite"></div>
+      <div class="nav2"><button class="btn" id="prev" aria-label="이전">◀</button><span class="pg" id="pg"></span><button class="btn" id="next" aria-label="다음">▶</button><span class="small muted">← → 키로도 넘깁니다</span></div>
+      <div class="order" id="order" aria-label="발표 순서"></div>
+    </div>
+
+    <aside class="panel side" aria-labelledby="logH">
+      <div class="panel-h"><h2 id="logH">이 항목 기록</h2><span class="id" id="curId"></span></div>
+      <div class="log">
+        <div class="close-box" id="closeBox" hidden>
+          <b>종결 요청</b>
+          <span class="act" id="closeAct"></span>
+          <div class="row"><button class="btn sm primary" id="approve">종결 승인 — 사례 카드로</button><button class="btn sm" id="hold">보류</button></div>
+          <span class="toast" id="closeMsg" hidden></span>
+        </div>
+        <div class="dec-box" id="decBox" hidden>
+          <b>결정 필요</b><span id="decQ"></span>
+          <label class="f">결정 내용<input type="text" id="decA" placeholder="예: 안벽에서 부하시험, 10/28 선주 입회"></label>
+          <div class="row"><button class="btn sm" id="decSave" type="button">결정 기록</button><span class="toast" id="decMsg" hidden>결정을 이슈 이력에 남기고 「결정 필요」를 비웠습니다</span></div>
+        </div>
+        <label class="f">코멘트<textarea id="cmt" placeholder="회의에서 나온 말 — 누가 무엇을 언제까지"></textarea></label>
+        <label class="f">결정<input id="dec" type="text" placeholder="예: 다음 주 부하시험 결과 보고"></label>
+        <div class="row">
+          <label class="f" style="flex:1">담당 부서<select id="dept"><option>시운전1부</option><option>시운전2부</option><option>시운전기술</option><option>기획운영</option></select></label>
+          <label class="f">중요 표시<span class="row"><input type="checkbox" id="imp"> 팀장 정보회의로</span></label>
+        </div>
+        <div class="row"><button class="btn primary" id="saveLog">기록하고 다음</button><span class="toast" id="saved" hidden>이슈 이력에 남겼습니다</span></div>
+        <div class="hist"><b class="small" style="color:var(--fg);font-family:var(--body)">이 이슈의 지난 이력</b><div id="hist"></div></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<aside class="drawer" id="drawer" hidden aria-labelledby="dH">
+  <div class="panel-h"><h2 id="dH">회의 중 새 이슈</h2><button class="btn sm ghost" id="dClose">닫기</button></div>
+  <label class="f">제목<input type="text" placeholder="예: SN2512 청수 발생기 생산량 저하"></label>
+  <label class="f">담당 부서<select><option>시운전2부</option><option>시운전1부</option><option>시운전기술</option></select></label>
+  <label class="f">회의록 메모 (선택 — AI 가 후보를 만듭니다)<textarea placeholder="회의에서 나온 말을 그대로 붙여넣기"></textarea></label>
+  <div class="row"><button class="btn primary">원장에 등록</button><span class="small muted">이슈 원장에 「회의 발생」으로 들어갑니다</span></div>
+</aside>
+
+<script>
+// 시안용 데이터 — 채택 순서대로
+const P = [
+  {k:'cover', g:'표지', t:'W43 부서 현안 공유회', id:''},
+  {k:'problem', g:'시운전1부', t:'SN2514 카고펌프 No.3 메카니컬씰 누유', id:'PRB-2026-0001', line:'씰 교체 후 4시간 무누유 — 종결 요청', close:'조치: 씰 교체 후 4시간 무누유 확인(10/21) · 원인: 씰 면 손상(초기 건운전)', hist:[['W42','씰 교체 완료, 시운전 대기'],['W41','누유 발견, 씰 주문']], photos:['조치 전','조치 후']},
+  {k:'issue', g:'시운전1부', t:'SN2511 발전기 No.2 배기온도 편차', id:'ISS-2026-0001', line:'연료밸브 입고 지연, 다음 주 교체', dec:'선주 협의: 부하시험을 해상/안벽 어디서 할지', hist:[['W43','연료밸브 입고 지연, 다음 주 교체'],['W42','신규 등록 — 3번 실린더 +38°C']], photos:['3번 실린더','배기 매니폴드']},
+  {k:'issue', g:'시운전기술', t:'SN2512 발전기 No.1 기동 지연', id:'ISS-2026-0004', line:'제조사 회신 대기 5주째', hist:[['W42','제조사 회신 대기'],['W39','신규 등록']]},
+  {k:'problem', g:'기획운영', t:'Sterntube 금속이물질 발견', id:'PRB-2026-0007', line:'SN2402·SN2510 확인, 원인 조사 중', dec:'후속선 S/T LO 소형 필터 추가 적용 여부', hist:[['W43','신규']] , photos:['이물질']},
+];
+let i = 1;
+const ch = ('BroadcastChannel' in window) ? new BroadcastChannel('meeting-run') : null;
+const present = new URLSearchParams(location.search).get('view') === 'present';
+if (present) document.body.classList.add('present');
+
+function slideHTML(p, n) {
+  if (p.k === 'cover') return `<div class="band"><span>부서 현안 공유회</span><span>W43</span></div><div class="sb"><div style="font-size:1.6em;font-weight:700;color:var(--slide-band);font-family:var(--display)">${p.t}</div><div>10/24(금) 09:00 · 채택 14건 · 종결 요청 1</div><table><tr><th>신규</th><th>진행 중</th><th>종결 요청</th><th>장기 미결</th></tr><tr><td>4</td><td>9</td><td>1</td><td>2</td></tr></table></div><div class="foot">부서 현안 공유회 · ${n}/${P.length}</div>`;
+  const ph = (p.photos || []).map((x) => `<div class="ph"><span>${x}</span></div>`).join('');
+  return `<div class="band"><span>${p.g} · ${p.id}</span><span class="tag">주간 현안</span></div><div class="sb"><div class="it ${p.k}"><b>${p.t}</b></div><dl class="kv"><dt>이번 주</dt><dd>${p.line}</dd>${p.close ? `<dt>종결 요청</dt><dd>${p.close}</dd>` : ''}${p.dec ? `<dt>결정 필요</dt><dd class="dec">${p.dec}</dd>` : ''}</dl>${ph ? `<div class="phs">${ph}</div>` : ''}</div><div class="foot">부서 현안 공유회 · ${n}/${P.length}</div>`;
+}
+function render(from) {
+  const p = P[i];
+  document.getElementById('slide').innerHTML = slideHTML(p, i + 1);
+  document.getElementById('pg').textContent = `${i + 1} / ${P.length}`;
+  if (present) return;
+  document.querySelectorAll('#order button').forEach((b, k) => b.setAttribute('aria-current', k === i));
+  document.getElementById('curId').textContent = p.id || '표지';
+  document.getElementById('closeBox').hidden = !p.close;
+  document.getElementById('closeAct').textContent = p.close || '';
+  document.getElementById('decBox').hidden = !p.dec;
+  document.getElementById('decQ').textContent = p.dec || '';
+  document.getElementById('decA').value = ''; document.getElementById('decMsg').hidden = true;
+  document.getElementById('hist').innerHTML = (p.hist || []).map(([w, t]) => `<div><b>${w}</b><span>${t}</span></div>`).join('') || '<span class="muted">표지 — 기록할 항목이 없습니다</span>';
+  ['cmt', 'dec'].forEach((x) => { document.getElementById(x).value = ''; });
+  document.getElementById('saved').hidden = true;
+  if (ch && from !== 'remote') ch.postMessage(i);
+}
+function go(d) { i = Math.max(0, Math.min(P.length - 1, i + d)); render(); }
+if (!present) {
+  document.getElementById('order').innerHTML = P.map((p, k) => `<button type="button" data-k="${k}"><b>${k + 1}. ${p.g}</b><span class="s">${p.t}</span></button>`).join('');
+  document.querySelectorAll('#order button').forEach((b) => b.addEventListener('click', () => { i = +b.dataset.k; render(); }));
+  document.getElementById('prev').onclick = () => go(-1);
+  document.getElementById('next').onclick = () => go(1);
+  document.getElementById('saveLog').onclick = () => { document.querySelectorAll('#order button')[i].classList.add('done'); document.getElementById('saved').hidden = false; setTimeout(() => go(1), 500); };
+  document.getElementById('approve').onclick = () => { const m = document.getElementById('closeMsg'); m.hidden = false; m.textContent = '종결 승인 — 사례 카드 CASE-2026-0311 을 만들었습니다'; };
+  document.getElementById('hold').onclick = () => { const m = document.getElementById('closeMsg'); m.hidden = false; m.style.color = 'var(--signal)'; m.textContent = '보류 — 다음 공유회에서 다시 봅니다'; };
+  document.getElementById('decSave').onclick = () => { P[i].dec = ''; document.getElementById('decMsg').hidden = false; const n = P.filter((x) => x.dec).length; document.getElementById('decJump').textContent = n ? `결정 필요 ${n}건 남음` : '결정 필요 모두 기록함'; };
+  document.getElementById('decJump').onclick = () => { const k = P.findIndex((x) => x.dec); if (k >= 0) { i = k; render(); } };
+  document.getElementById('newBtn').onclick = () => { document.getElementById('drawer').hidden = false; };
+  document.getElementById('dClose').onclick = () => { document.getElementById('drawer').hidden = true; };
+}
+if (ch) ch.onmessage = (e) => { i = e.data; render('remote'); };
+document.addEventListener('keydown', (e) => { if (e.target.matches('input,textarea,select')) return; if (e.key === 'ArrowRight') go(1); if (e.key === 'ArrowLeft') go(-1); });
+render();
+</script>
+</body>
+</html>

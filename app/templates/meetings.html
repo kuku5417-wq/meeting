@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}회의 · {{ app_title }}{% endblock %}
+{% block content %}
+{# 회의 목록(최종 시안 design/mockups/v2m-meetings) — M11 공식. 카드는 그 회의의 다음 할 일로 바로 간다 #}
+<div class="v-ph">
+  <div><h1>회의</h1><span class="mono muted small">{{ week.label }}</span></div>
+</div>
+<p class="v-trial-note">부서 자료를 <b>제출</b>하면 부서 현안 공유회 자료에 그 판이 실리고, 공유회·팀장 정보회의는 <b>발행</b>하면 판이 고정됩니다. 발행한 회의는 보기에서 「회의 시작」으로 진행 화면을 엽니다(안건 = 최신 발행본).</p>
+{% if err %}<p class="flash bad" role="alert">{{ err }}</p>{% endif %}
+{% macro card(mt, past=False) %}
+  {% set done = mt.status in ('제출', '발행', '종료') %}
+  {% set nxt = '보기 →' if past or done else ('편집 계속 →' if mt.kind == 'dept' else ('취합·발행 →' if mt.kind == 'share' else '구성하기 →')) %}
+  <div class="v-row v-mt">
+    <a class="v-row-link" href="{{ '/meetings/%d' % mt.id if past or done else '/studio/%d' % mt.id }}"><span class="t">{{ mt.title or kinds[mt.kind] }}</span>
+      <span class="m">{% if past %}<span class="mono">{{ mt.week_id }}</span>{% endif %}<span>{{ kinds[mt.kind] }}</span><span>{{ mt.status }}{% if mt.version %} · {{ mt.version }}판{% endif %}</span>{% if not past %}<span>장 {{ counts[mt.id] }}</span>{% endif %}</span></a>
+    <span class="row">{% if done and not past %}<a class="btn sm" href="/studio/{{ mt.id }}">편집</a>{% endif %}<a class="v-go" href="{{ '/meetings/%d' % mt.id if past or done else '/studio/%d' % mt.id }}">{{ nxt }}</a></span>
+  </div>
+{% endmacro %}
+<div class="v-home">
+  <section aria-labelledby="wH">
+    <h2 class="v-sec" id="wH">이번 주</h2>
+    <div class="v-list">{% for mt in meetings %}{{ card(mt) }}{% endfor %}</div>
+    {% if past %}
+    <h2 class="v-sec">지난 회의</h2>
+    <div class="v-list">{% for mt in past %}{{ card(mt, True) }}{% endfor %}</div>
+    {% endif %}
+  </section>
+  <aside aria-labelledby="nH">
+    <h2 class="v-sec" id="nH">수시 회의 만들기</h2>
+    <form class="panel" method="post" action="/meetings/{{ week.id }}/adhoc">
+      <label class="f">종류<select name="kind"><option value="hull">호선별 회의</option><option value="review">문제점·장비 리뷰</option></select></label>
+      <label class="f">호선(호선별 회의)<select name="hull_id"><option value="">—</option>{% for h in hulls %}<option>{{ h }}</option>{% endfor %}</select></label>
+      <label class="f">날짜<input type="date" name="held_on"></label>
+      <button class="btn primary" type="submit">만들고 스튜디오로</button>
+      <span class="muted small">정기 회의(부서 자료·공유회·팀장 정보회의)는 매주 자동으로 생깁니다.</span>
+    </form>
+  </aside>
+</div>
+{% endblock %}

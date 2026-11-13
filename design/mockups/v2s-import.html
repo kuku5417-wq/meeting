@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>최종 시안 — 가져오기</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<link rel="stylesheet" href="v2s.css">
+<style>
+/* 최종 시안 — 가져오기(스튜디오 틀). 왼쪽 입구(메모·메일·파일) + 조각 목록 · 가운데 고른 조각의 원본(근거 노란 표시) · 오른쪽 판정과 반영될 사실.
+   판정하면 다음 조각이 자동으로 골라진다 */
+.pc{grid-template-columns:22px minmax(0,1fr) auto;cursor:pointer;font-size:var(--fs-2)}
+.pc .n{font-family:var(--mono);color:var(--muted);font-size:var(--fs-1)}
+.pc .t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pc .v{font-size:var(--fs-1);font-weight:600;color:var(--t-ok)}
+.pc .v.skip{color:var(--muted)}
+.src-p{display:grid;gap:6px}
+.mail{grid-template-columns:minmax(0,1fr) auto;font-size:var(--fs-1)}
+.memo{width:640px}
+.memo .paper{font-family:var(--mono);font-size:var(--fs-3);line-height:1.8;white-space:pre-wrap}
+.memo mark{background:#fff1b8;color:inherit;border-radius:3px;padding:0 2px}
+.memo .dim{color:#9aa0a8}
+.pick{display:grid;gap:4px}
+.pick button{font:inherit;font-size:var(--fs-2);font-weight:600;min-height:34px;border:0;border-radius:8px;background:var(--fill);color:var(--fg);cursor:pointer;text-align:left;padding:0 12px}
+.pick button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg)}
+.pick kbd{font-family:var(--mono);font-size:var(--fs-1);opacity:.7;margin-right:6px}
+.facts{display:grid;gap:4px;padding:10px;border-radius:8px;background:var(--ok-soft);font-size:var(--fs-2)}
+</style>
+</head>
+<body>
+<header class="tb" id="tb"></header>
+<div class="studio">
+  <aside class="pane left" aria-label="입구와 조각">
+    <div class="seg" role="group" aria-label="가져올 곳"><button type="button" data-src="memo" aria-pressed="true">메모</button><button type="button" data-src="mail" aria-pressed="false">메일 3</button><button type="button" data-src="file" aria-pressed="false">파일</button></div>
+    <div class="src-p" data-pane="memo"><label class="sr" for="memo">메모·메신저 대화</label><textarea id="memo" style="min-height:96px;font-family:var(--mono);font-size:var(--fs-1)">[오전 9:12] 2511 DG2 배기온도 편차 계속, 3번 실린더 +38도. 연료밸브 교체품 금요일 입고
+[오전 9:15] 2514 카고 1번 토출압 흔들림 ±0.4, 스트레이너 볼 예정
+[오전 9:20] 안전사고 예방 캠페인 10/6~10/30</textarea><button class="btn sm primary" type="button" id="split">AI 로 나누기</button><span class="small muted">시간·보낸 사람 줄은 걷어내고 이름은 저장하지 않습니다</span></div>
+    <div class="src-p" data-pane="mail" hidden><span class="small muted">Outlook 「회의자료」 폴더 · 10분마다</span><div class="group"><div class="cell mail"><span><b>FW: 2514 카고펌프 사진</b><br>사진 3 · 본문 2줄</span><span class="st new">새로 옴</span></div><div class="cell mail"><span><b>스캔: 점검표 SN2511</b><br>PDF 2쪽 (글자 인식)</span><span class="st done">나눔</span></div></div></div>
+    <div class="src-p" data-pane="file" hidden><span class="small muted">PPT · HTML 을 캔버스에 끌어다 놓기</span><button class="btn sm" type="button" id="fakeFile">예시 파일로 해 보기</button></div>
+    <div class="sec-h" id="pcH">조각</div>
+    <div class="group" id="pcs"></div>
+  </aside>
+  <main class="canvas" id="canvas" aria-label="원본"></main>
+  <aside class="pane right" aria-label="판정" id="props"></aside>
+</div>
+<script type="module">
+import {$, $$, esc, toast, fitStages} from './v2b.js';
+import {toolbar, frame} from './v2s.js';
+toolbar('issue', 'v2b-import.html');
+$('#title').textContent = '가져오기'; $('#sub').textContent = '메모·메일·파일이 같은 조각으로 모입니다 · 원본은 그대로 보관';
+$('#act').innerHTML = '<a class="btn sm gray" href="v2s-issue.html">‹ 이슈</a><button class="btn sm primary" type="button" id="apply">반영하기</button>';
+// 조각 — 실제 구현: 메모·메일·파일을 같은 extract 파이프라인(근거 줄·별칭 연결)으로
+let pcs = [{from: '메일 10/22 08:40', raw: '2514 카고펌프 3번 씰 교체 후 4시간 무누유', hit: 'PRB-2026-0001 SN2514 카고펌프 No.3 메카니컬씰 누유', pct: 94, add: '이번 주 진행 · 사진 3', ev: '씰 교체 후 4시간 무누유'}];
+let cur = 0, memoLines = [];
+const V = {link: '기존 이슈에 붙이기', new: '새 이슈로', skip: '건너뛰기'};
+function renderList() {
+  $('#pcs').innerHTML = pcs.map((p, i) => `<div class="cell pc ${i === cur ? 'on' : ''}" data-i="${i}"><span class="n">${i + 1}</span><span class="t">${esc(p.raw)}</span>${p.v ? `<span class="v ${p.v === 'skip' ? 'skip' : ''}">${p.v === 'link' ? '붙임' : p.v === 'new' ? '새 이슈' : '건너뜀'}</span>` : '<span></span>'}</div>`).join('') || '<div class="empty">왼쪽 위에서 가져오세요</div>';
+  const left = pcs.filter((p) => !p.v).length, n = pcs.filter((p) => p.v && p.v !== 'skip').length;
+  $('#pcH').textContent = `조각 · 판정 ${pcs.length - left}/${pcs.length}`;
+  $('#apply').textContent = n ? `반영하기 ${n}건` : '반영하기';
+}
+function renderCanvas() {
+  const p = pcs[cur];
+  if (!p) { $('#canvas').innerHTML = '<div class="startc"><b>조각이 없습니다</b><span class="small muted">메모를 붙여넣고 「AI 로 나누기」, 또는 PPT 를 끌어다 놓으세요.</span></div>'; return; }
+  if (p.slide) { $('#canvas').innerHTML = `<p class="cv-h">${esc(p.from)} — 원본 장 그대로(근거 부분이 이슈에 들어갑니다)</p><div class="rowf">${frame(`<div class="sh"><span>시운전1부 현안</span><span>1쪽</span></div><div class="sb"><div class="st1">${esc(p.raw)}</div><div style="background:#fff1b8;border-radius:12px;padding:16px 24px">${esc(p.ev)}</div><div style="background:#f2f2f7;border-radius:12px;min-height:240px"></div></div><div class="sf"><span>원본 PPT</span><span>근거 노란 표시</span></div>`, `<b>${esc(p.from)}</b>`, 'on static', '', 680)}</div>`; fitStages(); return; }
+  const lines = p.memo ? memoLines : [p.raw];
+  $('#canvas').innerHTML = `<p class="cv-h">${esc(p.from)} — 원문(노란 부분이 이 조각의 근거)</p><div class="frame static on memo"><span class="lbl"><b>원문</b> 바꾸지 않고 보관</span><div class="paper">${lines.map((l) => l === p.raw ? `<mark>${esc(l)}</mark>` : `<span class="dim">${esc(l)}</span>`).join('\n')}</div></div>`;
+}
+function renderProps() {
+  const p = pcs[cur];
+  if (!p) { $('#props').innerHTML = ''; return; }
+  $('#props').innerHTML = `<div class="sec-h">판정 — 누르면 다음 조각으로</div><div class="pick">${Object.entries(V).filter(([k]) => p.hit || k !== 'link').map(([k, l], n) => `<button type="button" data-v="${k}" aria-pressed="${p.v === k}"><kbd>${n + 1}</kbd>${l}</button>`).join('')}</div>
+    <div class="sec-h">붙일 곳</div><div class="prop">${p.hit ? `<b>${esc(p.hit)}</b><span class="small muted">일치 ${p.pct}% · 다른 이슈 고르기</span>` : '<span class="small muted">비슷한 이슈가 없습니다 — 새 이슈 후보</span>'}</div>
+    <div class="sec-h">반영될 사실</div><div class="facts"><span>● ${esc(p.add)}</span><span class="small muted">근거: ${esc(p.from)}</span></div>
+    <div class="keys"><kbd>1</kbd>~<kbd>3</kbd> 판정 · <kbd>↑</kbd><kbd>↓</kbd> 조각 고르기</div>`;
+}
+const all = () => { renderList(); renderCanvas(); renderProps(); };
+function decide(v) { const p = pcs[cur]; if (!p || (v === 'link' && !p.hit)) return; p.v = v; const nx = pcs.findIndex((x, i) => i > cur && !x.v); const any = pcs.findIndex((x) => !x.v); cur = nx >= 0 ? nx : any >= 0 ? any : cur; all(); }
+$('#split').onclick = () => {
+  memoLines = $('#memo').value.split('\n').map((l) => l.replace(/^\[[^\]]*\]\s*/, '').trim()).filter(Boolean);
+  const guess = [['DG2', 'ISS-2026-0001 SN2511 발전기 No.2 배기온도 편차', 96, '이번 주 진행 한 줄'], ['카고 1번', 'ISS-2026-0012 SN2514 카고펌프 No.1 토출압 변동', 88, '이번 주 진행 한 줄']];
+  memoLines.forEach((l) => { const g = guess.find(([k]) => l.includes(k)); pcs.push({from: '메모', memo: true, raw: l, hit: g?.[1], pct: g?.[2], add: g ? g[3] : '공유정보 새로 · 매핑 해당 없음'}); });
+  cur = pcs.findIndex((p) => !p.v); all(); toast(`${memoLines.length}조각으로 나눴습니다 — 시간 표기는 걷어냈습니다`);
+};
+$('#fakeFile').onclick = () => { pcs.push({from: '시운전1부_현안.pptx 1쪽', slide: true, raw: 'SN2511 주발전기 #2 배기온도 원인 및 교체 일정', ev: '85% 부하에서 3번 실린더 +38℃ — 분사밸브 노즐 마모 확인, 10/25 부하시험', hit: 'ISS-2026-0001 SN2511 발전기 No.2 배기온도 편차', pct: 96, add: '원인·조치 · 원본 장 1'}); cur = pcs.length - 1; all(); };
+$('#apply').onclick = () => { const n = pcs.filter((p) => p.v && p.v !== 'skip').length; if (!n) { toast('판정한 조각이 없습니다 — 오른쪽에서 판정하세요'); return; } toast(`${n}건을 원장에 반영했습니다`); $('#apply').textContent = '이슈 원장으로 →'; $('#apply').onclick = () => (location.href = 'v2s-issue.html?f=line'); };
+document.addEventListener('click', (e) => {
+  const s = e.target.closest('[data-src]'), v = e.target.closest('[data-v]'), pc = e.target.closest('.pc[data-i]');
+  if (s) { $$('[data-src]').forEach((b) => b.setAttribute('aria-pressed', b === s)); $$('[data-pane]').forEach((p) => (p.hidden = p.dataset.pane !== s.dataset.src)); }
+  if (v) decide(v.dataset.v);
+  if (pc) { cur = +pc.dataset.i; all(); }
+});
+addEventListener('keydown', (e) => {
+  if (e.target.closest?.('input,textarea')) return;
+  const opts = Object.keys(V).filter((k) => pcs[cur]?.hit || k !== 'link'), k = opts[+e.key - 1]; if (k) decide(k);   // 보이는 순서대로 1·2·3
+  if (e.key === 'ArrowDown') { cur = Math.min(pcs.length - 1, cur + 1); all(); }
+  if (e.key === 'ArrowUp') { cur = Math.max(0, cur - 1); all(); }
+});
+all();
+</script>
+</body>
+</html>

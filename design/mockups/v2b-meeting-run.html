@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 B안 회의 진행 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<style>
+/* 회의 진행 B안(iPadOS) — 진행자 화면(왼쪽 슬라이드 · 오른쪽 이 안건 기록 카드) / ?view=present 발표 화면(슬라이드만, 진행자 쪽을 따라감).
+   흐름: 안건마다 「기록하고 다음」(Enter) 한 번 — 코멘트·결정·지시·종결 승인을 한 카드에서 남기고 넘어간다 */
+.run{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:14px;align-items:start}
+.rec{position:sticky;top:12px}
+.qk{display:inline-flex;gap:2px;padding:2px;background:var(--fill);border-radius:9px;flex-wrap:wrap}
+.qk button{font:inherit;font-size:var(--fs-2);font-weight:500;min-height:34px;padding:0 12px;border:0;border-radius:7px;background:none;color:var(--fg);cursor:pointer}
+.qk button[aria-pressed="true"]{background:var(--surface);font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.14)}
+.close{display:flex;gap:8px;padding:10px;border-radius:10px;background:var(--ok-soft);align-items:center;flex-wrap:wrap}
+.thumbs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.thumbs button{flex:0 0 auto;font:inherit;font-size:var(--fs-2);min-height:36px;padding:0 12px;border:0;border-radius:999px;background:var(--fill);color:var(--fg);cursor:pointer}
+.thumbs button[aria-current="true"]{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.thumbs button.rec-ok::after{content:" ✓";color:var(--t-ok)}
+.thumbs button[aria-current="true"].rec-ok::after{color:var(--accent-fg)}
+details summary{cursor:pointer;font-weight:600;color:var(--accent);font-size:var(--fs-2);min-height:32px}
+body.present{background:#000;padding-left:0}
+body.present .stage-wrap{position:fixed;inset:0;margin:auto;width:min(100vw,177.78vh);height:auto;border-radius:0;box-shadow:none}
+@media (max-width:1250px){.run{grid-template-columns:minmax(0,1fr)}.rec{position:static}}
+</style>
+</head>
+<body>
+<header class="top" id="top">
+  <span class="brand">회의·지식</span>
+  <nav class="nav" aria-label="메뉴"><a href="v2b-home.html">홈</a><a href="v2b-issue-desk.html">이슈</a><a href="v2b-meetings.html" aria-current="page">회의</a><a href="v2-metrics.html">지표</a><a href="#">지식창고</a><a href="#">장비 허브</a></nav>
+  <div class="right"><a id="toA" href="#">A안 보기</a></div>
+</header>
+<details class="note" id="note"><summary>시안 설명 — B안 회의 진행</summary>진행자는 오른쪽 한 칸에서 코멘트·결정·지시·종결 승인을 남기고 「기록하고 다음」(Enter). 발표 화면은 「발표 화면 열기」로 띄운 창(빔프로젝터)이 진행자 쪽을 그대로 따라갑니다. 발표 장은 1920×1080 기준 본문 26px 이상, 늘 흰 바탕입니다. 데이터는 가상입니다.</details>
+<main class="page" id="main">
+  <div class="ph"><h1 id="title"></h1><span class="small muted" id="prog"></span></div>
+  <div class="run">
+    <div style="display:grid;gap:10px;min-width:0"><div class="stage-wrap" id="sw"><div class="stage" id="stg"></div></div><div class="thumbs" id="thumbs"></div></div>
+    <section class="panel rec" aria-labelledby="rH" id="recPanel">
+      <h2 id="rH" style="font-size:var(--fs-3)">이 안건 기록</h2>
+      <div class="qk" role="group" aria-label="빠른 결과"><button type="button" data-q="공유됨" aria-pressed="false">공유됨</button><button type="button" data-q="다음 주 다시" aria-pressed="false">다음 주 다시</button><button type="button" data-q="담당 부서 바꿈" aria-pressed="false">담당 부서 바꿈</button></div>
+      <label class="f">코멘트<textarea id="cm" placeholder="회의에서 나온 말 — 이슈 이력에 쌓입니다"></textarea></label>
+      <label class="f" id="decW" style="color:var(--t-decide)">결정<input type="text" id="dec" placeholder="결정 필요에 대한 결정 — 남기면 결정 필요 칸이 비워집니다"></label>
+      <details id="act"><summary>＋ 지시 남기기 — 다음 주 담당 부서 자료 맨 위에 다시 나옵니다</summary>
+        <div style="display:grid;gap:6px;margin-top:6px"><input type="text" id="actT" placeholder="지시 내용"><div class="row"><select id="actD" style="width:auto"><option>시운전1부</option><option>시운전기술</option><option>시운전2부</option></select><input type="text" id="actW" value="W44" style="width:90px"></div></div></details>
+      <div class="close" id="closeW"><span class="small" style="flex:1"><b>종결 요청</b> — 승인하면 사례 카드</span><button class="btn sm primary" type="button" data-close="ok">종결 승인</button><button class="btn sm gray" type="button" data-close="hold">보류</button></div>
+      <button class="btn gray" type="button" id="newIss">＋ 회의 중 새 이슈</button>
+    </section>
+  </div>
+</main>
+<div class="actbar" id="bar"><span class="state" id="state"></span><span class="keys"><kbd>Enter</kbd> 기록하고 다음 · <kbd>←</kbd>/<kbd>→</kbd> 장 이동</span><button class="btn gray" type="button" id="openP">발표 화면 열기</button><button class="btn gray" type="button" id="prev">← 이전</button><button class="btn primary" type="button" id="next">기록하고 다음 →</button></div>
+
+<script type="module">
+import {$, $$, toast, fitStages} from './v2b.js';
+import {deckOf, MEETING, itemSlide, coverSlide} from './v2b-data.js';
+const qs = new URLSearchParams(location.search), m = qs.get('m') || 'share', present = qs.get('view') === 'present';
+const its = deckOf(m), total = its.length + 1, title = MEETING[m];
+const rec = new Map();
+let pg = 0;
+const ch = 'BroadcastChannel' in window ? new BroadcastChannel('v2b-run-' + m) : null;   // 진행자 → 발표 화면 동기화
+function draw() {
+  $('#stg').innerHTML = pg === 0 ? coverSlide(title, its, total) : itemSlide(its[pg - 1], pg + 1, total, its[pg]?.d.title, title);
+  fitStages();
+  if (present) return;
+  const it = its[pg - 1], d = it?.d;
+  $('#title').textContent = title;
+  $('#prog').textContent = `${pg + 1} / ${total} · 기록 ${rec.size}/${its.length}`;
+  $('#recPanel').hidden = pg === 0;
+  if (d) {
+    const r = rec.get(d.id) || {};
+    $('#cm').value = r.cm || ''; $('#dec').value = r.dec || ''; $('#actT').value = r.act || '';
+    $('#decW').hidden = !d.dec; $('#closeW').hidden = !(d.st === 'req' && m === 'share');
+    $$('[data-q]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.q === r.q));
+    $('#rH').textContent = `이 안건 기록 — ${d.id}`;
+  }
+  $('#next').textContent = pg === 0 ? '첫 안건 →' : pg === its.length ? '기록하고 회의 마치기' : '기록하고 다음 →';
+  $('#prev').disabled = pg === 0;
+  $('#thumbs').innerHTML = `<button type="button" data-p="0" aria-current="${pg === 0}">표지</button>` + its.map((x, i) => `<button type="button" data-p="${i + 1}" aria-current="${pg === i + 1}" class="${rec.has(x.d.id) ? 'rec-ok' : ''}">${i + 2}. ${x.d.hull}</button>`).join('');
+  $('#state').textContent = its.filter((x) => x.d.dec && !rec.get(x.d.id)?.dec).length ? `결정이 남은 안건 ${its.filter((x) => x.d.dec && !rec.get(x.d.id)?.dec).length}` : '남은 결정 없음';
+  ch?.postMessage(pg);
+}
+function save() {
+  const d = its[pg - 1]?.d; if (!d) return;
+  const r = rec.get(d.id) || {};
+  Object.assign(r, {cm: $('#cm').value.trim(), dec: $('#dec').value.trim(), act: $('#actT').value.trim()});
+  if (r.cm || r.dec || r.act || r.q || r.close) rec.set(d.id, r);
+}
+function go(n) { save(); pg = Math.max(0, Math.min(total - 1, n)); draw(); if (!present && pg > 0) $('#cm').focus({preventScroll: true}); }
+if (present) {
+  document.body.classList.add('present'); ['#top', '#note', '#bar', '#recPanel', '#thumbs', '.ph'].forEach((s) => { const el = $(s); if (el) el.hidden = true; });
+  ch?.addEventListener('message', (e) => { pg = e.data; draw(); });
+  addEventListener('keydown', (e) => { if (e.key === 'ArrowRight') { pg = Math.min(total - 1, pg + 1); draw(); } if (e.key === 'ArrowLeft') { pg = Math.max(0, pg - 1); draw(); } });
+} else {
+  $('#next').onclick = () => { if (pg === its.length) { save(); toast(`회의를 마쳤습니다 — 기록 ${rec.size}건이 이슈 이력에 들어갔습니다`); $('#next').textContent = '회의 목록으로'; $('#next').onclick = () => (location.href = 'v2b-meetings.html'); return; } go(pg + 1); };
+  $('#prev').onclick = () => go(pg - 1);
+  $('#openP').onclick = () => window.open(`v2b-meeting-run.html?m=${m}&view=present`, 'v2b-present', 'width=1280,height=720');
+  $('#newIss').onclick = () => toast('새 이슈 칸이 열립니다 — 등록하면 이 회의 안건 끝에 붙고 원장에도 들어갑니다(시안)');
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey && !e.target.matches('textarea')) { e.preventDefault(); $('#next').click(); }
+    if (!e.target.closest('input,textarea,select')) { if (e.key === 'ArrowRight') go(pg + 1); if (e.key === 'ArrowLeft') go(pg - 1); }
+  });
+  document.addEventListener('click', (e) => {
+    const q = e.target.closest('[data-q]'), c = e.target.closest('[data-close]'), t = e.target.closest('[data-p]');
+    const d = its[pg - 1]?.d;
+    if (q && d) { const r = rec.get(d.id) || {}; r.q = r.q === q.dataset.q ? '' : q.dataset.q; rec.set(d.id, r); draw(); }
+    if (c && d) { const r = rec.get(d.id) || {}; r.close = c.dataset.close; rec.set(d.id, r); toast(c.dataset.close === 'ok' ? `${d.id} 종결 승인 — 사례 카드를 만들었습니다` : `${d.id} 보류 — 다음 주 다시`, () => { delete r.close; draw(); }); go(pg + 1); }
+    if (t) go(+t.dataset.p);
+  });
+}
+draw();
+</script>
+</body>
+</html>

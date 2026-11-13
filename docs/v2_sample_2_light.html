@@ -1,0 +1,2368 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>커미셔닝팀 회의자료·지식화 시스템 v2 — 전체 화면 시안 (Sample 2 Light · 여유 밀도)</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Pretendard:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --font-sans: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, "맑은 고딕", sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+    body {
+      font-family: var(--font-sans);
+      margin: 0;
+      padding: 0;
+      background-color: #F3F6FA;
+      color: #0F172A;
+      -webkit-font-smoothing: antialiased;
+    }
+    .font-mono-num {
+      font-family: var(--font-mono);
+      font-variant-numeric: tabular-nums;
+    }
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.45);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(100, 116, 139, 0.7);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .animate-fade-in {
+      animation: fadeIn 0.2s ease-out forwards;
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#F3F6FA] text-slate-900">
+
+  <!-- ===================================================================== -->
+  <!-- GLOBAL TOP NAVIGATION HEADER (Sample 2 Light Engineering Style)       -->
+  <!-- ===================================================================== -->
+  <header class="sticky top-0 z-40 bg-white border-b border-slate-200/90 shadow-sm">
+    <div class="max-w-[1720px] mx-auto px-5 py-3 flex flex-wrap items-center justify-between gap-4">
+      <!-- Brand & Context -->
+      <div class="flex items-center gap-3.5">
+        <div class="w-9 h-9 rounded-xl bg-[#1E3A5F] text-white font-mono-num font-bold text-sm flex items-center justify-center shadow-sm">
+          CM
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm sm:text-base font-bold tracking-tight text-slate-900">커미셔닝팀 회의자료 · 지식화 v2</span>
+            <span class="px-2 py-0.5 rounded-full text-[11px] font-mono-num font-semibold bg-sky-50 text-sky-800 border border-sky-200">2026-W43 · 10.19–10.23</span>
+            <span class="hidden sm:inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>사내망 · pjtlist 동기화됨
+            </span>
+          </div>
+          <p class="text-[11px] text-slate-500 hidden md:block mt-0.5">
+            이슈 원장·지식 매핑(1층) ──▶ 부서 회의자료(2층) ──▶ 공유회·팀장 보고(3층) · 사실(●) 수정 시 전 단계 자동 역반영
+          </p>
+        </div>
+      </div>
+
+      <!-- 6 Main Navigation Tabs (docs/06 §4 메뉴: 홈 · 이슈 · 회의 · 외부자료 · 지표 · 지식/장비허브) -->
+      <nav class="flex items-center gap-1 bg-slate-100/90 p-1 rounded-2xl border border-slate-200/90 overflow-x-auto" aria-label="메인 메뉴">
+        <button type="button" data-main-nav="home"
+          class="main-nav-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 whitespace-nowrap">
+          <span>🏠 홈</span>
+          <span class="font-mono-num text-[11px] px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold" id="nav-badge-home">3</span>
+        </button>
+        <button type="button" data-main-nav="ledger"
+          class="main-nav-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 whitespace-nowrap">
+          <span>📋 이슈 작업대</span>
+          <span class="font-mono-num text-[11px] px-1.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold" id="nav-badge-ledger">5</span>
+        </button>
+        <button type="button" data-main-nav="meetings"
+          class="main-nav-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 whitespace-nowrap">
+          <span>🗂 회의 · 자료 구성</span>
+          <span class="font-mono-num text-[11px] px-1.5 py-0.5 rounded-full bg-slate-200 text-slate-700 font-bold">4종</span>
+        </button>
+        <button type="button" data-main-nav="import"
+          class="main-nav-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 whitespace-nowrap">
+          <span>📥 외부 자료 가져오기</span>
+          <span class="font-mono-num text-[11px] px-1.5 py-0.5 rounded-full bg-purple-100 text-purple-800 font-bold">PPT·HTML</span>
+        </button>
+        <button type="button" data-main-nav="metrics"
+          class="main-nav-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 whitespace-nowrap">
+          <span>📊 지표</span>
+        </button>
+        <button type="button" data-main-nav="knowledge"
+          class="main-nav-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 whitespace-nowrap">
+          <span>🔎 지식창고 · 장비 허브</span>
+        </button>
+      </nav>
+
+      <!-- Global Right Controls: Role Switcher, Density, AI Memo, Download HTML -->
+      <div class="flex items-center gap-2">
+        <!-- Density Switcher -->
+        <div class="hidden xl:flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs" title="화면 여백·밀도 전환">
+          <button type="button" data-set-density="relaxed" id="btn-density-relaxed"
+            class="px-2.5 py-1.5 rounded-lg font-semibold transition bg-white text-slate-900 shadow-sm">
+            여유 밀도
+          </button>
+          <button type="button" data-set-density="compact" id="btn-density-compact"
+            class="px-2.5 py-1.5 rounded-lg font-semibold transition text-slate-500 hover:text-slate-900">
+            조밀
+          </button>
+        </div>
+
+        <button type="button" id="btn-open-ai-memo"
+          class="px-3.5 py-2 rounded-xl text-xs font-bold bg-sky-700 hover:bg-sky-600 text-white transition flex items-center gap-1.5 shadow-sm">
+          <span>✨ + 메모로 이슈 만들기</span>
+        </button>
+
+        <button type="button" id="btn-download-html"
+          class="px-3 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white transition flex items-center gap-1.5 shadow-sm">
+          <span>⬇ HTML 저장</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===================================================================== -->
+  <!-- MAIN VIEWPORT (Renders active screen in Sample 2 Light Relaxed style) -->
+  <!-- ===================================================================== -->
+  <main id="app-viewport" class="flex-1 flex flex-col min-h-0">
+  </main>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 1: F1 현장 메모 AI 정리 및 원장 후보 등록                         -->
+  <!-- ===================================================================== -->
+  <div id="modal-ai-memo" class="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white text-slate-900 rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden animate-fade-in">
+      <div class="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+        <div>
+          <span class="text-[11px] font-mono-num font-bold uppercase tracking-wider text-sky-700">F1 · 현장 메모 AI 정리 · 별칭 사전 자동 매핑</span>
+          <h3 class="text-base font-bold text-slate-900 mt-0.5">현장 메모를 붙여넣으면 원장 이슈 후보와 근거 줄(L1~Ln)을 추출합니다</h3>
+        </div>
+        <button type="button" id="btn-close-ai-memo" class="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg text-sm font-bold">✕</button>
+      </div>
+      <div class="p-6 space-y-5">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label for="ai-memo-textarea" class="text-xs font-bold text-slate-700">
+              현장 메모 원문 입력 (원본은 <code class="font-mono-num text-sky-700">memo</code> 테이블에 불변 보관)
+            </label>
+            <span class="text-[11px] text-slate-500">기존 진행 이슈 언급 시 주간 진행 한 줄로 자동 매칭</span>
+          </div>
+          <textarea id="ai-memo-textarea" rows="4"
+            class="w-full rounded-xl border border-slate-300 p-3.5 text-xs sm:text-sm font-mono-num leading-relaxed focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/40"
+          >- 2511 보일러 급수펌프 No.1 시운전 중 베어링 온도 78도 상승(기준 65도). 윤활유 라인 점검 필요, 선주 입회 일정 금요일로 재조율 요청
+- 2514 IG 팬 스크러버 출구 산소농도 헌팅 현상, 센서 교정 완료 후 정상화(종결 요청)</textarea>
+        </div>
+
+        <div class="bg-sky-50/70 border border-sky-200/90 rounded-2xl p-4 text-xs space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <span class="font-bold text-sky-950 text-sm">🤖 AI 추출 후보 2건 (근거 줄 100% 일치 확인 · ensure_sn 정규화)</span>
+            <span class="font-mono-num text-[11px] px-2.5 py-0.5 rounded-full bg-white text-sky-800 border border-sky-200 font-semibold">SOLA 사내 LLM 응답 · 0.8초</span>
+          </div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div class="bg-white p-3.5 rounded-xl border border-sky-200 shadow-sm space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-rose-50 text-rose-700 border border-rose-200">문제점 · 신규</span>
+                <span class="font-mono-num text-[11px] text-sky-700 font-semibold">SN2511 ← 2511 · 매핑 5/5</span>
+              </div>
+              <div class="font-bold text-slate-900 text-xs sm:text-sm">SN2511 보일러 급수펌프 No.1 베어링 온도 과열(+78℃)</div>
+              <div class="text-[11px] text-slate-600">표준 장비: <b>보일러 급수펌프 No.1 (EQ-SN2511-FP-01)</b></div>
+              <div class="text-[11px] text-purple-800 font-semibold">결정 필요: 선주 입회 일정 금요일로 재조율</div>
+              <div class="text-[11px] text-slate-400 border-t border-slate-100 pt-1">근거 · 메모 L1 "2511 보일러 급수펌프 No.1 시운전 중 베어링 온도 78도 상승"</div>
+            </div>
+            <div class="bg-white p-3.5 rounded-xl border border-sky-200 shadow-sm space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="px-2 py-0.5 text-[11px] font-bold rounded bg-emerald-50 text-emerald-700 border border-emerald-200">이슈 · 종결요청</span>
+                <span class="font-mono-num text-[11px] text-sky-700 font-semibold">SN2514 ← 2514 · 매핑 5/5</span>
+              </div>
+              <div class="font-bold text-slate-900 text-xs sm:text-sm">SN2514 IG 팬 스크러버 출구 산소농도 헌팅 센서 교정</div>
+              <div class="text-[11px] text-slate-600">표준 장비: <b>IG 스크러버 유닛 (EQ-SN2514-IG-01)</b></div>
+              <div class="text-[11px] text-emerald-700 font-semibold">조치: 산소농도 센서 제로점 교정 후 정상 운전 확인</div>
+              <div class="text-[11px] text-slate-400 border-t border-slate-100 pt-1">근거 · 메모 L2 "2514 IG 팬 스크러버 출구 산소농도 헌팅 현상, 센서 교정 완료"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <span class="text-xs text-slate-500">등록 즉시 각 이슈의 「상세 한 장」 1차 초안이 자동으로 생성됩니다.</span>
+        <div class="flex items-center gap-2">
+          <button type="button" id="btn-cancel-ai-memo" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-200/70">취소</button>
+          <button type="button" id="btn-confirm-ai-memo" class="px-4 py-2 rounded-xl text-xs font-bold bg-sky-700 hover:bg-sky-600 text-white shadow-sm">
+            원장에 후보 2건 등록하기
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- MODAL 2: 발표 화면 (빔프로젝터 전용 16:9 슬라이드 쇼)                   -->
+  <!-- ===================================================================== -->
+  <div id="modal-projector" class="fixed inset-0 z-50 bg-slate-950/95 hidden flex-col justify-between p-6 text-white">
+    <div class="max-w-6xl w-full mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="px-2.5 py-1 rounded-lg bg-sky-500/20 text-sky-300 border border-sky-400/30 text-xs font-bold font-mono-num">발표 화면 (빔프로젝터 창 동기화)</span>
+        <span class="text-sm font-bold text-slate-200" id="projector-meeting-title">2026-W43 부서 현안 공유회</span>
+      </div>
+      <div class="flex items-center gap-2">
+        <button type="button" id="btn-proj-prev" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold">← 이전 장</button>
+        <span id="projector-page-indicator" class="font-mono-num text-xs px-3 text-slate-300">1 / 4</span>
+        <button type="button" id="btn-proj-next" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold">다음 장 →</button>
+        <button type="button" id="btn-close-projector" class="ml-3 px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-500 text-xs font-bold">발표 종료 (ESC)</button>
+      </div>
+    </div>
+    <div id="projector-slide-body" class="max-w-5xl w-full mx-auto my-auto"></div>
+    <div class="max-w-6xl w-full mx-auto flex items-center justify-between text-xs text-slate-400">
+      <span>진행자 화면에서 코멘트·결정·종결 승인을 입력하면 원장 이력에 실시간 반영됩니다.</span>
+      <span class="font-mono-num">커미셔닝팀 회의자료 · 지식화 시스템 v2</span>
+    </div>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script>
+    (function () {
+      // =========================================================================
+      // CENTRAL APPLICATION STATE (Covers all v2 features F1~F19 from docs 06 & 07)
+      // =========================================================================
+      const state = {
+        mainTab: 'ledger',          // 'home' | 'ledger' | 'meetings' | 'import' | 'metrics' | 'knowledge'
+        gridDensity: 'relaxed',     // 'relaxed' (여유 밀도) | 'compact' (조밀)
+        selectedIssueId: 'ISS-2026-0001',
+        selectedMeeting: 'share',   // 'dept' | 'share' | 'exec' | 'monthly' | 'hull'
+        meetingSubTab: 'compose',   // 'list' | 'deptDeck' | 'compose' | 'run'
+        ledgerAttachTab: 'mapping', // 'mapping' | 'schedule' | 'progress' | 'photos'
+        knowledgeSubTab: 'hub',     // 'hub' | 'cases' | 'unregistered'
+        selectedEqId: 'EQ-SN2511-GE-02',
+        selectedMapNode: 'sister',
+        knowledgeQuery: 'LNGC 발전기 배기온도 편차, 과거에 어떻게 조치했나?',
+        filterHull: 'ALL',
+        filterDept: 'ALL',
+        filterStatus: 'ALL',
+        groupBy: 'dept',            // 'dept' | 'hull' | 'equip' | 'none'
+        slideFormatOverride: null,
+        selectedImportSlideId: 'SL-01',
+        selectedMetricDept: 'D3',
+        projectorIdx: 0,
+
+        // 8개 부서 기준정보 (docs/03 & docs/05 확정 순서)
+        departments: [
+          { id: 'D1', order: '01', name: '기획운영', submitted: true, staleCount: 0, itemCount: 2, updatedAt: '10/21 17:10' },
+          { id: 'D2', order: '02', name: '시운전기술', submitted: true, staleCount: 1, itemCount: 3, updatedAt: '10/21 18:05' },
+          { id: 'D3', order: '03', name: '시운전1부', submitted: true, staleCount: 0, itemCount: 4, updatedAt: '10/22 08:40' },
+          { id: 'D4', order: '04', name: '시운전2부', submitted: true, staleCount: 0, itemCount: 3, updatedAt: '10/21 16:50' },
+          { id: 'D5', order: '05', name: '시운전3부', submitted: false, staleCount: 2, itemCount: 2, updatedAt: '작성 중' },
+          { id: 'D6', order: '06', name: '해운부', submitted: true, staleCount: 0, itemCount: 2, updatedAt: '10/21 15:20' },
+          { id: 'D7', order: '07', name: '안벽의장그룹', submitted: true, staleCount: 0, itemCount: 3, updatedAt: '10/22 08:15' },
+          { id: 'D8', order: '08', name: '친환경실증Lab', submitted: false, staleCount: 1, itemCount: 1, updatedAt: '작성 중' }
+        ],
+
+        // 회의 종류 및 템플릿 (docs/06 §3)
+        meetings: {
+          dept: {
+            id: 'dept',
+            name: '부서 회의자료 (시운전1부)',
+            kindBadge: '부서 제출본',
+            schedule: '매주 수요일 제출',
+            owner: '시운전1부 부장 · 스텝',
+            defaultForm: '상세 한 장 / 카드',
+            canClose: false,
+            status: '제출 완료 (재제출 가능)',
+            desc: '우리 부서 과장·담당자의 1차 초안을 골라 표현을 다듬고, 여러 이슈를 한 장으로 요약해 공유회에 제출합니다.'
+          },
+          share: {
+            id: 'share',
+            name: '부서 현안 공유회',
+            kindBadge: '주간 정기 · 종결 승인 가능',
+            schedule: '2026-W43 · 10/22(목) 14:00',
+            owner: '팀 스텝(기획운영) 주관',
+            defaultForm: '부서별 카드 / 사진 강조',
+            canClose: true,
+            status: '자료 구성 중 (6/8 부서 제출)',
+            desc: '8개 부서 제출본을 참조로 자동 취합합니다. 종결 요청 건을 승인하면 지식창고 사례 카드로 즉시 승격됩니다.'
+          },
+          exec: {
+            id: 'exec',
+            name: '팀장 정보회의 (본부 보고)',
+            kindBadge: '주간 상위 보고',
+            schedule: '2026-W43 · 10/23(금) 09:00',
+            owner: '기획 구성 · 팀장 확인',
+            defaultForm: '한 줄 요약 + 핵심 지표',
+            canClose: false,
+            status: '초안 자동 구성됨',
+            desc: '공유회 채택분 중 중요 표시·장기 미결·이번 주 종결 건만 추려 본부장 보고용 한 줄 요약으로 변환합니다.'
+          },
+          monthly: {
+            id: 'monthly',
+            name: '10월 월간 현안 회의',
+            kindBadge: '월간 정기 · 종결 승인 가능',
+            schedule: '매월 첫 주 (공유회 대체)',
+            owner: '팀 스텝(기획운영) 주관',
+            defaultForm: '상세 한 장 + 계획 대비 실적',
+            canClose: true,
+            status: '예정 (11/05)',
+            desc: '결정 필요 안건, 장기 미결, 계획 대비 실적 간트와 호선 비교표를 상세 1장 양식으로 깊이 있게 다룹니다.'
+          },
+          hull: {
+            id: 'hull',
+            name: 'SN2511 해상시운전 사전 점검 회의',
+            kindBadge: '호선별 수시 회의',
+            schedule: '2026-10-24(토) 10:00',
+            owner: '시운전1부 · 시운전기술 합동',
+            defaultForm: '사진 강조 + 자매선 비교',
+            canClose: false,
+            status: '구성 중',
+            desc: 'SN2511 및 자매선(SN2510·SN2512)의 열린 이슈와 선행 사례를 묶어 해상시운전 출발 전 점검합니다.'
+          }
+        },
+
+        // 이슈 원장 (1층 · docs/06 & 07)
+        issues: [
+          {
+            id: 'ISS-2026-0001',
+            type: 'issue',
+            typeLabel: '이슈',
+            status: '진행',
+            draftState: '초안 완료',
+            deptId: 'D3',
+            deptName: '시운전1부',
+            author: '김 과장',
+            hull: 'SN2511',
+            shipType: '174K LNGC',
+            milestone: '해상시운전 D-12',
+            sisterHull: 'SN2510 · SN2512',
+            equipmentRaw: '2511 DG2',
+            equipmentStd: '발전기 No.2 (EQ-SN2511-GE-02)',
+            modelName: '6L 이중연료 발전엔진',
+            component: '연료분사밸브',
+            symptomCode: '배기온도 편차 (+38℃)',
+            causeCode: '분사밸브 노즐 초기 마모',
+            mappingScore: 5,
+            mappingTotal: 5,
+            important: true,
+            needsWeeklyUpdate: false,
+            adoptedIn: ['dept', 'share', 'exec', 'monthly', 'hull'],
+            slideForm: 'detail',
+            title: 'SN2511 발전기 No.2 배기온도 편차 (+38℃)',
+            phenomenon: '부하 85% 운전 중 3번 실린더 배기온도가 평균 대비 +38℃ 상승 지속 (관리 기준 ±25℃ 이내).',
+            cause: '연료분사밸브 노즐 초기 마모로 인한 분무 불량 추정 (자매선 SN2510 W30 동일 증상 선행 사례 확인).',
+            actionPlan: '연료분사밸브 신품 금요일 입고 즉시 교체 후 10/25 해상시운전 부하시험 재검증.',
+            decisionNeeded: '제조사(Maker) 무상 보증 클레임 적용 및 예비품 2세트 추가 선적 협의',
+            weeklyUpdate: '교체용 신품 밸브 입고 완료, 내일 09:00 교체 작업 및 선급 입회 시험 확정',
+            meetingLines: {
+              dept: '[시운전1부] DG2 3번 실린더 배기온도 +38℃ 편차 — 금요일 분사밸브 교체 후 부하시험 재검증',
+              share: '[부서 공유회] SN2511 DG2 배기온도 편차: 자매선(SN2510) 선행 사례 기반 분사밸브 교체 완료 예정',
+              exec: '[본부 보고] SN2511 주발전기 배기온도 편차 조치 중 (인도 일정 영향 없음, Maker 무상 클레임 진행)',
+              monthly: '[월간 현안] LNGC 시리즈 주발전기 분사밸브 편차 재발 방지 및 전 호선 사전 점검 결과',
+              hull: '[SN2511 중점] 출발 전 DG2 3번 실린더 분사밸브 신품 교체 및 100% 부하 검증'
+            },
+            evidenceLine: '메모 1행 "2511 DG2 배기온도 편차 계속, 3번 실린더 +38도. 연료밸브 교체품 금요일 입고 예정"',
+            sisterPrecedent: '자매선 SN2510 같은 위치 발전기 No.2 (2026-W30 종결 · CASE-0298): 동일 +35℃ 편차 → 분사밸브 교체 후 부하시험 정상',
+            photoMarkers: [
+              { no: 1, label: '3번 실린더 분사밸브 탈거 부위', part: '연료분사밸브' },
+              { no: 2, label: '배기 매니폴드 온도 센서 #3', part: '배기 온도센서' }
+            ],
+            scheduleGantt: [
+              { task: '원인 진단 및 내시경 점검', planStart: '10/18', planEnd: '10/19', actStart: '10/18', actEnd: '10/20', diff: '+1일 (노즐 정밀 촬영)' },
+              { task: 'Maker 신품 밸브 입고·교체', planStart: '10/21', planEnd: '10/22', actStart: '10/22', actEnd: '10/23', diff: '+1일 (통관 지연 만회)' },
+              { task: '해상시운전 100% 부하시험', planStart: '10/25', planEnd: '10/25', actStart: '10/25', actEnd: '10/25', diff: '계획대로 진행' }
+            ],
+            progressBars: [
+              { area: 'No.1 발전기 (GE-01) 부하시험', stage: '완료 (100% 부하 승인)', pct: 100 },
+              { area: 'No.2 발전기 (GE-02) 밸브 교체·재시험', stage: '부품 교체 대기', pct: 65 },
+              { area: 'No.3 발전기 (GE-03) 부하시험', stage: '완료 (특이사항 없음)', pct: 100 }
+            ],
+            meetingComments: [
+              { author: '박 팀장', meeting: '부서 현안 공유회', text: '자매선 SN2510에서도 동일 제조사 로트였는지 확인해 후속선 SN2512도 입고 전 내시경 점검할 것.' }
+            ],
+            lastSyncedNote: '시운전1부 회의자료에서 조치 일정 업데이트됨 (원장·전 회의 동기화 완료)'
+          },
+          {
+            id: 'PRB-2026-0001',
+            type: 'problem',
+            typeLabel: '문제점',
+            status: '종결요청',
+            draftState: '회의 반영됨',
+            deptId: 'D3',
+            deptName: '시운전1부',
+            author: '이 대리',
+            hull: 'SN2514',
+            shipType: '300K VLCC',
+            milestone: '안벽시운전 D-5',
+            sisterHull: 'SN2513',
+            equipmentRaw: '카고펌프 No.3',
+            equipmentStd: '카고펌프 No.3 (EQ-SN2514-CP-03)',
+            modelName: '복식 원심 카고펌프',
+            component: '메카니컬씰',
+            symptomCode: '씰 하우징 누유',
+            causeCode: '초기 조립 시 씰 면 미세 손상',
+            mappingScore: 5,
+            mappingTotal: 5,
+            important: true,
+            needsWeeklyUpdate: false,
+            adoptedIn: ['dept', 'share', 'exec'],
+            slideForm: 'detail',
+            title: 'SN2514 카고펌프 No.3 메카니컬씰 누유 조치 완료',
+            phenomenon: '안벽 카고펌프 시운전 중 No.3 펌프 메카니컬씰 하우징 드레인 라인에서 시간당 약 40cc 누유 확인.',
+            cause: '초기 조립 시 메카니컬씰 슬라이딩 면 미세 스크래치 발생 확인.',
+            actionPlan: '메카니컬씰 어셈블리 신품 교체 후 4시간 연속 운전 시험 완료, 누유 0cc 확인 (종결 승인 요청).',
+            decisionNeeded: '',
+            weeklyUpdate: '메카니컬씰 신품 교체 및 4시간 부하 운전 누유 없음 확인 → 공유회 종결 승인 요청',
+            meetingLines: {
+              dept: '[종결요청] SN2514 카고펌프 No.3 메카니컬씰 교체 후 4시간 운전 정상',
+              share: '[종결승인 대기] SN2514 카고펌프 씰 누유 — 씰 교체 후 4시간 무누유 검증 완료 (사례 카드 승격 후보)',
+              exec: '[종결] SN2514 카고펌프 No.3 메카니컬씰 누유 즉시 교체 완료 (시운전 일정 정상)',
+              monthly: '[사례 승격] 카고펌프 메카니컬씰 초기 조립 손상 사례 및 입고 검사 강화',
+              hull: 'SN2514 카고펌프 씰 교체 완료'
+            },
+            evidenceLine: '메모 2행 "2514 카고펌프 No.3 씰 누유 발견(사진1). 메카니컬씰 하우징 쪽"',
+            sisterPrecedent: '동일 모델 탑재 4척 중 첫 발생 — 종결 승인 시 CASE-0391 사례 카드로 지식창고에 등재됩니다.',
+            photoMarkers: [
+              { no: 1, label: '씰 하우징 누유 지점 (교체 전)', part: '메카니컬씰' },
+              { no: 2, label: '드레인 배관 건조 상태 (교체 후 4h)', part: '드레인 배관' }
+            ],
+            scheduleGantt: [
+              { task: '누유 확인 및 펌프 정지·분해', planStart: '10/19', planEnd: '10/19', actStart: '10/19', actEnd: '10/19', diff: '즉시 조치' },
+              { task: '메카니컬씰 신품 교체 및 4h 운전', planStart: '10/20', planEnd: '10/21', actStart: '10/20', actEnd: '10/21', diff: '무누유 검증 완료' }
+            ],
+            progressBars: [
+              { area: '카고펌프 No.1~No.3 안벽 시운전', stage: '전 호기 운전 완료', pct: 100 }
+            ],
+            meetingComments: [],
+            lastSyncedNote: '종결 승인 대기 중 — 승인 시 CASE-0391 사례 카드로 승격'
+          },
+          {
+            id: 'ISS-2026-0097',
+            type: 'issue',
+            typeLabel: '이슈',
+            status: '진행 (5주 미결)',
+            draftState: '초안 완료',
+            deptId: 'D2',
+            deptName: '시운전기술',
+            author: '박 과장',
+            hull: 'SN2512',
+            shipType: '174K LNGC',
+            milestone: '진수 후 D-28',
+            sisterHull: 'SN2510 · SN2511',
+            equipmentRaw: 'BOG 압축기 #1',
+            equipmentStd: 'BOG 압축기 No.1 (EQ-SN2512-BC-01)',
+            modelName: 'LD-Comp 4단 극저온 압축기',
+            component: '2단 크로스헤드 · 배관 서포트',
+            symptomCode: '무부하 고주파 진동 (4.8mm/s)',
+            causeCode: '배관 서포트 공진 간섭 조사 중',
+            mappingScore: 4,
+            mappingTotal: 5,
+            important: true,
+            needsWeeklyUpdate: true,
+            adoptedIn: ['share', 'exec', 'monthly'],
+            slideForm: 'compare',
+            title: 'SN2512 BOG 압축기 No.1 무부하 진동값 상승 (5주 장기 미결)',
+            phenomenon: '무부하 시운전 시 2단 실린더 측 진동값이 4.8mm/s로 관리치(3.5mm/s) 상회.',
+            cause: '배관 서포트 강성 부족에 따른 공진 간섭 가능성 — 제조사 구조해석 리포트 대기 중.',
+            actionPlan: '제조사 보강 브래킷 도면 접수 후 안벽 보강 작업 및 진동 재측정.',
+            decisionNeeded: '선주사(Owner) 시운전 조건부 코멘트(Pending Item) 유예 합의 필요',
+            weeklyUpdate: '제조사 진동 해석 리포트 금주 목요일 접수 예정, 선주사 사전 설명회 준비',
+            meetingLines: {
+              dept: '[장기미결 5주] SN2512 BOG 압축기 진동 — 목요일 Maker 해석 결과 접수 후 서포트 보강',
+              share: '[결정필요 · 5주 미결] SN2512 BOG 압축기 진동 보강안 및 선주 코멘트 유예 협의 요청',
+              exec: '[중점관리] SN2512 BOG 압축기 진동(5주 미결) — 금주 Maker 보강안 확정 및 선주 협의',
+              monthly: '[호선 비교] SN2510·2511·2512 BOG 압축기 배관 서포트 진동 비교 및 표준 보강안',
+              hull: '자매선 SN2512 BOG 압축기 진동 참고'
+            },
+            evidenceLine: '지난주 이월 (W38 최초 등록 · 시운전기술 → 시운전2부 협업)',
+            sisterPrecedent: '자매선 SN2510은 서포트 보강 패드 추가 후 진동 4.6 → 2.1mm/s로 감소 (CASE-0244)',
+            photoMarkers: [
+              { no: 1, label: '2단 실린더 배관 서포트 진동 센서 부착점', part: '배관 서포트' }
+            ],
+            scheduleGantt: [
+              { task: '진동 스펙트럼 계측 및 Maker 송부', planStart: '10/05', planEnd: '10/08', actStart: '10/05', actEnd: '10/09', diff: '완료' },
+              { task: '보강 브래킷 시공 및 재측정', planStart: '10/22', planEnd: '10/26', actStart: '10/24', actEnd: '10/28', diff: '+2일 (도면 검토)' }
+            ],
+            progressBars: [
+              { area: 'BOG 압축기 진동 저감 보강', stage: '설계 보강안 접수 대기', pct: 45 }
+            ],
+            meetingComments: [],
+            lastSyncedNote: '이번 주 한 줄 업데이트 필요 (홈 화면에서 바로 입력 가능)'
+          },
+          {
+            id: 'SHR-2026-0310',
+            type: 'share',
+            typeLabel: '공유정보',
+            status: '게시',
+            draftState: '초안 완료',
+            deptId: 'D7',
+            deptName: '안벽의장그룹',
+            author: '최 주임',
+            hull: 'SN2511',
+            shipType: '174K LNGC',
+            milestone: '해상시운전 D-12',
+            sisterHull: 'SN2510',
+            equipmentRaw: '조타기(Steering Gear)',
+            equipmentStd: '조타기 No.1 (EQ-SN2511-SG-01)',
+            modelName: '로터리 베인 조타기',
+            component: '유압 펌프 유닛',
+            symptomCode: '일정 변경 공유',
+            causeCode: '선급 입회관 일정 조정',
+            mappingScore: 3,
+            mappingTotal: 5,
+            important: false,
+            needsWeeklyUpdate: false,
+            adoptedIn: ['dept', 'share', 'hull'],
+            slideForm: 'line',
+            title: 'SN2511 조타기 선급(Class) 입회 검사 일정 변경 (10/21 → 10/23)',
+            phenomenon: '선급 검사관 타 호선 해상시운전 일정 중복으로 SN2511 조타기 공식 입회일 이틀 순연.',
+            cause: '선급 입회관 일정 조율 (장비 이상 없음).',
+            actionPlan: '10/23(목) 14:00 안벽 입회 시험 진행, 시운전1부 기관팀 전원 공급 협조 요청.',
+            decisionNeeded: '',
+            weeklyUpdate: '10/23 14:00 입회 확정 공문 발송 완료',
+            meetingLines: {
+              dept: '[일정공유] SN2511 조타기 선급 입회 10/21 → 10/23(목) 14:00 변경',
+              share: '[공유] SN2511 조타기 선급 검사 10/23(목) 14:00 진행 — 시운전1부 전원 공급 협조',
+              exec: 'SN2511 조타기 선급 검사 10/23 진행',
+              monthly: '10월 4주차 주요 선급 입회 일정 종합',
+              hull: '10/23(목) 14:00 조타기 안벽 공식 입회'
+            },
+            evidenceLine: '메모 3행 "선급 검사 일정 변경 : 2511 조타기 검사 10/21 → 10/23"',
+            sisterPrecedent: '특이 선행 이슈 없음',
+            photoMarkers: [],
+            scheduleGantt: [],
+            progressBars: [],
+            meetingComments: [],
+            lastSyncedNote: '공유정보 — 유효기한 경과 시 자동 보관'
+          },
+          {
+            id: 'ISS-2026-0118',
+            type: 'issue',
+            typeLabel: '이슈',
+            status: '진행',
+            draftState: '작성 중',
+            deptId: 'D8',
+            deptName: '친환경실증Lab',
+            author: '정 선임',
+            hull: 'SN2515',
+            shipType: '93K VLAC (암모니아)',
+            milestone: '진수 전 D-40',
+            sisterHull: '시리즈 1호선',
+            equipmentRaw: '2515 암모니아 가스감지기 #4',
+            equipmentStd: '미등록 표기 (신규 친환경 장비)',
+            modelName: 'NH3 적외선 가스감지기 (미등록)',
+            component: '센서 모듈',
+            symptomCode: '습도 보정 오프셋 편차',
+            causeCode: '고습도 환경 영점 흔들림',
+            mappingScore: 3,
+            mappingTotal: 5,
+            important: false,
+            needsWeeklyUpdate: true,
+            adoptedIn: ['share'],
+            slideForm: 'detail',
+            title: 'SN2515 암모니아 독성가스 감지기 #4 고습도 영점 보정 시험',
+            phenomenon: '실증 챔버 습도 90% 조건에서 #4 감지기 출력값이 +12ppm 드리프트 발생.',
+            cause: '신규 적용 모델의 수분 간섭 보정 펌웨어 파라미터 미최적화.',
+            actionPlan: '제조사 신규 펌웨어(v2.4) 패치 적용 후 48시간 내습 시험 재실시.',
+            decisionNeeded: '',
+            weeklyUpdate: '금주 펌웨어 v2.4 패치 입고 대기 중',
+            meetingLines: {
+              dept: '[실증Lab] SN2515 NH3 감지기 고습도 보정 펌웨어 v2.4 패치 시험',
+              share: '[친환경실증Lab] SN2515 암모니아 감지기 고습도 드리프트 — 펌웨어 v2.4 패치 검증',
+              exec: 'SN2515 암모니아 감지기 보정 패치 진행',
+              monthly: '친환경 암모니아 추진선 핵심 센서 실증 현황',
+              hull: ''
+            },
+            evidenceLine: '실증Lab 주간 메모 L1 "2515 암모니아 가스감지기 #4 습도 90% 조건 드리프트"',
+            sisterPrecedent: '미등록 장비 표기 — 장비 허브 「기준정보에 없는 표기」 목록에 자동 집계됨 (확정·제출을 막지 않음)',
+            photoMarkers: [],
+            scheduleGantt: [],
+            progressBars: [],
+            meetingComments: [],
+            lastSyncedNote: '기준정보 미등록 장비 포함 (경고 배지만 표시, 제출 허용)'
+          }
+        ],
+
+        // F14 외부 자료 가져오기 슬라이드 목록 (docs/06 §4 E & docs/07 F14)
+        importSlides: [
+          {
+            id: 'SL-01',
+            pageNo: 1,
+            fileName: '시운전1부_현안보고_외부작성본.pptx',
+            slideTitle: 'SN2511 주발전기 #2 배기온도 편차 원인 및 교체 일정',
+            extractedHull: 'SN2511',
+            extractedEquip: '발전기 No.2 (← D/G #2)',
+            extractedPhenomenon: '85% 부하에서 3번 실린더 배기온도 +38℃ 상승, 내시경 점검 결과 분사밸브 노즐 마모 확인',
+            extractedAction: '10/23(금) 신품 밸브 교체 완료 후 10/25 해상시운전 부하시험 입회 확정',
+            extractedDecision: '제조사 무상 클레임 및 예비 노즐 2세트 추가 확보',
+            matchRate: 96,
+            matchedIssueId: 'ISS-2026-0001',
+            decisionState: 'link', // 'link' (기존 이슈 연결) | 'new' (새 이슈 등록) | 'skip' (건너뛰기)
+            applied: false
+          },
+          {
+            id: 'SL-02',
+            pageNo: 2,
+            fileName: '시운전1부_현안보고_외부작성본.pptx',
+            slideTitle: 'SN2511 축계 비틀림 진동(Torsional Vibration) 계측 준비 현황',
+            extractedHull: 'SN2511',
+            extractedEquip: '주기관 축계 (← Shafting)',
+            extractedPhenomenon: '해상시운전 출발 전 스트레인 게이지 텔레메트리 영점 세팅 완료',
+            extractedAction: '10/25 해상시운전 중 전 회전수 구간 비틀림 진동 실측 및 선급 제출',
+            extractedDecision: '',
+            matchRate: 22,
+            matchedIssueId: '',
+            decisionState: 'new',
+            applied: false
+          },
+          {
+            id: 'SL-03',
+            pageNo: 3,
+            fileName: '시운전1부_현안보고_외부작성본.pptx',
+            slideTitle: '시운전1부 10월 4주차 안전 캠페인 안내 (표지 장식용)',
+            extractedHull: '-',
+            extractedEquip: '-',
+            extractedPhenomenon: '일반 안전 구호 슬라이드 (기술 이슈 아님)',
+            extractedAction: '-',
+            extractedDecision: '',
+            matchRate: 0,
+            matchedIssueId: '',
+            decisionState: 'skip',
+            applied: false
+          }
+        ],
+
+        // F16 지표 데이터 (주간 지표 + 기간 표)
+        weeklyMetrics: [
+          { id: 'M1', deptId: 'D3', name: '시운전 항목 완료율', unit: '%', normalLow: 75, normalHigh: 92, history: [72, 76, 80, 84, 88, 95], comment: '안벽 주요 기기 조기 완료로 평소 범위 상회' },
+          { id: 'M2', deptId: 'D3', name: '미결 펀치(Punch) 건수', unit: '건', normalLow: 15, normalHigh: 45, history: [52, 48, 44, 41, 39, 31], comment: '전주 대비 8건 해소 (정상 범위 진입)' },
+          { id: 'M3', deptId: 'D3', name: '장비 초기 트러블 발생 건수', unit: '건', normalLow: 0, normalHigh: 4, history: [3, 2, 3, 2, 4, 6], comment: '신규 호선 안벽 초기 가동 집중으로 일시 증가 (이상치 강조)' }
+        ],
+        periodTable: [
+          { team: '기관시운전1과', friPlan: 12, friAct: 12, satPlan: 8, satAct: 11, sunPlan: 4, sunAct: 4, note: 'SN2511 DG2 분사밸브 긴급 교체로 토요일 3명 추가 투입' },
+          { team: '화물창시운전과', friPlan: 10, friAct: 10, satPlan: 6, satAct: 6, sunPlan: 0, sunAct: 0, note: '계획대로 진행' },
+          { team: '전장제어시운전과', friPlan: 9, friAct: 9, satPlan: 5, satAct: 5, sunPlan: 2, sunAct: 3, note: 'SN2514 카고펌프 제어반 연동 확인 +1명' }
+        ],
+
+        // F15 지식창고 사례 카드 (종결 승인된 과거 사례 + 신규 승격분)
+        caseCards: [
+          {
+            id: 'CASE-0298',
+            hull: 'SN2510',
+            shipType: '174K LNGC (자매선)',
+            equip: '발전기 No.2 (EQ-SN2510-GE-02)',
+            model: '6L 이중연료 발전엔진',
+            approvedWeek: '2026-W30',
+            dept: '시운전1부',
+            symptom: '부하 운전 중 3번 실린더 배기온도 평균 대비 +35℃ 편차 발생',
+            cause: '연료분사밸브 노즐 초기 마모 (분무 각도 불량)',
+            action: '연료분사밸브 어셈블리 교체 후 100% 부하시험 정상 확인',
+            views: 48
+          },
+          {
+            id: 'CASE-0311',
+            hull: 'SN2508',
+            shipType: '174K LNGC',
+            equip: '발전기 No.1 (EQ-SN2508-GE-01)',
+            model: '6L 이중연료 발전엔진',
+            approvedWeek: '2026-W24',
+            dept: '시운전1부',
+            symptom: '가스 모드 전환 시 5번 실린더 배기온도 +32℃ 편차',
+            cause: '연료분사밸브 시트면 미세 카본 퇴적 및 마모',
+            action: '분사밸브 신품 교체 및 가스 퍼지 밸브 점검 후 정상',
+            views: 35
+          },
+          {
+            id: 'CASE-0352',
+            hull: 'SN2509',
+            shipType: '174K LNGC',
+            equip: '발전기 No.3 (EQ-SN2509-GE-03)',
+            model: '6L 이중연료 발전엔진',
+            approvedWeek: '2026-W36',
+            dept: '시운전2부',
+            symptom: '실린더 배기온도 지시값 +40℃ 급상승 (실제 매니폴드 표면온도는 정상)',
+            cause: '배기 온도센서(열전대) 커넥터 접촉 불량 오차',
+            action: '열전대 센서 신품 교체 및 단자대 방진 고정 후 정상',
+            views: 29
+          },
+          {
+            id: 'CASE-0244',
+            hull: 'SN2510',
+            shipType: '174K LNGC (자매선)',
+            equip: 'BOG 압축기 No.1 (EQ-SN2510-BC-01)',
+            model: 'LD-Comp 4단 극저온 압축기',
+            approvedWeek: '2026-W28',
+            dept: '시운전기술',
+            symptom: '무부하 운전 중 2단 실린더 배관 진동 4.6mm/s 발생',
+            cause: '배관 서포트 스팬 과다로 인한 고유진동수 공진',
+            action: '서포트 보강 패드 및 U-볼트 추가 시공 후 2.1mm/s로 안정화',
+            views: 61
+          }
+        ]
+      };
+
+      // =========================================================================
+      // UTILITIES
+      // =========================================================================
+      function escapeHtml(str) {
+        return String(str || '')
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      function showToast(title, detail, tone) {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const el = document.createElement('div');
+        const bgClass = tone === 'emerald' ? 'bg-emerald-950 border-emerald-700 text-emerald-100'
+                      : tone === 'amber' ? 'bg-amber-950 border-amber-700 text-amber-100'
+                      : 'bg-slate-900 border-slate-700 text-white';
+        el.className = 'pointer-events-auto px-4 py-3 rounded-xl border shadow-xl text-xs max-w-sm animate-fade-in ' + bgClass;
+        el.innerHTML = '<div class="font-bold mb-0.5">' + escapeHtml(title) + '</div>' +
+                       '<div class="opacity-90 leading-relaxed">' + escapeHtml(detail) + '</div>';
+        container.appendChild(el);
+        setTimeout(function () {
+          el.style.opacity = '0';
+          el.style.transition = 'opacity 0.25s ease';
+          setTimeout(function () { el.remove(); }, 260);
+        }, 3200);
+      }
+
+      function getSelectedIssue() {
+        return state.issues.find(function (x) { return x.id === state.selectedIssueId; }) || state.issues[0];
+      }
+
+      function getFilteredIssues() {
+        return state.issues.filter(function (item) {
+          if (state.filterHull !== 'ALL' && item.hull !== state.filterHull) return false;
+          if (state.filterDept !== 'ALL' && item.deptId !== state.filterDept) return false;
+          if (state.filterStatus === 'UNMAPPED' && item.mappingScore >= 5) return false;
+          if (state.filterStatus === 'DECIDE' && !item.decisionNeeded) return false;
+          if (state.filterStatus === 'CLOSE_REQ' && item.status !== '종결요청') return false;
+          return true;
+        });
+      }
+
+      function getDensityClasses() {
+        const isRelaxed = state.gridDensity !== 'compact';
+        return {
+          isRelaxed: isRelaxed,
+          cellPad: isRelaxed ? 'py-4 px-4' : 'py-2.5 px-3',
+          wrapPad: isRelaxed ? 'p-6 lg:p-7 gap-6' : 'p-4 gap-4',
+          cardPad: isRelaxed ? 'p-5 sm:p-6' : 'p-4'
+        };
+      }
+
+      // =========================================================================
+      // SHARED 16:9 SLIDE PREVIEW COMPONENT (Supports detail, line, compare, gantt)
+      // =========================================================================
+      function renderLiveSlideHtml(issue, meetingKey) {
+        const meeting = state.meetings[meetingKey] || state.meetings.share;
+        const activeForm = state.slideFormatOverride || (meetingKey === 'exec' ? 'line' : issue.slideForm);
+        const lineText = issue.meetingLines[meetingKey] || issue.weeklyUpdate;
+
+        let bodyHtml = '';
+        if (activeForm === 'line') {
+          bodyHtml =
+            '<div class="p-4 space-y-3">' +
+              '<div class="grid grid-cols-4 gap-2.5 text-center">' +
+                '<div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5"><div class="text-[10px] text-slate-500">이번 주 채택</div><div class="text-base font-bold text-slate-900 font-mono-num">6건</div></div>' +
+                '<div class="bg-sky-50/70 border border-sky-200 rounded-lg p-2.5"><div class="text-[10px] text-sky-700">시운전 완료율</div><div class="text-base font-bold text-sky-800 font-mono-num">95%</div></div>' +
+                '<div class="bg-emerald-50/70 border border-emerald-200 rounded-lg p-2.5"><div class="text-[10px] text-emerald-700">금주 종결</div><div class="text-base font-bold text-emerald-800 font-mono-num">3건</div></div>' +
+                '<div class="bg-amber-50 border border-amber-200 rounded-lg p-2.5"><div class="text-[10px] text-amber-800">장기 미결(4주+)</div><div class="text-base font-bold text-amber-900 font-mono-num">1건</div></div>' +
+              '</div>' +
+              '<div class="border border-slate-200 rounded-xl overflow-hidden text-xs">' +
+                '<div class="bg-slate-100 px-3.5 py-2 font-bold text-slate-700 flex justify-between"><span>핵심 보고 항목 (한 줄 요약 형태)</span><span>상태 · 일정 영향</span></div>' +
+                state.issues.filter(function(i){ return i.adoptedIn.indexOf(meetingKey) >= 0 || i.id === issue.id; }).map(function(row){
+                  const isCur = row.id === issue.id;
+                  return '<div class="px-3.5 py-2.5 border-t border-slate-200 flex items-center justify-between gap-2 ' + (isCur ? 'bg-sky-50/90 font-semibold text-slate-950' : 'bg-white text-slate-700') + '">' +
+                    '<div class="truncate"><span class="font-mono-num text-[11px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-800 mr-1.5">' + escapeHtml(row.hull) + '</span>' +
+                    escapeHtml(row.meetingLines[meetingKey] || row.title) + '</div>' +
+                    '<span class="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-300">' + escapeHtml(row.status) + '</span>' +
+                  '</div>';
+                }).join('') +
+              '</div>' +
+            '</div>';
+        } else if (activeForm === 'compare') {
+          bodyHtml =
+            '<div class="p-4 space-y-3 text-xs">' +
+              '<div class="font-bold text-slate-800 flex items-center justify-between">' +
+                '<span>자매선 · 동일 장비 모델 비교표 (' + escapeHtml(issue.modelName) + ')</span>' +
+                '<span class="text-[11px] font-normal text-sky-700 bg-sky-50 px-2.5 py-0.5 rounded-full border border-sky-200">기준정보 ID 자동 묶음</span>' +
+              '</div>' +
+              '<table class="w-full border-collapse border border-slate-300 text-[11px]">' +
+                '<thead><tr class="bg-slate-100 text-slate-700">' +
+                  '<th class="border border-slate-300 p-2 text-left">비교 항목</th>' +
+                  '<th class="border border-slate-300 p-2 text-left">SN2510 (선행 자매선)</th>' +
+                  '<th class="border border-slate-300 p-2 text-left bg-sky-50 text-sky-950">' + escapeHtml(issue.hull) + ' (당선 · 현재)</th>' +
+                  '<th class="border border-slate-300 p-2 text-left">SN2512 (후속선)</th>' +
+                '</tr></thead>' +
+                '<tbody>' +
+                  '<tr><td class="border border-slate-300 p-2 font-semibold bg-slate-50">발생 증상</td><td class="border border-slate-300 p-2">배기온도 +35℃ 편차 (W30)</td><td class="border border-slate-300 p-2 bg-sky-50/40 font-semibold">' + escapeHtml(issue.phenomenon.slice(0, 42)) + '…</td><td class="border border-slate-300 p-2">시운전 전 사전 점검 대상</td></tr>' +
+                  '<tr><td class="border border-slate-300 p-2 font-semibold bg-slate-50">원인 분석</td><td class="border border-slate-300 p-2">분사밸브 노즐 초기 마모</td><td class="border border-slate-300 p-2 bg-sky-50/40">' + escapeHtml(issue.cause.slice(0, 40)) + '…</td><td class="border border-slate-300 p-2">입고품 노즐 사전 내시경 검사</td></tr>' +
+                  '<tr><td class="border border-slate-300 p-2 font-semibold bg-slate-50">조치 및 결과</td><td class="border border-slate-300 p-2 text-emerald-700 font-semibold">교체 후 정상 (CASE-0298)</td><td class="border border-slate-300 p-2 bg-sky-50/40 font-semibold text-sky-900">' + escapeHtml(issue.actionPlan.slice(0, 42)) + '…</td><td class="border border-slate-300 p-2">예비품 선적 대기</td></tr>' +
+                '</tbody>' +
+              '</table>' +
+            '</div>';
+        } else if (activeForm === 'gantt') {
+          const rows = issue.scheduleGantt && issue.scheduleGantt.length ? issue.scheduleGantt : [
+            { task: '원인 점검 및 부품 확보', planStart: '10/19', planEnd: '10/21', actStart: '10/19', actEnd: '10/22', diff: '+1일' },
+            { task: '현장 교체 및 부하 재시험', planStart: '10/23', planEnd: '10/25', actStart: '10/23', actEnd: '10/25', diff: '정상' }
+          ];
+          bodyHtml =
+            '<div class="p-4 space-y-3 text-xs">' +
+              '<div class="font-bold text-slate-800 flex items-center justify-between">' +
+                '<span>계획 대비 실적 일정표 (자동 간트 + 차이 사유)</span>' +
+                '<span class="text-[11px] font-mono-num text-slate-500">' + escapeHtml(issue.hull) + ' · ' + escapeHtml(issue.milestone) + '</span>' +
+              '</div>' +
+              '<div class="space-y-2">' +
+                rows.map(function(r, idx) {
+                  const wPlan = idx === 0 ? 'w-1/3 ml-[5%]' : idx === 1 ? 'w-1/3 ml-[35%]' : 'w-1/4 ml-[68%]';
+                  const wAct = idx === 0 ? 'w-2/5 ml-[5%]' : idx === 1 ? 'w-1/3 ml-[40%]' : 'w-1/4 ml-[68%]';
+                  return (
+                    '<div class="p-2.5 rounded-lg border border-slate-200 bg-slate-50/70 space-y-1.5">' +
+                      '<div class="flex items-center justify-between text-[11px]">' +
+                        '<span class="font-bold text-slate-900">' + escapeHtml(r.task) + '</span>' +
+                        '<span class="font-mono-num text-sky-800">계획 ' + escapeHtml(r.planStart) + '~' + escapeHtml(r.planEnd) + ' / 실적 ' + escapeHtml(r.actStart) + '~' + escapeHtml(r.actEnd) + ' (' + escapeHtml(r.diff) + ')</span>' +
+                      '</div>' +
+                      '<div class="h-4 bg-slate-200/80 rounded overflow-hidden relative flex flex-col justify-center gap-0.5 p-0.5">' +
+                        '<div class="h-1.5 bg-slate-400 rounded ' + wPlan + '"></div>' +
+                        '<div class="h-1.5 bg-sky-600 rounded ' + wAct + '"></div>' +
+                      '</div>' +
+                    '</div>'
+                  );
+                }).join('') +
+              '</div>' +
+            '</div>';
+        } else {
+          // 기본: 상세 한 장 (현상 / 원인 / 조치·계획 / 결정 필요 4칸 + 사진 마커 합성본)
+          bodyHtml =
+            '<div class="p-4 grid grid-cols-12 gap-3.5 text-xs">' +
+              '<div class="col-span-7 space-y-2">' +
+                '<div class="bg-slate-50 border-l-4 border-sky-700 rounded-r-lg p-2.5">' +
+                  '<div class="text-[11px] font-bold text-sky-950 flex justify-between"><span>① 현상 (사실 · 원장 직결)</span><span class="font-mono-num text-slate-500">' + escapeHtml(issue.equipmentStd) + '</span></div>' +
+                  '<div class="text-slate-800 mt-1 leading-relaxed">' + escapeHtml(issue.phenomenon) + '</div>' +
+                '</div>' +
+                '<div class="bg-slate-50 border-l-4 border-amber-500 rounded-r-lg p-2.5">' +
+                  '<div class="text-[11px] font-bold text-amber-900">② 원인 (' + escapeHtml(issue.causeCode) + ')</div>' +
+                  '<div class="text-slate-800 mt-1 leading-relaxed">' + escapeHtml(issue.cause) + '</div>' +
+                '</div>' +
+                '<div class="bg-slate-50 border-l-4 border-emerald-600 rounded-r-lg p-2.5">' +
+                  '<div class="text-[11px] font-bold text-emerald-900">③ 조치 및 계획</div>' +
+                  '<div class="text-slate-800 mt-1 leading-relaxed">' + escapeHtml(issue.actionPlan) + '</div>' +
+                '</div>' +
+                (issue.decisionNeeded ? (
+                  '<div class="bg-purple-50 border border-purple-200 rounded-lg p-2.5">' +
+                    '<div class="text-[11px] font-bold text-purple-900">④ 결정 필요 사항 (회의 의결 안건)</div>' +
+                    '<div class="text-purple-950 font-semibold mt-0.5">' + escapeHtml(issue.decisionNeeded) + '</div>' +
+                  '</div>'
+                ) : '') +
+              '</div>' +
+              '<div class="col-span-5 flex flex-col justify-between bg-slate-100/90 rounded-xl p-3 border border-slate-200">' +
+                '<div>' +
+                  '<div class="flex items-center justify-between text-[11px] font-semibold text-slate-600 mb-2">' +
+                    '<span>현장 사진 · 마커 합성본</span>' +
+                    '<span class="px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-700 text-[10px]">원본 불변 · JSON 합성</span>' +
+                  '</div>' +
+                  '<div class="relative rounded-lg bg-slate-300 h-32 overflow-hidden border border-slate-300">' +
+                    '<svg viewBox="0 0 280 120" class="w-full h-full">' +
+                      '<rect x="0" y="0" width="280" height="120" fill="#cbd5e1"/>' +
+                      '<rect x="35" y="22" width="130" height="76" rx="6" fill="#64748b"/>' +
+                      '<circle cx="100" cy="60" r="24" fill="#334155"/>' +
+                      '<rect x="180" y="34" width="68" height="52" rx="4" fill="#475569"/>' +
+                      '<rect x="52" y="28" width="96" height="64" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-dasharray="4 2"/>' +
+                    '</svg>' +
+                    '<span class="absolute left-[32%] top-[24%] w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center shadow ring-2 ring-white font-mono-num">1</span>' +
+                    '<span class="absolute left-[68%] top-[45%] w-5 h-5 rounded-full bg-rose-600 text-white text-[10px] font-bold flex items-center justify-center shadow ring-2 ring-white font-mono-num">2</span>' +
+                  '</div>' +
+                  '<div class="mt-2.5 space-y-1.5">' +
+                    (issue.photoMarkers.length ? issue.photoMarkers.map(function(m){
+                      return '<div class="flex items-center justify-between text-[11px] bg-white px-2.5 py-1 rounded-lg border border-slate-200">' +
+                        '<span class="truncate"><b class="text-rose-600 font-mono-num mr-1">①</b>' + escapeHtml(m.label) + '</span>' +
+                        '<span class="shrink-0 px-1.5 py-0.5 bg-emerald-50 text-emerald-700 rounded font-medium">' + escapeHtml(m.part) + '</span>' +
+                      '</div>';
+                    }).join('') : '<div class="text-[11px] text-slate-500 py-2 text-center">첨부된 사진 마커 없음</div>') +
+                  '</div>' +
+                '</div>' +
+                '<div class="mt-2.5 pt-2 border-t border-slate-200 text-[11px] text-slate-600 flex items-center justify-between gap-2">' +
+                  '<span class="shrink-0">회의용 한 줄:</span>' +
+                  '<span class="font-semibold text-slate-900 truncate">' + escapeHtml(lineText) + '</span>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        }
+
+        // Slide Band Header follows docs/06 §3-2 Navy (#26344A) + Amber tag (#F0A63C with dark navy text)
+        return (
+          '<div class="rounded-2xl border border-slate-300 bg-white text-slate-900 shadow-sm overflow-hidden">' +
+            '<div class="px-4 py-3 flex items-center justify-between bg-[#26344A] text-white">' +
+              '<div class="flex items-center gap-2.5 min-w-0">' +
+                '<span class="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#F0A63C] text-[#1E293B] shrink-0">' + escapeHtml(meeting.name.split(' ')[0]) + '</span>' +
+                '<span class="font-bold text-xs sm:text-sm truncate">' + escapeHtml(issue.title) + '</span>' +
+              '</div>' +
+              '<div class="flex items-center gap-2 shrink-0 text-[11px] text-slate-200 font-mono-num">' +
+                '<span>' + escapeHtml(issue.hull) + '</span>' +
+                '<span>·</span>' +
+                '<span>' + escapeHtml(issue.deptName) + '</span>' +
+              '</div>' +
+            '</div>' +
+            bodyHtml +
+            '<div class="px-4 py-2 bg-slate-50 border-t border-slate-200 flex items-center justify-between text-[11px] text-slate-500">' +
+              '<span>원장 ID: <b class="font-mono-num text-slate-800">' + escapeHtml(issue.id) + '</b> · 지식 매핑 ' + issue.mappingScore + '/5</span>' +
+              '<span>편집 가능한 PowerPoint(.pptx) 출력과 동일한 배치</span>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      // =========================================================================
+      // SCREEN 1: 홈 (v2-home.html — 이번 주 할 일 · 주간 한 줄 입력 · 8개 부서 제출 현황 · 종결 승인)
+      // =========================================================================
+      function renderHomeScreen() {
+        const d = getDensityClasses();
+        const staleIssues = state.issues.filter(function(i) { return i.needsWeeklyUpdate; });
+        const unmappedIssues = state.issues.filter(function(i) { return i.mappingScore < 5; });
+        const closeReqIssues = state.issues.filter(function(i) { return i.status === '종결요청'; });
+        const longOpenIssues = state.issues.filter(function(i) { return i.status.indexOf('미결') >= 0; });
+
+        return (
+          '<div class="max-w-[1720px] w-full mx-auto ' + d.wrapPad + ' flex flex-col">' +
+            // Top Welcome & Quick Submit Banner
+            '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm flex flex-wrap items-center justify-between gap-4">' +
+              '<div>' +
+                '<div class="text-xs font-mono-num font-bold uppercase tracking-wider text-sky-700">HOME · THIS WEEK WORKLOAD (2026-W43)</div>' +
+                '<h2 class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5">이번 주 할 일 및 8개 부서 회의자료 제출 현황</h2>' +
+                '<p class="text-xs sm:text-sm text-slate-500 mt-1">미업데이트나 매핑 빈 칸이 있어도 제출을 가로막지 않고 배지로만 안내합니다.</p>' +
+              '</div>' +
+              '<div class="flex flex-wrap items-center gap-2.5">' +
+                '<button type="button" data-go-tab="ledger" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 transition">이슈 원장 열기</button>' +
+                '<button type="button" id="btn-home-submit-dept" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-sky-700 hover:bg-sky-600 text-white shadow-sm transition">' +
+                  '✓ 우리 부서(시운전1부) 이번 주 자료 제출하기' +
+                '</button>' +
+              '</div>' +
+            '</div>' +
+
+            // 4 Summary KPI Cards (docs/06 §4 홈 요약 4칸)
+            '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">' +
+              '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm">' +
+                '<div class="flex items-center justify-between text-xs font-semibold text-slate-500"><span>주간 한 줄 업데이트 필요</span><span class="px-2 py-0.5 rounded-full bg-amber-50 text-amber-800 border border-amber-200">원장 인라인</span></div>' +
+                '<div class="text-3xl font-bold text-slate-900 font-mono-num mt-2">' + staleIssues.length + '<span class="text-base font-normal text-slate-500 ml-1">건</span></div>' +
+                '<p class="text-xs text-slate-500 mt-2">아래 목록에서 한 줄만 입력하면 이번 주 진행 이력으로 바로 쌓입니다.</p>' +
+              '</div>' +
+              '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm">' +
+                '<div class="flex items-center justify-between text-xs font-semibold text-slate-500"><span>지식 매핑 빈 곳 (5칸 미만)</span><span class="px-2 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">평균 4.4/5</span></div>' +
+                '<div class="text-3xl font-bold text-sky-700 font-mono-num mt-2">' + unmappedIssues.length + '<span class="text-base font-normal text-slate-500 ml-1">건</span></div>' +
+                '<p class="text-xs text-slate-500 mt-2">기준정보에 없는 신규 장비는 「미등록」으로 두고 그대로 제출 가능합니다.</p>' +
+              '</div>' +
+              '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm">' +
+                '<div class="flex items-center justify-between text-xs font-semibold text-slate-500"><span>종결 승인 대기 (공유회·기획)</span><span class="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">사례 승격 후보</span></div>' +
+                '<div class="text-3xl font-bold text-emerald-700 font-mono-num mt-2">' + closeReqIssues.length + '<span class="text-base font-normal text-slate-500 ml-1">건</span></div>' +
+                '<p class="text-xs text-slate-500 mt-2">승인하는 순간 현상·원인·조치가 묶여 지식창고 사례 카드가 됩니다.</p>' +
+              '</div>' +
+              '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm">' +
+                '<div class="flex items-center justify-between text-xs font-semibold text-slate-500"><span>장기 미결 (4주 이상 진행)</span><span class="px-2 py-0.5 rounded-full bg-rose-50 text-rose-700 border border-rose-200">팀장 보고 자동 후보</span></div>' +
+                '<div class="text-3xl font-bold text-amber-700 font-mono-num mt-2">' + longOpenIssues.length + '<span class="text-base font-normal text-slate-500 ml-1">건</span></div>' +
+                '<p class="text-xs text-slate-500 mt-2">부서 현안 공유회와 팀장 정보회의 후보로 자동 추천됩니다.</p>' +
+              '</div>' +
+            '</div>' +
+
+            // 8개 부서 제출 현황 띠 (docs/06 §4)
+            '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+              '<div class="flex flex-wrap items-center justify-between gap-2">' +
+                '<div class="flex items-center gap-2.5">' +
+                  '<h3 class="text-sm sm:text-base font-bold text-slate-900">8개 부서 이번 주 회의자료 제출 현황</h3>' +
+                  '<span class="px-2.5 py-0.5 rounded-full text-xs font-mono-num bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">' +
+                    state.departments.filter(function(x){ return x.submitted; }).length + ' / 8 제출 완료' +
+                  '</span>' +
+                '</div>' +
+                '<span class="text-xs text-slate-500">부서 카드를 누르면 해당 부서의 이슈 원장 필터로 이동합니다</span>' +
+              '</div>' +
+              '<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-3">' +
+                state.departments.map(function(dept) {
+                  return (
+                    '<button type="button" data-home-dept="' + dept.id + '" class="text-left p-3.5 rounded-xl border transition hover:shadow-sm ' +
+                      (dept.submitted ? 'bg-slate-50/70 border-slate-200/90 hover:border-sky-400' : 'bg-amber-50/60 border-amber-200 hover:border-amber-400') + '">' +
+                      '<div class="flex items-center justify-between text-[11px] font-mono-num text-slate-400">' +
+                        '<span>' + dept.order + '</span>' +
+                        '<span class="px-1.5 py-0.5 rounded font-sans font-bold ' +
+                          (dept.submitted ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-200/80 text-amber-900') + '">' +
+                          (dept.submitted ? '제출됨' : '작성 중') +
+                        '</span>' +
+                      '</div>' +
+                      '<div class="font-bold text-xs sm:text-sm text-slate-900 mt-1.5 truncate">' + escapeHtml(dept.name) + '</div>' +
+                      '<div class="text-[11px] text-slate-500 mt-1 flex items-center justify-between font-mono-num">' +
+                        '<span>채택 ' + dept.itemCount + '건</span>' +
+                        (dept.staleCount > 0 ? '<span class="text-amber-700 font-semibold">미업데이트 ' + dept.staleCount + '</span>' : '<span>✓</span>') +
+                      '</div>' +
+                    '</button>'
+                  );
+                }).join('') +
+              '</div>' +
+            '</div>' +
+
+            // Bottom Split: Left (주간 한 줄 바로 입력 + 종결 승인 콘솔) / Right (다가오는 정기·수시 회의)
+            '<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">' +
+              '<div class="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                '<div class="flex items-center justify-between border-b border-slate-200/80 pb-3">' +
+                  '<div>' +
+                    '<h3 class="text-sm sm:text-base font-bold text-slate-900">빠른 주간 한 줄 업데이트 &amp; 기획 주관자 종결 승인</h3>' +
+                    '<p class="text-xs text-slate-500 mt-0.5">이슈 작업대에 들어가지 않고도 홈에서 바로 금주 진행 한 줄을 남기거나 종결을 승인합니다.</p>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="space-y-3">' +
+                  state.issues.slice(0, 4).map(function(item) {
+                    return (
+                      '<div class="p-4 rounded-xl border border-slate-200/90 bg-slate-50/50 space-y-2.5">' +
+                        '<div class="flex flex-wrap items-center justify-between gap-2">' +
+                          '<div class="flex items-center gap-2">' +
+                            '<span class="font-mono-num text-xs font-bold text-sky-700">' + escapeHtml(item.id) + '</span>' +
+                            '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-white border border-slate-200 text-slate-700 font-mono-num">' + escapeHtml(item.hull) + '</span>' +
+                            '<span class="font-bold text-xs sm:text-sm text-slate-900">' + escapeHtml(item.title) + '</span>' +
+                          '</div>' +
+                          (item.status === '종결요청' ? (
+                            '<button type="button" data-approve-close="' + item.id + '" class="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm">' +
+                              '✓ 종결 승인 (사례 카드 생성)' +
+                            '</button>'
+                          ) : (
+                            '<span class="text-[11px] px-2 py-0.5 rounded-full ' + (item.needsWeeklyUpdate ? 'bg-amber-100 text-amber-900 font-semibold' : 'bg-emerald-50 text-emerald-700') + '">' +
+                              (item.needsWeeklyUpdate ? '이번 주 한 줄 미입력' : '금주 업데이트 완료') +
+                            '</span>'
+                          )) +
+                        '</div>' +
+                        '<div class="flex gap-2">' +
+                          '<input type="text" data-home-weekly-input="' + item.id + '" value="' + escapeHtml(item.weeklyUpdate) + '" class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />' +
+                          '<button type="button" data-home-weekly-save="' + item.id + '" class="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shrink-0">한 줄 저장</button>' +
+                        '</div>' +
+                      '</div>'
+                    );
+                  }).join('') +
+                '</div>' +
+              '</div>' +
+
+              // Upcoming Meetings Card List
+              '<div class="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                '<div class="flex items-center justify-between border-b border-slate-200/80 pb-3">' +
+                  '<div>' +
+                    '<h3 class="text-sm sm:text-base font-bold text-slate-900">이번 주 정기 · 수시 회의 (원장 이슈 채택 현황)</h3>' +
+                    '<p class="text-xs text-slate-500 mt-0.5">카드를 클릭하면 해당 회의자료 구성·슬라이드 화면으로 이동합니다.</p>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="space-y-3">' +
+                  ['dept', 'share', 'exec', 'monthly', 'hull'].map(function(mKey) {
+                    const m = state.meetings[mKey];
+                    const count = state.issues.filter(function(i){ return i.adoptedIn.indexOf(mKey) >= 0; }).length;
+                    return (
+                      '<div data-open-meeting-card="' + mKey + '" class="cursor-pointer p-4 rounded-xl border border-slate-200/90 hover:border-sky-500 bg-white hover:bg-sky-50/30 transition space-y-1.5 shadow-sm">' +
+                        '<div class="flex items-center justify-between gap-2">' +
+                          '<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold border border-slate-300 text-slate-700 bg-slate-50">' + escapeHtml(m.kindBadge) + '</span>' +
+                          '<span class="font-mono-num text-xs font-bold text-sky-700">채택 ' + count + '건 →</span>' +
+                        '</div>' +
+                        '<div class="text-sm sm:text-base font-bold text-slate-900">' + escapeHtml(m.name) + '</div>' +
+                        '<div class="text-xs text-slate-500 flex items-center justify-between">' +
+                          '<span>' + escapeHtml(m.schedule) + ' · ' + escapeHtml(m.owner) + '</span>' +
+                          '<span class="font-medium text-slate-700">기본: ' + escapeHtml(m.defaultForm) + '</span>' +
+                        '</div>' +
+                      '</div>'
+                    );
+                  }).join('') +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      // =========================================================================
+      // SCREEN 2: 이슈 작업대 (Sample 2 Light Engineering Grid + 5-Point Mapping & Attachments)
+      // =========================================================================
+      function renderLedgerScreen() {
+        const issue = getSelectedIssue();
+        const filtered = getFilteredIssues();
+        const curMeeting = state.meetings[state.selectedMeeting];
+        const d = getDensityClasses();
+
+        // Bottom-left sub-panel content (Mapping & Radar vs Gantt vs Progress vs Photos)
+        let subPanelHtml = '';
+        if (state.ledgerAttachTab === 'schedule') {
+          subPanelHtml =
+            '<div class="space-y-3 text-xs sm:text-sm">' +
+              '<div class="flex items-center justify-between">' +
+                '<span class="font-bold text-slate-900">계획 대비 실적 일정 (이슈에 붙인 간트 · 슬라이드 자동 변환)</span>' +
+                '<button type="button" data-slide-form="gantt" class="px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 border border-sky-200 text-xs font-semibold">우측 슬라이드를 간트로 보기 →</button>' +
+              '</div>' +
+              '<table class="w-full border-collapse border border-slate-200 text-xs">' +
+                '<thead><tr class="bg-slate-50 text-slate-600">' +
+                  '<th class="border border-slate-200 p-2.5 text-left">세부 작업 항목</th>' +
+                  '<th class="border border-slate-200 p-2.5 text-left">계획 (시작~종료)</th>' +
+                  '<th class="border border-slate-200 p-2.5 text-left">실적 (시작~종료)</th>' +
+                  '<th class="border border-slate-200 p-2.5 text-left">차이 및 사유</th>' +
+                '</tr></thead>' +
+                '<tbody>' +
+                  (issue.scheduleGantt && issue.scheduleGantt.length ? issue.scheduleGantt.map(function(g) {
+                    return '<tr>' +
+                      '<td class="border border-slate-200 p-2.5 font-semibold text-slate-900">' + escapeHtml(g.task) + '</td>' +
+                      '<td class="border border-slate-200 p-2.5 font-mono-num text-slate-600">' + escapeHtml(g.planStart) + ' ~ ' + escapeHtml(g.planEnd) + '</td>' +
+                      '<td class="border border-slate-200 p-2.5 font-mono-num text-sky-800 font-semibold">' + escapeHtml(g.actStart) + ' ~ ' + escapeHtml(g.actEnd) + '</td>' +
+                      '<td class="border border-slate-200 p-2.5 text-slate-700">' + escapeHtml(g.diff) + '</td>' +
+                    '</tr>';
+                  }).join('') : '<tr><td colspan="4" class="p-4 text-center text-slate-400">등록된 일정 행이 없습니다.</td></tr>') +
+                '</tbody>' +
+              '</table>' +
+            '</div>';
+        } else if (state.ledgerAttachTab === 'progress') {
+          subPanelHtml =
+            '<div class="space-y-3 text-xs sm:text-sm">' +
+              '<div class="font-bold text-slate-900">구역·항목별 시운전 진행률 (%)</div>' +
+              '<div class="space-y-2.5">' +
+                (issue.progressBars && issue.progressBars.length ? issue.progressBars.map(function(p) {
+                  return (
+                    '<div class="p-3 rounded-xl bg-slate-50 border border-slate-200/80 space-y-1.5">' +
+                      '<div class="flex items-center justify-between text-xs">' +
+                        '<span class="font-bold text-slate-900">' + escapeHtml(p.area) + '</span>' +
+                        '<span class="font-mono-num font-bold text-sky-800">' + escapeHtml(p.stage) + ' · ' + p.pct + '%</span>' +
+                      '</div>' +
+                      '<div class="h-2.5 bg-slate-200 rounded-full overflow-hidden">' +
+                        '<div class="h-full bg-sky-600 rounded-full" style="width:' + p.pct + '%"></div>' +
+                      '</div>' +
+                    '</div>'
+                  );
+                }).join('') : '<div class="text-xs text-slate-400 py-3">등록된 진행률 막대가 없습니다.</div>') +
+              '</div>' +
+            '</div>';
+        } else {
+          // Default: 5-Point Knowledge Mapping + Sister-Ship Precedent Radar
+          subPanelHtml =
+            '<div class="space-y-4">' +
+              '<div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">' +
+                '<div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90"><div class="text-[11px] text-slate-500">① 호선 (pjtlist)</div><div class="font-bold text-slate-900 font-mono-num mt-1">' + escapeHtml(issue.hull) + '</div><div class="text-[11px] text-sky-700 mt-0.5">' + escapeHtml(issue.shipType) + '</div></div>' +
+                '<div class="p-3 rounded-xl bg-sky-50/70 border border-sky-200"><div class="text-[11px] text-sky-800">② 탑재 장비 (별칭)</div><div class="font-bold text-slate-900 mt-1 truncate">' + escapeHtml(issue.equipmentStd.split(' (')[0]) + '</div><div class="text-[11px] font-mono-num text-sky-700 mt-0.5">← ' + escapeHtml(issue.equipmentRaw) + '</div></div>' +
+                '<div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90"><div class="text-[11px] text-slate-500">③ 부위 (마커 연동)</div><div class="font-bold text-slate-900 mt-1">' + escapeHtml(issue.component) + '</div><div class="text-[11px] text-emerald-700 mt-0.5">마커 ' + issue.photoMarkers.length + '개 연결</div></div>' +
+                '<div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90"><div class="text-[11px] text-slate-500">④ 증상 분류</div><div class="font-bold text-slate-900 mt-1">' + escapeHtml(issue.symptomCode) + '</div><div class="text-[11px] text-slate-500 mt-0.5">표준 용어집</div></div>' +
+                '<div class="p-3 rounded-xl bg-slate-50 border border-slate-200/90"><div class="text-[11px] text-slate-500">⑤ 원인 코드</div><div class="font-bold text-slate-900 mt-1">' + escapeHtml(issue.causeCode) + '</div><div class="text-[11px] text-slate-500 mt-0.5">사례 3건 누적</div></div>' +
+              '</div>' +
+
+              '<div class="grid grid-cols-1 md:grid-cols-3 gap-3.5 text-xs sm:text-sm">' +
+                '<div class="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3.5">' +
+                  '<div class="text-xs text-slate-500 font-medium">장비 모델 · 동일 모델 탑재</div>' +
+                  '<div class="font-bold text-slate-900 mt-1 leading-snug">' + escapeHtml(issue.modelName) + '</div>' +
+                  '<div class="text-xs text-sky-700 mt-1.5 font-mono-num font-semibold">동일 모델 6척 탑재 (자매선 ' + escapeHtml(issue.sisterHull) + ')</div>' +
+                '</div>' +
+                '<div class="bg-slate-50/80 border border-slate-200/80 rounded-xl p-3.5">' +
+                  '<div class="text-xs text-slate-500 font-medium">원문 근거 줄 (Evidence Span)</div>' +
+                  '<div class="font-semibold text-slate-800 mt-1 text-xs leading-relaxed">' + escapeHtml(issue.evidenceLine) + '</div>' +
+                  '<div class="text-[11px] text-emerald-700 mt-1.5 font-semibold">✓ 근거 없는 AI 생성 문장 0건</div>' +
+                '</div>' +
+                '<div class="bg-amber-50/80 border border-amber-200 rounded-xl p-3.5">' +
+                  '<div class="text-xs text-amber-900 font-bold flex items-center justify-between"><span>선행 호선(자매선) 비교 경보</span><button type="button" data-go-tab="knowledge" class="underline text-[11px] text-sky-800">허브 열기 →</button></div>' +
+                  '<div class="text-amber-950 mt-1 text-xs leading-relaxed">' + escapeHtml(issue.sisterPrecedent) + '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+        }
+
+        return (
+          '<div class="flex-1 flex flex-col">' +
+            // Sub-Toolbar: Telemetry & Filters
+            '<div class="bg-white border-b border-slate-200/90 px-6 py-3.5 shadow-sm">' +
+              '<div class="max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-4">' +
+                '<div class="flex flex-wrap items-center gap-3">' +
+                  '<span class="text-xs font-bold text-slate-500">호선 필터:</span>' +
+                  '<div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">' +
+                    ['ALL', 'SN2511', 'SN2514', 'SN2512', 'SN2515'].map(function(h) {
+                      const active = state.filterHull === h;
+                      return '<button type="button" data-filter-hull="' + h + '" class="px-2.5 py-1 rounded-lg font-mono-num transition ' +
+                        (active ? 'bg-sky-700 text-white font-bold shadow-sm' : 'text-slate-600 hover:text-slate-900') + '">' +
+                        (h === 'ALL' ? '전체 호선' : h) +
+                      '</button>';
+                    }).join('') +
+                  '</div>' +
+
+                  '<div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">' +
+                    [
+                      { k: 'ALL', l: '전체 상태' },
+                      { k: 'DECIDE', l: '결정 필요' },
+                      { k: 'CLOSE_REQ', l: '종결 요청' },
+                      { k: 'UNMAPPED', l: '매핑 빈 곳' }
+                    ].map(function(st) {
+                      const on = state.filterStatus === st.k;
+                      return '<button type="button" data-filter-status="' + st.k + '" class="px-2.5 py-1 rounded-lg font-semibold transition ' +
+                        (on ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900') + '">' + st.l + '</button>';
+                    }).join('') +
+                  '</div>' +
+                '</div>' +
+
+                // Target Meeting Selector for One-Click Adoption
+                '<div class="flex flex-wrap items-center gap-2">' +
+                  '<span class="text-xs font-semibold text-slate-500">채택 대상 회의:</span>' +
+                  '<div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">' +
+                    ['dept', 'share', 'exec', 'monthly', 'hull'].map(function(mKey) {
+                      const on = state.selectedMeeting === mKey;
+                      const label = mKey === 'dept' ? '부서자료' : mKey === 'share' ? '공유회' : mKey === 'exec' ? '팀장보고' : mKey === 'monthly' ? '월간현안' : 'SN2511회의';
+                      return '<button type="button" data-select-meeting="' + mKey + '" class="px-2.5 py-1 rounded-lg font-semibold transition ' +
+                        (on ? 'bg-sky-700 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900') + '">' + label + '</button>';
+                    }).join('') +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            // Main Split Grid (Left 7 Cols: Ledger Grid + Mapping/Attachments | Right 5 Cols: Fact/Expression Sync + 16:9 Slide)
+            '<div class="flex-1 grid grid-cols-12 ' + d.wrapPad + ' max-w-[1720px] w-full mx-auto">' +
+              '<div class="col-span-12 lg:col-span-7 flex flex-col ' + (d.isRelaxed ? 'gap-6' : 'gap-4') + '">' +
+                // 1) Ledger Data Grid
+                '<div class="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm">' +
+                  '<div class="px-5 py-3.5 bg-slate-50/80 border-b border-slate-200/90 flex flex-wrap items-center justify-between gap-2 text-xs">' +
+                    '<div class="flex items-center gap-2">' +
+                      '<span class="font-bold text-sm text-slate-900">이슈 원장 데이터 그리드 (' + filtered.length + '건)</span>' +
+                      '<span class="text-slate-500">행 클릭 → 우측 사실·표현·슬라이드 동시 편집</span>' +
+                    '</div>' +
+                    '<span class="font-mono-num text-[11px] px-2.5 py-1 rounded-full bg-sky-50 text-sky-700 border border-sky-200 font-medium">체크박스 = [' + escapeHtml(curMeeting.name.split(' (')[0]) + '] 채택</span>' +
+                  '</div>' +
+                  '<div class="overflow-x-auto">' +
+                    '<table class="w-full text-left border-collapse text-xs sm:text-sm">' +
+                      '<thead>' +
+                        '<tr class="bg-slate-50/60 text-slate-500 border-b border-slate-200 text-xs font-semibold">' +
+                          '<th class="' + d.cellPad + ' w-14 text-center">채택</th>' +
+                          '<th class="' + d.cellPad + '">ID · 유형</th>' +
+                          '<th class="' + d.cellPad + '">호선 · 마일스톤</th>' +
+                          '<th class="' + d.cellPad + '">표준 장비 (별칭)</th>' +
+                          '<th class="' + d.cellPad + '">이슈 제목 · 금주 진행</th>' +
+                          '<th class="' + d.cellPad + ' text-center">매핑</th>' +
+                          '<th class="' + d.cellPad + '">상태</th>' +
+                        '</tr>' +
+                      '</thead>' +
+                      '<tbody class="divide-y divide-slate-200/70">' +
+                        filtered.map(function(row) {
+                          const isSel = row.id === issue.id;
+                          const isAdopted = row.adoptedIn.indexOf(state.selectedMeeting) >= 0;
+                          const typeTone = row.type === 'problem'
+                            ? 'bg-rose-50 text-rose-700 border-rose-200'
+                            : row.type === 'share'
+                            ? 'bg-teal-50 text-teal-700 border-teal-200'
+                            : 'bg-amber-50 text-amber-800 border-amber-200';
+                          return (
+                            '<tr data-select-issue="' + row.id + '" class="cursor-pointer transition ' +
+                              (isSel ? 'bg-sky-50/85 text-slate-950' : 'hover:bg-slate-50/90 text-slate-700 bg-white') + '">' +
+                              '<td class="' + d.cellPad + ' text-center">' +
+                                '<button type="button" data-toggle-adopt="' + row.id + '" class="w-6 h-6 mx-auto rounded-lg flex items-center justify-center border font-mono-num text-xs transition ' +
+                                  (isAdopted ? 'bg-sky-600 border-sky-600 text-white font-bold shadow-sm' : 'bg-white border-slate-300 text-transparent hover:border-slate-400') + '">✓</button>' +
+                              '</td>' +
+                              '<td class="' + d.cellPad + ' font-mono-num whitespace-nowrap">' +
+                                '<div class="font-bold text-sky-800 text-xs sm:text-sm">' + escapeHtml(row.id) + '</div>' +
+                                '<div class="mt-1 flex items-center gap-1.5">' +
+                                  '<span class="px-1.5 py-0.5 rounded text-[11px] font-sans font-semibold border ' + typeTone + '">' + escapeHtml(row.typeLabel) + '</span>' +
+                                  '<span class="text-[11px] font-sans text-slate-500">' + escapeHtml(row.deptName) + '</span>' +
+                                '</div>' +
+                              '</td>' +
+                              '<td class="' + d.cellPad + ' font-mono-num whitespace-nowrap">' +
+                                '<div class="font-bold text-slate-900 text-xs sm:text-sm">' + escapeHtml(row.hull) + '</div>' +
+                                '<div class="text-[11px] font-sans text-slate-500 mt-0.5">' + escapeHtml(row.milestone) + '</div>' +
+                              '</td>' +
+                              '<td class="' + d.cellPad + ' whitespace-nowrap">' +
+                                '<div class="font-semibold text-slate-900 text-xs sm:text-sm">' + escapeHtml(row.equipmentStd.split(' (')[0]) + '</div>' +
+                                '<div class="text-[11px] font-mono-num text-sky-700 mt-0.5">← ' + escapeHtml(row.equipmentRaw) + '</div>' +
+                              '</td>' +
+                              '<td class="' + d.cellPad + ' max-w-[290px]">' +
+                                '<div class="font-bold text-slate-900 text-xs sm:text-sm leading-snug flex items-center gap-1.5">' +
+                                  (row.decisionNeeded ? '<span class="px-1.5 py-0.5 rounded bg-purple-100 text-purple-800 text-[10px] shrink-0">결정필요</span>' : '') +
+                                  '<span class="truncate">' + escapeHtml(row.title) + '</span>' +
+                                '</div>' +
+                                '<div class="text-xs text-slate-500 truncate mt-1">' + escapeHtml(row.weeklyUpdate) + '</div>' +
+                              '</td>' +
+                              '<td class="' + d.cellPad + ' font-mono-num whitespace-nowrap text-center">' +
+                                '<span class="px-2.5 py-1 rounded-full text-xs font-semibold ' +
+                                  (row.mappingScore === 5 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-amber-50 text-amber-800 border border-amber-200') + '">' +
+                                  row.mappingScore + '/5' +
+                                '</span>' +
+                              '</td>' +
+                              '<td class="' + d.cellPad + ' whitespace-nowrap">' +
+                                '<span class="px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-800 border border-slate-200/90">' + escapeHtml(row.status) + '</span>' +
+                              '</td>' +
+                            '</tr>'
+                          );
+                        }).join('') +
+                      '</tbody>' +
+                    '</table>' +
+                  '</div>' +
+                '</div>' +
+
+                // 2) Bottom-Left: 5-Point Knowledge Mapping & Attachments Tabs (docs/06 §3-1)
+                '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' space-y-4 shadow-sm">' +
+                  '<div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200/80 pb-3">' +
+                    '<div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">' +
+                      [
+                        { k: 'mapping', l: '지식 매핑 5칸 · 자매선 레이더' },
+                        { k: 'schedule', l: '계획 대비 실적 (간트)' },
+                        { k: 'progress', l: '구역별 진행률 (%)' }
+                      ].map(function(t) {
+                        const on = state.ledgerAttachTab === t.k;
+                        return '<button type="button" data-ledger-attach="' + t.k + '" class="px-3 py-1.5 rounded-lg font-semibold transition ' +
+                          (on ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600 hover:text-slate-900') + '">' + t.l + '</button>';
+                      }).join('') +
+                    '</div>' +
+                    '<span class="font-mono-num text-xs text-slate-500">' + escapeHtml(issue.id) + ' · ' + escapeHtml(issue.equipmentStd) + '</span>' +
+                  '</div>' +
+                  subPanelHtml +
+                '</div>' +
+              '</div>' +
+
+              // Right 5 Cols: Fact/Expression Sync Console + 16:9 Slide Output
+              '<div class="col-span-12 lg:col-span-5 flex flex-col ' + (d.isRelaxed ? 'gap-6' : 'gap-4') + '">' +
+                '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' space-y-4 shadow-sm">' +
+                  '<div class="flex flex-wrap items-start justify-between gap-2 border-b border-slate-200/80 pb-3.5">' +
+                    '<div>' +
+                      '<div class="flex items-center gap-2">' +
+                        '<span class="font-mono-num text-xs text-sky-700 font-bold">' + escapeHtml(issue.id) + '</span>' +
+                        '<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700">' + escapeHtml(issue.deptName) + ' · ' + escapeHtml(issue.author) + '</span>' +
+                        '<span class="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">' + escapeHtml(issue.draftState) + '</span>' +
+                      '</div>' +
+                      '<h3 class="text-base font-bold text-slate-900 mt-1">' + escapeHtml(issue.title) + '</h3>' +
+                    '</div>' +
+                    '<div class="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">' +
+                      ['detail', 'line', 'compare', 'gantt'].map(function(fKey) {
+                        const fName = fKey === 'detail' ? '상세 1장' : fKey === 'line' ? '한 줄' : fKey === 'compare' ? '비교표' : '간트';
+                        const activeF = (state.slideFormatOverride || (state.selectedMeeting === 'exec' ? 'line' : issue.slideForm)) === fKey;
+                        return '<button type="button" data-slide-form="' + fKey + '" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition ' +
+                          (activeF ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600 hover:text-slate-900') + '">' + fName + '</button>';
+                      }).join('') +
+                    '</div>' +
+                  '</div>' +
+
+                  // Fact vs Expression Dual Editor
+                  '<div class="space-y-3 text-xs sm:text-sm">' +
+                    '<div class="p-3.5 rounded-xl bg-emerald-50/50 border border-emerald-200/80 space-y-2">' +
+                      '<div class="flex items-center justify-between">' +
+                        '<label class="text-xs text-emerald-950 font-bold">● 원장 사실 (현상·원인·조치·결정) — 수정 시 모든 회의자료 즉시 역반영</label>' +
+                        '<span class="text-[11px] text-emerald-700 font-mono-num">ai_field_log 기록</span>' +
+                      '</div>' +
+                      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' +
+                        '<input type="text" id="input-fact-cause" value="' + escapeHtml(issue.cause) + '" placeholder="원인" class="rounded-lg bg-white border border-slate-300 text-slate-900 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500" />' +
+                        '<input type="text" id="input-fact-decide" value="' + escapeHtml(issue.decisionNeeded) + '" placeholder="결정 필요 사항 (없으면 비움)" class="rounded-lg bg-white border border-slate-300 text-slate-900 px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500" />' +
+                      '</div>' +
+                      '<div class="flex gap-2">' +
+                        '<input type="text" id="input-fact-action" value="' + escapeHtml(issue.actionPlan) + '" class="flex-1 rounded-lg bg-white border border-slate-300 text-slate-900 px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />' +
+                        '<button type="button" id="btn-save-fact" class="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shrink-0 shadow-sm">원장 동기화</button>' +
+                      '</div>' +
+                    '</div>' +
+
+                    '<div class="p-3.5 rounded-xl bg-sky-50/50 border border-sky-200/80">' +
+                      '<label class="block text-xs text-sky-950 font-bold mb-1.5">○ 회의별 표현 (' + escapeHtml(curMeeting.name) + ' 전용 한 줄)</label>' +
+                      '<div class="flex gap-2">' +
+                        '<input type="text" id="input-expr-line" value="' + escapeHtml(issue.meetingLines[state.selectedMeeting] || '') + '" class="flex-1 rounded-lg bg-white border border-slate-300 text-slate-900 px-3 py-1.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500" />' +
+                        '<button type="button" id="btn-save-expr" class="px-3.5 py-1.5 rounded-lg bg-sky-700 hover:bg-sky-600 text-white text-xs font-bold shrink-0 shadow-sm">표현 저장</button>' +
+                      '</div>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+
+                // Live 16:9 Slide Output
+                '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' space-y-3 shadow-sm">' +
+                  '<div class="flex items-center justify-between text-xs sm:text-sm">' +
+                    '<span class="font-bold text-slate-900">16:9 슬라이드 실시간 렌더러 (' + escapeHtml(curMeeting.name.split(' (')[0]) + ')</span>' +
+                    '<div class="flex items-center gap-2">' +
+                      '<button type="button" id="btn-open-projector" class="px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold">빔프로젝터 크게 보기</button>' +
+                      '<button type="button" id="btn-export-pptx" class="px-3 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold">.pptx 내보내기</button>' +
+                    '</div>' +
+                  '</div>' +
+                  renderLiveSlideHtml(issue, state.selectedMeeting) +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      // =========================================================================
+      // SCREEN 3: 회의 · 자료 구성 (부서 회의자료 / 팀 회의자료 구성 / 회의 진행 통합)
+      // =========================================================================
+      function renderMeetingsScreen() {
+        const d = getDensityClasses();
+        const curMeeting = state.meetings[state.selectedMeeting];
+        const issue = getSelectedIssue();
+        const adoptedList = state.issues.filter(function(i) {
+          return i.adoptedIn.indexOf(state.selectedMeeting) >= 0;
+        });
+
+        return (
+          '<div class="max-w-[1720px] w-full mx-auto ' + d.wrapPad + ' flex flex-col">' +
+            // Top Meeting Selector & Mode Bar
+            '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm flex flex-wrap items-center justify-between gap-4">' +
+              '<div class="flex flex-wrap items-center gap-3">' +
+                '<span class="text-xs font-bold text-slate-500">대상 회의 선택:</span>' +
+                '<div class="flex flex-wrap items-center gap-1.5 bg-slate-100 p-1.5 rounded-xl border border-slate-200 text-xs">' +
+                  ['dept', 'share', 'exec', 'monthly', 'hull'].map(function(mKey) {
+                    const m = state.meetings[mKey];
+                    const on = state.selectedMeeting === mKey;
+                    const cnt = state.issues.filter(function(i){ return i.adoptedIn.indexOf(mKey) >= 0; }).length;
+                    return '<button type="button" data-select-meeting="' + mKey + '" class="px-3 py-1.5 rounded-lg font-bold transition flex items-center gap-1.5 ' +
+                      (on ? 'bg-sky-700 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900') + '">' +
+                      '<span>' + escapeHtml(m.name.split(' (')[0]) + '</span>' +
+                      '<span class="font-mono-num text-[11px] px-1.5 py-0.2 rounded-full ' + (on ? 'bg-sky-900 text-sky-100' : 'bg-white text-slate-600') + '">' + cnt + '</span>' +
+                    '</button>';
+                  }).join('') +
+                '</div>' +
+              '</div>' +
+
+              // Mode Switcher: 자료 구성·채택 vs 회의 진행(코멘트·결정·종결 승인)
+              '<div class="flex items-center gap-2">' +
+                '<div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">' +
+                  '<button type="button" data-meeting-sub="compose" class="px-3 py-1.5 rounded-lg font-bold transition ' +
+                    (state.meetingSubTab === 'compose' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600') + '">① 후보 채택 · 슬라이드 구성</button>' +
+                  '<button type="button" data-meeting-sub="run" class="px-3 py-1.5 rounded-lg font-bold transition ' +
+                    (state.meetingSubTab === 'run' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600') + '">② 회의 진행 (코멘트·의결·종결 승인)</button>' +
+                '</div>' +
+                '<button type="button" id="btn-open-projector" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-[#1E3A5F] hover:bg-slate-800 text-white shadow-sm">🖥 발표 창 열기</button>' +
+                '<button type="button" id="btn-export-pptx" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm">📊 PPTX 발행</button>' +
+              '</div>' +
+            '</div>' +
+
+            (state.meetingSubTab === 'compose' ? (
+              // SUB-MODE A: 회의자료 채택·묶기·순서·요약 구성 화면
+              '<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">' +
+                // Left 4 Cols: 원장 후보 추천 묶음 (종결 요청 / 결정 필요 / 장기 미결 / 일반)
+                '<div class="lg:col-span-4 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                  '<div class="flex items-center justify-between border-b border-slate-200 pb-3">' +
+                    '<div>' +
+                      '<h3 class="text-sm sm:text-base font-bold text-slate-900">원장 후보에서 채택</h3>' +
+                      '<p class="text-xs text-slate-500">체크하면 우측 회의자료 개요에 참조로 연결됩니다</p>' +
+                    '</div>' +
+                    '<button type="button" id="btn-combine-summary" class="px-2.5 py-1.5 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-800 border border-sky-200 text-xs font-bold">' +
+                      '✨ 채택 항목 AI 요약 생성' +
+                    '</button>' +
+                  '</div>' +
+                  '<div class="space-y-2.5">' +
+                    state.issues.map(function(item) {
+                      const isAdopted = item.adoptedIn.indexOf(state.selectedMeeting) >= 0;
+                      const isSel = item.id === issue.id;
+                      return (
+                        '<div data-select-issue="' + item.id + '" class="cursor-pointer p-3.5 rounded-xl border transition ' +
+                          (isSel ? 'border-sky-600 bg-sky-50/60' : 'border-slate-200/90 hover:border-slate-300 bg-slate-50/40') + '">' +
+                          '<div class="flex items-center justify-between gap-2">' +
+                            '<div class="flex items-center gap-2">' +
+                              '<button type="button" data-toggle-adopt="' + item.id + '" class="w-5 h-5 rounded-md flex items-center justify-center border text-xs font-mono-num ' +
+                                (isAdopted ? 'bg-sky-600 border-sky-600 text-white font-bold' : 'bg-white border-slate-300 text-transparent') + '">✓</button>' +
+                              '<span class="font-mono-num text-xs font-bold text-sky-800">' + escapeHtml(item.hull) + '</span>' +
+                              '<span class="text-xs text-slate-500">' + escapeHtml(item.deptName) + '</span>' +
+                            '</div>' +
+                            '<span class="px-2 py-0.5 rounded text-[11px] font-semibold bg-white border border-slate-200 text-slate-700">' + escapeHtml(item.status) + '</span>' +
+                          '</div>' +
+                          '<div class="text-xs sm:text-sm font-bold text-slate-900 mt-1.5">' + escapeHtml(item.title) + '</div>' +
+                        '</div>'
+                      );
+                    }).join('') +
+                  '</div>' +
+                '</div>' +
+
+                // Center 3 Cols: 채택된 슬라이드 목차 · 묶기 · 순서 (▲▼)
+                '<div class="lg:col-span-3 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                  '<div class="flex items-center justify-between border-b border-slate-200 pb-3">' +
+                    '<div>' +
+                      '<h3 class="text-sm sm:text-base font-bold text-slate-900">슬라이드 구성 목차 (' + adoptedList.length + '장)</h3>' +
+                      '<p class="text-xs text-slate-500">' + escapeHtml(curMeeting.desc) + '</p>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="space-y-2.5">' +
+                    adoptedList.map(function(item, idx) {
+                      const isSel = item.id === issue.id;
+                      return (
+                        '<div data-select-issue="' + item.id + '" class="cursor-pointer p-3.5 rounded-xl border transition ' +
+                          (isSel ? 'border-sky-600 bg-sky-50/80 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white') + '">' +
+                          '<div class="flex items-center justify-between text-xs mb-1">' +
+                            '<span class="font-mono-num font-bold text-sky-800">SLIDE 0' + (idx + 1) + ' · ' + escapeHtml(item.hull) + '</span>' +
+                            '<div class="flex items-center gap-1">' +
+                              '<button type="button" data-move-up="' + item.id + '" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px]">▲</button>' +
+                              '<button type="button" data-move-down="' + item.id + '" class="px-1.5 py-0.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px]">▼</button>' +
+                            '</div>' +
+                          '</div>' +
+                          '<div class="text-xs sm:text-sm font-bold text-slate-900">' + escapeHtml(item.title) + '</div>' +
+                          '<div class="text-[11px] text-slate-600 mt-1 truncate">' + escapeHtml(item.meetingLines[state.selectedMeeting] || item.weeklyUpdate) + '</div>' +
+                        '</div>'
+                      );
+                    }).join('') +
+                  '</div>' +
+                '</div>' +
+
+                // Right 5 Cols: 16:9 Live Preview & Fact/Expression Sync
+                '<div class="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                  '<div class="flex items-center justify-between border-b border-slate-200 pb-3">' +
+                    '<span class="text-sm sm:text-base font-bold text-slate-900">선택한 장 미리보기 및 사실(●)·표현(○) 편집</span>' +
+                    '<div class="flex gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">' +
+                      ['detail', 'line', 'compare', 'gantt'].map(function(fKey) {
+                        const fName = fKey === 'detail' ? '상세 1장' : fKey === 'line' ? '한 줄' : fKey === 'compare' ? '비교표' : '간트';
+                        const activeF = (state.slideFormatOverride || (state.selectedMeeting === 'exec' ? 'line' : issue.slideForm)) === fKey;
+                        return '<button type="button" data-slide-form="' + fKey + '" class="px-2.5 py-1 rounded-lg text-xs font-semibold transition ' +
+                          (activeF ? 'bg-white text-sky-800 shadow-sm' : 'text-slate-600') + '">' + fName + '</button>';
+                      }).join('') +
+                    '</div>' +
+                  '</div>' +
+                  renderLiveSlideHtml(issue, state.selectedMeeting) +
+                  '<div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200 space-y-2.5 text-xs">' +
+                    '<div>' +
+                      '<label class="block font-bold text-emerald-900 mb-1">● 사실 수정 (조치·계획 — 고치면 원장과 모든 회의에 즉시 반영)</label>' +
+                      '<div class="flex gap-2">' +
+                        '<input type="text" id="input-fact-action" value="' + escapeHtml(issue.actionPlan) + '" class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs" />' +
+                        '<button type="button" id="btn-save-fact" class="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold shrink-0">원장 반영</button>' +
+                      '</div>' +
+                    '</div>' +
+                    '<div>' +
+                      '<label class="block font-bold text-sky-900 mb-1">○ 현재 회의(' + escapeHtml(curMeeting.name.split(' (')[0]) + ') 전용 한 줄 표현</label>' +
+                      '<div class="flex gap-2">' +
+                        '<input type="text" id="input-expr-line" value="' + escapeHtml(issue.meetingLines[state.selectedMeeting] || '') + '" class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs" />' +
+                        '<button type="button" id="btn-save-expr" class="px-3 py-1.5 rounded-lg bg-sky-700 text-white font-bold shrink-0">표현 저장</button>' +
+                      '</div>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>'
+            ) : (
+              // SUB-MODE B: 회의 진행 화면 (진행자 콘솔: 슬라이드 + 코멘트·결정·종결 승인·회의 중 새 이슈)
+              '<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">' +
+                '<div class="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                  '<div class="flex items-center justify-between border-b border-slate-200 pb-3">' +
+                    '<span class="text-sm sm:text-base font-bold text-slate-900">발표 슬라이드 (현재 안건: ' + escapeHtml(issue.id) + ')</span>' +
+                    '<div class="flex items-center gap-1.5">' +
+                      adoptedList.map(function(it, idx) {
+                        const on = it.id === issue.id;
+                        return '<button type="button" data-select-issue="' + it.id + '" class="px-2.5 py-1 rounded-lg text-xs font-mono-num font-bold ' +
+                          (on ? 'bg-sky-700 text-white' : 'bg-slate-100 text-slate-700') + '">안건 ' + (idx + 1) + '</button>';
+                      }).join('') +
+                    '</div>' +
+                  '</div>' +
+                  renderLiveSlideHtml(issue, state.selectedMeeting) +
+                '</div>' +
+
+                '<div class="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                  '<div class="border-b border-slate-200 pb-3 flex items-center justify-between">' +
+                    '<div>' +
+                      '<span class="text-xs font-mono-num font-bold text-sky-700">MEETING RUN CONSOLE</span>' +
+                      '<h3 class="text-sm sm:text-base font-bold text-slate-900">회의 코멘트 · 의결 결정 · 종결 승인 기록</h3>' +
+                    '</div>' +
+                    (curMeeting.canClose ? '<span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">종결 승인 가능 회의</span>' : '') +
+                  '</div>' +
+
+                  // Decision Needed Resolution Box
+                  '<div class="p-4 rounded-xl bg-purple-50/70 border border-purple-200 space-y-2 text-xs">' +
+                    '<div class="font-bold text-purple-950">④ 결정 필요 안건 의결 (기록 시 원장 이력으로 이동)</div>' +
+                    '<div class="text-purple-900">' + escapeHtml(issue.decisionNeeded || '등록된 결정 필요 사항이 없습니다.') + '</div>' +
+                    '<div class="flex gap-2 pt-1">' +
+                      '<input type="text" id="input-run-decision" placeholder="회의 의결 사항 입력 (예: Maker 무상 클레임 진행 및 예비품 선적 승인)" class="flex-1 rounded-lg border border-purple-300 bg-white px-3 py-1.5 text-xs" />' +
+                      '<button type="button" id="btn-save-run-decision" class="px-3 py-1.5 rounded-lg bg-purple-700 hover:bg-purple-600 text-white font-bold shrink-0">의결 기록</button>' +
+                    '</div>' +
+                  '</div>' +
+
+                  // Comment Input
+                  '<div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 text-xs">' +
+                    '<div class="font-bold text-slate-900">회의 코멘트 · 지시사항 (원장 이력에 즉시 저장)</div>' +
+                    '<div class="flex gap-2">' +
+                      '<input type="text" id="input-run-comment" placeholder="이 안건에 대한 회의 코멘트 입력" class="flex-1 rounded-lg border border-slate-300 bg-white px-3 py-1.5 text-xs" />' +
+                      '<button type="button" id="btn-save-run-comment" class="px-3 py-1.5 rounded-lg bg-slate-900 text-white font-bold shrink-0">코멘트 추가</button>' +
+                    '</div>' +
+                    '<div class="space-y-1.5 pt-2">' +
+                      (issue.meetingComments && issue.meetingComments.length ? issue.meetingComments.map(function(c) {
+                        return '<div class="p-2.5 rounded-lg bg-white border border-slate-200 text-slate-700"><b>' + escapeHtml(c.author) + ' (' + escapeHtml(c.meeting) + '):</b> ' + escapeHtml(c.text) + '</div>';
+                      }).join('') : '<div class="text-slate-400">아직 기록된 회의 코멘트가 없습니다.</div>') +
+                    '</div>' +
+                  '</div>' +
+
+                  // Closure Approval Box
+                  '<div class="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 flex items-center justify-between gap-3 text-xs">' +
+                    '<div>' +
+                      '<div class="font-bold text-emerald-950">종결 승인 및 지식창고 사례 카드 승격</div>' +
+                      '<div class="text-emerald-800 mt-0.5">현상·원인·조치 3요소가 확인되면 즉시 사례 카드로 등재합니다.</div>' +
+                    '</div>' +
+                    '<button type="button" data-approve-close="' + issue.id + '" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold shrink-0 shadow-sm">' +
+                      '✓ 종결 승인' +
+                    '</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>'
+            )) +
+          '</div>'
+        );
+      }
+
+      // =========================================================================
+      // SCREEN 4: 외부 자료 가져오기 (v2-import.html — PPTX·HTML 장별 파싱 & 원장 매핑)
+      // =========================================================================
+      function renderImportScreen() {
+        const d = getDensityClasses();
+        const curSlide = state.importSlides.find(function(s){ return s.id === state.selectedImportSlideId; }) || state.importSlides[0];
+
+        return (
+          '<div class="max-w-[1720px] w-full mx-auto ' + d.wrapPad + ' flex flex-col">' +
+            '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm flex flex-wrap items-center justify-between gap-4">' +
+              '<div>' +
+                '<div class="text-xs font-mono-num font-bold uppercase tracking-wider text-sky-700">F14 · EXTERNAL DECK &amp; HTML PARSER</div>' +
+                '<h2 class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5">외부 PPTX · HTML 자료 가져오기 및 이슈 원장 연결</h2>' +
+                '<p class="text-xs sm:text-sm text-slate-500 mt-1">시스템 밖에서 만든 PPT 장도 업로드하면 AI가 호선·장비·사실을 추출해 기존 이슈에 잇거나 새 이슈로 등록합니다. 원본 슬라이드는 그대로 보존됩니다.</p>' +
+              '</div>' +
+              '<div class="flex items-center gap-2.5">' +
+                '<button type="button" id="btn-simulate-upload" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 transition">📂 새 PPTX·HTML 파일 선택</button>' +
+                '<button type="button" id="btn-apply-import" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-sky-700 hover:bg-sky-600 text-white shadow-sm transition">' +
+                  '✓ 선택한 판정대로 원장에 반영하기' +
+                '</button>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">' +
+              // Left 4 Cols: 업로드된 슬라이드 장 목록
+              '<div class="lg:col-span-4 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-3.5">' +
+                '<div class="flex items-center justify-between border-b border-slate-200 pb-3">' +
+                  '<span class="text-sm font-bold text-slate-900">시운전1부_현안보고_외부작성본.pptx (3장)</span>' +
+                  '<span class="font-mono-num text-xs text-emerald-700 font-semibold">파싱 완료</span>' +
+                '</div>' +
+                '<div class="space-y-2.5">' +
+                  state.importSlides.map(function(sl) {
+                    const isSel = sl.id === curSlide.id;
+                    const badge = sl.decisionState === 'link'
+                      ? 'bg-sky-100 text-sky-800 border-sky-200'
+                      : sl.decisionState === 'new'
+                      ? 'bg-emerald-100 text-emerald-800 border-emerald-200'
+                      : 'bg-slate-100 text-slate-600 border-slate-200';
+                    const badgeText = sl.decisionState === 'link' ? '기존 이슈 연결 (' + sl.matchRate + '%)' : sl.decisionState === 'new' ? '새 이슈 등록' : '건너뛰기';
+                    return (
+                      '<div data-select-import="' + sl.id + '" class="cursor-pointer p-4 rounded-xl border transition ' +
+                        (isSel ? 'border-sky-600 bg-sky-50/70 shadow-sm' : 'border-slate-200 hover:border-slate-300 bg-white') + '">' +
+                        '<div class="flex items-center justify-between text-xs mb-1.5">' +
+                          '<span class="font-mono-num font-bold text-slate-700">SLIDE 0' + sl.pageNo + '</span>' +
+                          '<span class="px-2 py-0.5 rounded-full text-[11px] font-bold border ' + badge + '">' + badgeText + (sl.applied ? ' · 반영됨' : '') + '</span>' +
+                        '</div>' +
+                        '<div class="text-xs sm:text-sm font-bold text-slate-900">' + escapeHtml(sl.slideTitle) + '</div>' +
+                        '<div class="text-[11px] text-slate-500 mt-1 font-mono-num">추출 호선: ' + escapeHtml(sl.extractedHull) + ' · 장비: ' + escapeHtml(sl.extractedEquip) + '</div>' +
+                      '</div>'
+                    );
+                  }).join('') +
+                '</div>' +
+              '</div>' +
+
+              // Right 8 Cols: 원본 장(근거 노란 하이라이트) + AI 추출 칸 + 반영 미리보기
+              '<div class="lg:col-span-8 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-5">' +
+                '<div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3.5">' +
+                  '<div>' +
+                    '<span class="font-mono-num text-xs font-bold text-sky-700">SLIDE 0' + curSlide.pageNo + ' 상세 검토</span>' +
+                    '<h3 class="text-base font-bold text-slate-900 mt-0.5">' + escapeHtml(curSlide.slideTitle) + '</h3>' +
+                  '</div>' +
+                  '<div class="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs">' +
+                    [
+                      { k: 'link', l: '기존 이슈에 연결' },
+                      { k: 'new', l: '새 이슈로 등록' },
+                      { k: 'skip', l: '건너뛰기' }
+                    ].map(function(opt) {
+                      const on = curSlide.decisionState === opt.k;
+                      return '<button type="button" data-import-decision="' + opt.k + '" class="px-3 py-1.5 rounded-lg font-bold transition ' +
+                        (on ? 'bg-slate-900 text-white shadow-sm' : 'text-slate-600 hover:text-slate-900') + '">' + opt.l + '</button>';
+                    }).join('') +
+                  '</div>' +
+                '</div>' +
+
+                '<div class="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs sm:text-sm">' +
+                  // Left: Original Slide Preview with yellow evidence highlight
+                  '<div class="p-4 rounded-xl bg-slate-100 border border-slate-200 space-y-3">' +
+                    '<div class="flex items-center justify-between text-xs font-bold text-slate-700">' +
+                      '<span>원본 PPT 슬라이드 (근거 영역 노란색 표시)</span>' +
+                      '<span class="px-2 py-0.5 rounded bg-white border border-slate-300 text-[11px]">원본 슬라이드 첨부 가능</span>' +
+                    '</div>' +
+                    '<div class="bg-white rounded-lg p-4 border border-slate-300 space-y-2.5 shadow-sm">' +
+                      '<div class="bg-[#26344A] text-white px-3 py-2 rounded font-bold text-xs">' + escapeHtml(curSlide.slideTitle) + '</div>' +
+                      '<div class="p-2 rounded bg-amber-100/90 border border-amber-300 text-slate-900 text-xs">' +
+                        '<span class="font-mono-num text-[10px] font-bold text-amber-900 block">[근거 박스 #1 · 현상/원인]</span>' +
+                        escapeHtml(curSlide.extractedPhenomenon) +
+                      '</div>' +
+                      '<div class="p-2 rounded bg-amber-100/90 border border-amber-300 text-slate-900 text-xs">' +
+                        '<span class="font-mono-num text-[10px] font-bold text-amber-900 block">[근거 박스 #2 · 조치/일정]</span>' +
+                        escapeHtml(curSlide.extractedAction) +
+                      '</div>' +
+                    '</div>' +
+                  '</div>' +
+
+                  // Right: AI Extracted Fields & Target Ledger Match
+                  '<div class="p-4 rounded-xl bg-sky-50/50 border border-sky-200 space-y-3">' +
+                    '<div class="font-bold text-sky-950 text-xs sm:text-sm flex items-center justify-between">' +
+                      '<span>이슈 원장에 반영될 사실 미리보기</span>' +
+                      (curSlide.matchedIssueId ? '<span class="font-mono-num text-xs px-2 py-0.5 rounded bg-sky-700 text-white">연결 대상: ' + escapeHtml(curSlide.matchedIssueId) + ' (' + curSlide.matchRate + '%)</span>' : '') +
+                    '</div>' +
+                    '<div class="space-y-2 text-xs">' +
+                      '<div class="p-2.5 rounded-lg bg-white border border-slate-200"><b>호선 · 표준 장비:</b> ' + escapeHtml(curSlide.extractedHull) + ' · ' + escapeHtml(curSlide.extractedEquip) + '</div>' +
+                      '<div class="p-2.5 rounded-lg bg-white border border-slate-200"><b>추출된 현상/원인:</b> ' + escapeHtml(curSlide.extractedPhenomenon) + '</div>' +
+                      '<div class="p-2.5 rounded-lg bg-white border border-slate-200"><b>추출된 조치·일정:</b> ' + escapeHtml(curSlide.extractedAction) + '</div>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      // =========================================================================
+      // SCREEN 5: 지표 (v2-metrics.html — 주간 지표 6주 추이 + 기간 표)
+      // =========================================================================
+      function renderMetricsScreen() {
+        const d = getDensityClasses();
+        return (
+          '<div class="max-w-[1720px] w-full mx-auto ' + d.wrapPad + ' flex flex-col">' +
+            '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm flex flex-wrap items-center justify-between gap-4">' +
+              '<div>' +
+                '<div class="text-xs font-mono-num font-bold uppercase tracking-wider text-sky-700">F16 · WEEKLY METRICS &amp; PERIOD TABLE</div>' +
+                '<h2 class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5">부서별 주간 지표(6주 추이) 및 기간 표(특근·투입 인원)</h2>' +
+                '<p class="text-xs sm:text-sm text-slate-500 mt-1">지표는 이슈 원장과 분리해 관리하며, 회의자료 구성 시 표지·요약 항목으로 채택합니다.</p>' +
+              '</div>' +
+              '<button type="button" id="btn-save-metrics" class="px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold bg-sky-700 hover:bg-sky-600 text-white shadow-sm">✓ 이번 주 지표 값 저장 및 슬라이드 반영</button>' +
+            '</div>' +
+
+            '<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">' +
+              // Left 7 Cols: 주간 지표 6주 추이
+              '<div class="lg:col-span-7 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                '<h3 class="text-sm sm:text-base font-bold text-slate-900">주간 지표 (최근 6주 추이 · 평소 범위 이탈 자동 감지)</h3>' +
+                '<div class="overflow-x-auto">' +
+                  '<table class="w-full text-left border-collapse text-xs sm:text-sm">' +
+                    '<thead><tr class="bg-slate-50 text-slate-500 border-b border-slate-200 text-xs">' +
+                      '<th class="py-3 px-3">지표명 (단위)</th>' +
+                      '<th class="py-3 px-3">W38~W42 추이</th>' +
+                      '<th class="py-3 px-3">이번 주(W43) 입력</th>' +
+                      '<th class="py-3 px-3">평소 범위 판정</th>' +
+                      '<th class="py-3 px-3">한 줄 코멘트</th>' +
+                    '</tr></thead>' +
+                    '<tbody class="divide-y divide-slate-200">' +
+                      state.weeklyMetrics.map(function(m) {
+                        const curVal = m.history[m.history.length - 1];
+                        const isOut = curVal < m.normalLow || curVal > m.normalHigh;
+                        return (
+                          '<tr>' +
+                            '<td class="py-3.5 px-3 font-bold text-slate-900">' + escapeHtml(m.name) + ' <span class="text-slate-400 font-normal">(' + escapeHtml(m.unit) + ')</span></td>' +
+                            '<td class="py-3.5 px-3 font-mono-num text-xs text-slate-500">' + m.history.slice(0, 5).join(' → ') + '</td>' +
+                            '<td class="py-3.5 px-3">' +
+                              '<input type="number" data-metric-input="' + m.id + '" value="' + curVal + '" class="w-20 rounded-lg border border-slate-300 px-2.5 py-1 font-mono-num font-bold text-slate-900" />' +
+                            '</td>' +
+                            '<td class="py-3.5 px-3">' +
+                              '<span class="px-2.5 py-1 rounded-full text-xs font-bold ' + (isOut ? 'bg-amber-100 text-amber-900 border border-amber-300' : 'bg-emerald-50 text-emerald-700 border border-emerald-200') + '">' +
+                                (isOut ? '평소 범위 초과 (' + m.normalLow + '~' + m.normalHigh + ')' : '정상 범위') +
+                              '</span>' +
+                            '</td>' +
+                            '<td class="py-3.5 px-3 text-xs text-slate-600">' + escapeHtml(m.comment) + '</td>' +
+                          '</tr>'
+                        );
+                      }).join('') +
+                    '</tbody>' +
+                  '</table>' +
+                '</div>' +
+              '</div>' +
+
+              // Right 5 Cols: 기간 표 (특근 인원 계획/실적)
+              '<div class="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                '<h3 class="text-sm sm:text-base font-bold text-slate-900">기간 표 (주말 시운전 투입 인원 계획 대비 실적)</h3>' +
+                '<div class="overflow-x-auto">' +
+                  '<table class="w-full text-left border-collapse text-xs">' +
+                    '<thead><tr class="bg-slate-50 text-slate-500 border-b border-slate-200">' +
+                      '<th class="py-2.5 px-3">소속 과</th>' +
+                      '<th class="py-2.5 px-3">금(계획/실적)</th>' +
+                      '<th class="py-2.5 px-3">토(계획/실적)</th>' +
+                      '<th class="py-2.5 px-3">일(계획/실적)</th>' +
+                      '<th class="py-2.5 px-3">차이 사유 메모</th>' +
+                    '</tr></thead>' +
+                    '<tbody class="divide-y divide-slate-200">' +
+                      state.periodTable.map(function(row) {
+                        return (
+                          '<tr>' +
+                            '<td class="py-3 px-3 font-bold text-slate-900">' + escapeHtml(row.team) + '</td>' +
+                            '<td class="py-3 px-3 font-mono-num">' + row.friPlan + ' / <b>' + row.friAct + '</b></td>' +
+                            '<td class="py-3 px-3 font-mono-num text-sky-800">' + row.satPlan + ' / <b>' + row.satAct + '</b></td>' +
+                            '<td class="py-3 px-3 font-mono-num">' + row.sunPlan + ' / <b>' + row.sunAct + '</b></td>' +
+                            '<td class="py-3 px-3 text-slate-600">' + escapeHtml(row.note) + '</td>' +
+                          '</tr>'
+                        );
+                      }).join('') +
+                    '</tbody>' +
+                  '</table>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      // =========================================================================
+      // SCREEN 6: 지식창고 · 장비 허브 (연결 지도 + 자매선 선행 + 사례 카드 + AI 인용 답변)
+      // =========================================================================
+      function renderKnowledgeScreen() {
+        const d = getDensityClasses();
+        return (
+          '<div class="max-w-[1720px] w-full mx-auto ' + d.wrapPad + ' flex flex-col">' +
+            // Top Search & Alias Resolver Bar
+            '<div class="bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+              '<div class="flex flex-wrap items-center justify-between gap-4">' +
+                '<div>' +
+                  '<div class="text-xs font-mono-num font-bold uppercase tracking-wider text-sky-700">F15 · EQUIPMENT HUB &amp; KNOWLEDGE BASE</div>' +
+                  '<h2 class="text-lg sm:text-xl font-bold text-slate-900 mt-0.5">장비 허브 연결 지도 &amp; 지식창고 자연어 근거 검색</h2>' +
+                '</div>' +
+                '<div class="flex items-center gap-2">' +
+                  '<span class="px-3 py-1.5 rounded-xl bg-sky-50 border border-sky-200 text-xs font-mono-num text-sky-900 font-semibold">현장 표기 해석: "2511 DG2" ──▶ EQ-SN2511-GE-02 (발전기 No.2)</span>' +
+                '</div>' +
+              '</div>' +
+
+              // Natural Language Question Input + Cited Answer
+              '<div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3">' +
+                '<div class="flex gap-2">' +
+                  '<input type="text" id="input-knowledge-query" value="' + escapeHtml(state.knowledgeQuery) + '" class="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-xs sm:text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500" />' +
+                  '<button type="button" id="btn-ask-knowledge" class="px-5 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-600 text-white text-xs sm:text-sm font-bold shrink-0 shadow-sm">🔎 근거 사례 검색</button>' +
+                '</div>' +
+                '<div class="p-3.5 rounded-xl bg-white border-l-4 border-sky-700 border border-slate-200 text-xs sm:text-sm space-y-1">' +
+                  '<div class="text-xs font-bold text-sky-800">🤖 AI 요약 답변 (반드시 근거 사례 ID 인용 · 근거 없는 추측 차단)</div>' +
+                  '<p class="text-slate-800 leading-relaxed">' +
+                    'LNGC 6L 이중연료 발전엔진 배기온도 편차 관련 종결 사례는 총 <b>3건</b>입니다. ' +
+                    '<b>연료분사밸브 노즐 마모·시트 불량 2건</b> — 분사밸브 어셈블리 신품 교체 후 100% 부하시험 정상 확인 ' +
+                    '<span class="font-mono-num text-xs px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-bold">CASE-0298</span> ' +
+                    '<span class="font-mono-num text-xs px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-bold">CASE-0311</span> / ' +
+                    '<b>배기 열전대 센서 오차 1건</b> — 커넥터 재고정 및 센서 교체 후 정상 ' +
+                    '<span class="font-mono-num text-xs px-1.5 py-0.5 rounded bg-sky-50 text-sky-800 border border-sky-200 font-bold">CASE-0352</span>' +
+                  '</p>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+
+            '<div class="grid grid-cols-1 lg:grid-cols-12 gap-6">' +
+              // Left 6 Cols: 장비 허브 연결 지도 (SVG) + 자매선 선행 사례 경보
+              '<div class="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                '<div class="flex items-center justify-between">' +
+                  '<h3 class="text-sm sm:text-base font-bold text-slate-900">장비 허브 연결 지도 (EQ-SN2511-GE-02)</h3>' +
+                  '<span class="text-xs text-slate-500">기준정보 ID로 호선·자매선·모델·원인이 자동 연결됨</span>' +
+                '</div>' +
+                '<div class="p-3 rounded-xl bg-slate-50 border border-slate-200">' +
+                  '<svg viewBox="0 0 680 210" class="w-full h-auto">' +
+                    '<line x1="340" y1="105" x2="120" y2="38" stroke="#94a3b8" stroke-width="2"/>' +
+                    '<line x1="340" y1="105" x2="120" y2="105" stroke="#0284c7" stroke-width="2.5"/>' +
+                    '<line x1="340" y1="105" x2="120" y2="172" stroke="#94a3b8" stroke-width="2"/>' +
+                    '<line x1="340" y1="105" x2="560" y2="38" stroke="#0284c7" stroke-width="2.5"/>' +
+                    '<line x1="560" y1="38" x2="560" y2="105" stroke="#94a3b8" stroke-width="2"/>' +
+                    '<line x1="560" y1="105" x2="560" y2="172" stroke="#f59e0b" stroke-width="2.5"/>' +
+                    '<g><rect x="35" y="18" width="170" height="40" rx="8" fill="#ffffff" stroke="#cbd5e1"/><text x="120" y="35" text-anchor="middle" font-size="10" fill="#64748b">호선 · 선종</text><text x="120" y="50" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">SN2511 · 174K LNGC</text></g>' +
+                    '<g><rect x="35" y="85" width="170" height="40" rx="8" fill="#f0f9ff" stroke="#0284c7"/><text x="120" y="102" text-anchor="middle" font-size="10" fill="#0369a1">자매선 그룹</text><text x="120" y="117" text-anchor="middle" font-size="12" font-weight="bold" fill="#0c4a6e">SN2510 · SN2512</text></g>' +
+                    '<g><rect x="35" y="152" width="170" height="40" rx="8" fill="#ffffff" stroke="#cbd5e1"/><text x="120" y="169" text-anchor="middle" font-size="10" fill="#64748b">소속 시스템</text><text x="120" y="184" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">주발전기 기관 계통</text></g>' +
+                    '<g><rect x="245" y="80" width="190" height="50" rx="10" fill="#1e3a5f"/><text x="340" y="101" text-anchor="middle" font-size="10" fill="#bae6fd">탑재 장비 (현재 조회)</text><text x="340" y="119" text-anchor="middle" font-size="13" font-weight="bold" fill="#ffffff">SN2511 발전기 No.2</text></g>' +
+                    '<g><rect x="470" y="18" width="180" height="40" rx="8" fill="#ffffff" stroke="#0284c7"/><text x="560" y="35" text-anchor="middle" font-size="10" fill="#0369a1">장비 모델</text><text x="560" y="50" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">6L 이중연료 발전엔진</text></g>' +
+                    '<g><rect x="470" y="85" width="180" height="40" rx="8" fill="#ffffff" stroke="#cbd5e1"/><text x="560" y="102" text-anchor="middle" font-size="10" fill="#64748b">동일 모델 탑재</text><text x="560" y="117" text-anchor="middle" font-size="12" font-weight="bold" fill="#0f172a">6대 (3개 호선)</text></g>' +
+                    '<g><rect x="470" y="152" width="180" height="40" rx="8" fill="#fef3c7" stroke="#f59e0b"/><text x="560" y="169" text-anchor="middle" font-size="10" fill="#b45309">주요 고장 원인 1위</text><text x="560" y="184" text-anchor="middle" font-size="12" font-weight="bold" fill="#78350f">연료분사밸브 불량 (3건)</text></g>' +
+                  '</svg>' +
+                '</div>' +
+                '<div class="p-4 rounded-xl bg-amber-50 border border-amber-200 text-xs sm:text-sm text-amber-950">' +
+                  '<b class="text-amber-900">⚠ 자매선 선행 사례 경보:</b> 자매선 <b>SN2510</b> 같은 위치(발전기 No.2)에서 2026-W30에 동일 증상(배기온도 +35℃ 편차)이 발생해 <b>연료분사밸브 어셈블리 교체</b>로 종결되었습니다 (CASE-0298).' +
+                '</div>' +
+              '</div>' +
+
+              // Right 6 Cols: 종결 사례 카드 목록 (증상 / 원인 / 조치 3칸)
+              '<div class="lg:col-span-6 bg-white border border-slate-200/90 rounded-2xl ' + d.cardPad + ' shadow-sm space-y-4">' +
+                '<div class="flex items-center justify-between">' +
+                  '<h3 class="text-sm sm:text-base font-bold text-slate-900">지식창고 종결 사례 카드 (' + state.caseCards.length + '건)</h3>' +
+                  '<span class="text-xs text-emerald-700 font-semibold">회의 종결 승인 시 자동 생성</span>' +
+                '</div>' +
+                '<div class="space-y-3">' +
+                  state.caseCards.map(function(c) {
+                    return (
+                      '<div class="p-4 rounded-xl border border-slate-200/90 bg-slate-50/40 space-y-2.5">' +
+                        '<div class="flex flex-wrap items-center justify-between gap-2 text-xs">' +
+                          '<div class="flex items-center gap-2">' +
+                            '<span class="font-mono-num font-bold px-2 py-0.5 rounded bg-sky-100 text-sky-900">' + escapeHtml(c.id) + '</span>' +
+                            '<span class="font-mono-num font-semibold text-slate-800">' + escapeHtml(c.hull) + ' · ' + escapeHtml(c.equip) + '</span>' +
+                          '</div>' +
+                          '<span class="text-slate-500 font-mono-num">' + escapeHtml(c.approvedWeek) + ' 종결 · ' + escapeHtml(c.dept) + ' · 조회 ' + c.views + '</span>' +
+                        '</div>' +
+                        '<div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs">' +
+                          '<div class="p-2.5 rounded-lg bg-white border border-slate-200"><b class="text-slate-500 block mb-0.5">증상</b>' + escapeHtml(c.symptom) + '</div>' +
+                          '<div class="p-2.5 rounded-lg bg-white border border-slate-200"><b class="text-amber-800 block mb-0.5">원인</b>' + escapeHtml(c.cause) + '</div>' +
+                          '<div class="p-2.5 rounded-lg bg-white border border-slate-200"><b class="text-emerald-800 block mb-0.5">조치</b>' + escapeHtml(c.action) + '</div>' +
+                        '</div>' +
+                      '</div>'
+                    );
+                  }).join('') +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      // =========================================================================
+      // MAIN RENDER FUNCTION & HEADER STATE
+      // =========================================================================
+      function updateHeaderNav() {
+        document.querySelectorAll('.main-nav-btn').forEach(function(btn) {
+          const tab = btn.getAttribute('data-main-nav');
+          if (tab === state.mainTab) {
+            btn.className = 'main-nav-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold transition flex items-center gap-1.5 whitespace-nowrap bg-white text-sky-800 shadow-sm border border-slate-200/80';
+          } else {
+            btn.className = 'main-nav-btn px-3.5 py-2 rounded-xl text-xs sm:text-sm font-semibold transition flex items-center gap-1.5 whitespace-nowrap text-slate-600 hover:text-slate-900';
+          }
+        });
+
+        const btnRel = document.getElementById('btn-density-relaxed');
+        const btnCmp = document.getElementById('btn-density-compact');
+        if (btnRel && btnCmp) {
+          const isRel = state.gridDensity !== 'compact';
+          btnRel.className = 'px-2.5 py-1.5 rounded-lg font-semibold transition ' + (isRel ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900');
+          btnCmp.className = 'px-2.5 py-1.5 rounded-lg font-semibold transition ' + (!isRel ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-900');
+        }
+
+        const badgeLedger = document.getElementById('nav-badge-ledger');
+        if (badgeLedger) badgeLedger.textContent = String(state.issues.length);
+      }
+
+      function renderApp() {
+        updateHeaderNav();
+        const viewport = document.getElementById('app-viewport');
+        if (!viewport) return;
+
+        if (state.mainTab === 'home') {
+          viewport.innerHTML = renderHomeScreen();
+        } else if (state.mainTab === 'ledger') {
+          viewport.innerHTML = renderLedgerScreen();
+        } else if (state.mainTab === 'meetings') {
+          viewport.innerHTML = renderMeetingsScreen();
+        } else if (state.mainTab === 'import') {
+          viewport.innerHTML = renderImportScreen();
+        } else if (state.mainTab === 'metrics') {
+          viewport.innerHTML = renderMetricsScreen();
+        } else {
+          viewport.innerHTML = renderKnowledgeScreen();
+        }
+      }
+
+      // =========================================================================
+      // EVENT LISTENERS
+      // =========================================================================
+      document.querySelectorAll('.main-nav-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          state.mainTab = btn.getAttribute('data-main-nav');
+          renderApp();
+        });
+      });
+
+      document.querySelectorAll('[data-set-density]').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          state.gridDensity = btn.getAttribute('data-set-density');
+          renderApp();
+        });
+      });
+
+      // Modal AI Memo
+      const modalAi = document.getElementById('modal-ai-memo');
+      function closeAiModal() {
+        modalAi.classList.add('hidden');
+        modalAi.classList.remove('flex');
+      }
+      document.getElementById('btn-open-ai-memo').addEventListener('click', function() {
+        modalAi.classList.remove('hidden');
+        modalAi.classList.add('flex');
+      });
+      document.getElementById('btn-close-ai-memo').addEventListener('click', closeAiModal);
+      document.getElementById('btn-cancel-ai-memo').addEventListener('click', closeAiModal);
+      document.getElementById('btn-confirm-ai-memo').addEventListener('click', function() {
+        const newId = 'PRB-2026-00' + (state.issues.length + 15);
+        state.issues.unshift({
+          id: newId,
+          type: 'problem',
+          typeLabel: '문제점',
+          status: '신규',
+          draftState: '초안 완료',
+          deptId: 'D3',
+          deptName: '시운전1부',
+          author: '김 과장',
+          hull: 'SN2511',
+          shipType: '174K LNGC',
+          milestone: '해상시운전 D-12',
+          sisterHull: 'SN2510',
+          equipmentRaw: '2511 급수펌프 No.1',
+          equipmentStd: '보일러 급수펌프 No.1 (EQ-SN2511-FP-01)',
+          modelName: '다단 원심 급수펌프',
+          component: '스러스트 베어링',
+          symptomCode: '베어링 온도 과열(+78℃)',
+          causeCode: '윤활유 라인 유량 부족 조사 중',
+          mappingScore: 5,
+          mappingTotal: 5,
+          important: true,
+          needsWeeklyUpdate: false,
+          adoptedIn: ['dept', 'share'],
+          slideForm: 'detail',
+          title: 'SN2511 보일러 급수펌프 No.1 베어링 온도 상승 (+78℃)',
+          phenomenon: '시운전 중 급수펌프 No.1 베어링 온도 78℃ 상승(기준 65℃ 이하).',
+          cause: '윤활유 오리피스 이물질 막힘 추정 — 스트레이너 개방 점검 중.',
+          actionPlan: '윤활유 라인 플러싱 완료 후 무부하/부하 온도 재측정 및 선주 입회 일정 조율.',
+          decisionNeeded: '선주 입회 일정 금요일 오후로 변경 협의',
+          weeklyUpdate: '방금 현장 메모 AI 정리로 원장 등록 및 별칭 자동 매핑 완료',
+          meetingLines: {
+            dept: '[신규] SN2511 급수펌프 No.1 베어링 +78℃ — 윤활유 라인 플러싱 및 선주 입회 재조율',
+            share: '[신규 · 결정필요] SN2511 보일러 급수펌프 베어링 과열 조치 및 선주 입회 일정 협의',
+            exec: '[신규] SN2511 급수펌프 베어링 온도 상승 점검 중 (금주 내 조치 완료)',
+            monthly: '보일러 급수펌프 초기 윤활유 플러싱 표준 점검 항목 반영',
+            hull: 'SN2511 급수펌프 No.1 플러싱 후 온도 확인'
+          },
+          evidenceLine: '메모 1행 "2511 보일러 급수펌프 No.1 시운전 중 베어링 온도 78도 상승"',
+          sisterPrecedent: '자매선 SN2510 시운전 초기 윤활유 스트레이너 미세 철분 검출 사례 1건 (CASE-0271)',
+          photoMarkers: [
+            { no: 1, label: '스러스트 베어링 하우징 온도 측정점', part: '스러스트 베어링' }
+          ],
+          scheduleGantt: [],
+          progressBars: [],
+          meetingComments: [],
+          lastSyncedNote: '방금 메모 AI 추출로 등록됨'
+        });
+        state.selectedIssueId = newId;
+        state.mainTab = 'ledger';
+        closeAiModal();
+        renderApp();
+        showToast('현장 메모 → 원장 이슈 등록 완료', newId + ' 보일러 급수펌프 건이 기준정보(SN2511)와 자동 매핑되어 추가되었습니다.', 'emerald');
+      });
+
+      // Projector Modal
+      const modalProj = document.getElementById('modal-projector');
+      function openProjector() {
+        const adopted = state.issues.filter(function(i){ return i.adoptedIn.indexOf(state.selectedMeeting) >= 0; });
+        const list = adopted.length ? adopted : state.issues;
+        state.projectorIdx = Math.min(state.projectorIdx, list.length - 1);
+        const cur = list[state.projectorIdx] || getSelectedIssue();
+        document.getElementById('projector-meeting-title').textContent = state.meetings[state.selectedMeeting].name;
+        document.getElementById('projector-page-indicator').textContent = (state.projectorIdx + 1) + ' / ' + list.length;
+        document.getElementById('projector-slide-body').innerHTML = renderLiveSlideHtml(cur, state.selectedMeeting);
+        modalProj.classList.remove('hidden');
+        modalProj.classList.add('flex');
+      }
+      function closeProjector() {
+        modalProj.classList.add('hidden');
+        modalProj.classList.remove('flex');
+      }
+      document.getElementById('btn-close-projector').addEventListener('click', closeProjector);
+      document.getElementById('btn-proj-prev').addEventListener('click', function() {
+        if (state.projectorIdx > 0) {
+          state.projectorIdx--;
+          openProjector();
+        }
+      });
+      document.getElementById('btn-proj-next').addEventListener('click', function() {
+        const adopted = state.issues.filter(function(i){ return i.adoptedIn.indexOf(state.selectedMeeting) >= 0; });
+        const list = adopted.length ? adopted : state.issues;
+        if (state.projectorIdx < list.length - 1) {
+          state.projectorIdx++;
+          openProjector();
+        }
+      });
+
+      // Download HTML button
+      document.getElementById('btn-download-html').addEventListener('click', function () {
+        const htmlContent = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+        const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'commissioning_v2_light_grid_full.html';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        showToast('HTML 전체 시안 다운로드 완료', 'commissioning_v2_light_grid_full.html 파일이 저장되었습니다.', 'emerald');
+      });
+
+      // Delegated clicks inside #app-viewport
+      document.getElementById('app-viewport').addEventListener('click', function (e) {
+        const goTab = e.target.closest('[data-go-tab]');
+        if (goTab) {
+          state.mainTab = goTab.getAttribute('data-go-tab');
+          renderApp();
+          return;
+        }
+
+        const homeDept = e.target.closest('[data-home-dept]');
+        if (homeDept) {
+          state.filterDept = homeDept.getAttribute('data-home-dept');
+          state.mainTab = 'ledger';
+          renderApp();
+          showToast('부서 필터 적용', '선택한 부서의 이슈 원장 목록으로 이동했습니다.', 'sky');
+          return;
+        }
+
+        const openMeetCard = e.target.closest('[data-open-meeting-card]');
+        if (openMeetCard) {
+          state.selectedMeeting = openMeetCard.getAttribute('data-open-meeting-card');
+          state.mainTab = 'meetings';
+          state.meetingSubTab = 'compose';
+          renderApp();
+          return;
+        }
+
+        const weeklySaveBtn = e.target.closest('[data-home-weekly-save]');
+        if (weeklySaveBtn) {
+          const id = weeklySaveBtn.getAttribute('data-home-weekly-save');
+          const inp = document.querySelector('[data-home-weekly-input="' + id + '"]');
+          const target = state.issues.find(function(x){ return x.id === id; });
+          if (inp && target) {
+            target.weeklyUpdate = inp.value;
+            target.needsWeeklyUpdate = false;
+            renderApp();
+            showToast('주간 한 줄 업데이트 저장', id + ' 건의 이번 주 진행 한 줄이 원장 이력에 기록되었습니다.', 'emerald');
+          }
+          return;
+        }
+
+        if (e.target.closest('#btn-home-submit-dept')) {
+          showToast('시운전1부 이번 주 회의자료 제출 완료', '미업데이트 0건 · 채택 4건이 부서 현안 공유회 후보로 등록되었습니다.', 'emerald');
+          return;
+        }
+
+        const adoptBtn = e.target.closest('[data-toggle-adopt]');
+        if (adoptBtn) {
+          e.stopPropagation();
+          const id = adoptBtn.getAttribute('data-toggle-adopt');
+          const target = state.issues.find(function (x) { return x.id === id; });
+          if (target) {
+            const idx = target.adoptedIn.indexOf(state.selectedMeeting);
+            const mName = state.meetings[state.selectedMeeting].name.split(' (')[0];
+            if (idx >= 0) {
+              target.adoptedIn.splice(idx, 1);
+              showToast('회의 채택 해제', id + ' 항목을 [' + mName + ']에서 제외했습니다. (원장 데이터는 유지)', 'amber');
+            } else {
+              target.adoptedIn.push(state.selectedMeeting);
+              showToast('회의자료 채택 완료', id + ' 항목이 [' + mName + ']에 참조로 연결되었습니다.', 'emerald');
+            }
+            renderApp();
+          }
+          return;
+        }
+
+        const issueRow = e.target.closest('[data-select-issue]');
+        if (issueRow && !e.target.closest('button') && !e.target.closest('input')) {
+          state.selectedIssueId = issueRow.getAttribute('data-select-issue');
+          state.slideFormatOverride = null;
+          renderApp();
+          return;
+        }
+
+        const hullBtn = e.target.closest('[data-filter-hull]');
+        if (hullBtn) {
+          state.filterHull = hullBtn.getAttribute('data-filter-hull');
+          state.filterDept = 'ALL';
+          renderApp();
+          return;
+        }
+
+        const statusBtn = e.target.closest('[data-filter-status]');
+        if (statusBtn) {
+          state.filterStatus = statusBtn.getAttribute('data-filter-status');
+          renderApp();
+          return;
+        }
+
+        const meetBtn = e.target.closest('[data-select-meeting]');
+        if (meetBtn) {
+          state.selectedMeeting = meetBtn.getAttribute('data-select-meeting');
+          state.slideFormatOverride = null;
+          renderApp();
+          return;
+        }
+
+        const attachBtn = e.target.closest('[data-ledger-attach]');
+        if (attachBtn) {
+          state.ledgerAttachTab = attachBtn.getAttribute('data-ledger-attach');
+          renderApp();
+          return;
+        }
+
+        const slideFormBtn = e.target.closest('[data-slide-form]');
+        if (slideFormBtn) {
+          state.slideFormatOverride = slideFormBtn.getAttribute('data-slide-form');
+          renderApp();
+          return;
+        }
+
+        const meetSubBtn = e.target.closest('[data-meeting-sub]');
+        if (meetSubBtn) {
+          state.meetingSubTab = meetSubBtn.getAttribute('data-meeting-sub');
+          renderApp();
+          return;
+        }
+
+        const moveUp = e.target.closest('[data-move-up]');
+        if (moveUp) {
+          e.stopPropagation();
+          const id = moveUp.getAttribute('data-move-up');
+          const idx = state.issues.findIndex(function(x){ return x.id === id; });
+          if (idx > 0) {
+            const tmp = state.issues[idx - 1];
+            state.issues[idx - 1] = state.issues[idx];
+            state.issues[idx] = tmp;
+            renderApp();
+          }
+          return;
+        }
+
+        const moveDown = e.target.closest('[data-move-down]');
+        if (moveDown) {
+          e.stopPropagation();
+          const id = moveDown.getAttribute('data-move-down');
+          const idx = state.issues.findIndex(function(x){ return x.id === id; });
+          if (idx >= 0 && idx < state.issues.length - 1) {
+            const tmp = state.issues[idx + 1];
+            state.issues[idx + 1] = state.issues[idx];
+            state.issues[idx] = tmp;
+            renderApp();
+          }
+          return;
+        }
+
+        if (e.target.closest('#btn-combine-summary')) {
+          showToast('✨ 여러 이슈 한 장으로 요약 완료', '채택된 발전기·카고펌프 안건의 공통 표현 요약 슬라이드가 생성되었습니다. (각 이슈의 사실은 원장에 개별 유지)', 'emerald');
+          return;
+        }
+
+        if (e.target.closest('#btn-save-fact')) {
+          const cur = getSelectedIssue();
+          const inpAction = document.getElementById('input-fact-action');
+          const inpCause = document.getElementById('input-fact-cause');
+          const inpDecide = document.getElementById('input-fact-decide');
+          if (cur && inpAction) {
+            cur.actionPlan = inpAction.value;
+            if (inpCause) cur.cause = inpCause.value;
+            if (inpDecide) cur.decisionNeeded = inpDecide.value;
+            renderApp();
+            showToast('● 원장 사실 역반영(Fact Sync) 완료', cur.id + '의 사실 항목이 원장과 모든 채택 회의자료 슬라이드에 즉시 동기화되었습니다.', 'emerald');
+          }
+          return;
+        }
+
+        if (e.target.closest('#btn-save-expr')) {
+          const cur = getSelectedIssue();
+          const inpExpr = document.getElementById('input-expr-line');
+          if (cur && inpExpr) {
+            cur.meetingLines[state.selectedMeeting] = inpExpr.value;
+            renderApp();
+            showToast('○ 회의별 표현 저장 완료', '[' + state.meetings[state.selectedMeeting].name.split(' (')[0] + '] 전용 한 줄 표현이 저장되었습니다.', 'sky');
+          }
+          return;
+        }
+
+        if (e.target.closest('#btn-open-projector')) {
+          openProjector();
+          return;
+        }
+
+        if (e.target.closest('#btn-export-pptx')) {
+          showToast('편집 가능한 PPTX 내보내기 준비 완료', '현재 구성된 슬라이드 배치 그대로 텍스트 상자·PowerPoint 표·마커 합성 이미지가 담긴 .pptx를 생성합니다.', 'emerald');
+          return;
+        }
+
+        const approveBtn = e.target.closest('[data-approve-close]');
+        if (approveBtn) {
+          const id = approveBtn.getAttribute('data-approve-close');
+          const target = state.issues.find(function(x){ return x.id === id; });
+          if (target) {
+            target.status = '종결 (CASE-0391)';
+            state.caseCards.unshift({
+              id: 'CASE-0391',
+              hull: target.hull,
+              shipType: target.shipType,
+              equip: target.equipmentStd,
+              model: target.modelName,
+              approvedWeek: '2026-W43',
+              dept: target.deptName,
+              symptom: target.phenomenon,
+              cause: target.cause,
+              action: target.actionPlan,
+              views: 1
+            });
+            renderApp();
+            showToast('종결 승인 · 지식창고 사례 카드 승격 완료', id + ' 건이 CASE-0391 사례 카드로 지식창고에 등재되었습니다.', 'emerald');
+          }
+          return;
+        }
+
+        if (e.target.closest('#btn-save-run-decision')) {
+          const inp = document.getElementById('input-run-decision');
+          const cur = getSelectedIssue();
+          if (inp && inp.value.trim() && cur) {
+            cur.meetingComments.push({ author: '회의 의결', meeting: state.meetings[state.selectedMeeting].name.split(' (')[0], text: '[결정] ' + inp.value.trim() });
+            cur.decisionNeeded = '';
+            renderApp();
+            showToast('회의 결정 기록 완료', '결정 필요 칸이 비워지고 이슈 원장 이력에 의결 내용이 남았습니다.', 'emerald');
+          }
+          return;
+        }
+
+        if (e.target.closest('#btn-save-run-comment')) {
+          const inp = document.getElementById('input-run-comment');
+          const cur = getSelectedIssue();
+          if (inp && inp.value.trim() && cur) {
+            cur.meetingComments.push({ author: '박 팀장', meeting: state.meetings[state.selectedMeeting].name.split(' (')[0], text: inp.value.trim() });
+            renderApp();
+            showToast('회의 코멘트 저장 완료', cur.id + ' 원장 이력에 회의 코멘트가 추가되었습니다.', 'emerald');
+          }
+          return;
+        }
+
+        const impCard = e.target.closest('[data-select-import]');
+        if (impCard) {
+          state.selectedImportSlideId = impCard.getAttribute('data-select-import');
+          renderApp();
+          return;
+        }
+
+        const impDec = e.target.closest('[data-import-decision]');
+        if (impDec) {
+          const curSl = state.importSlides.find(function(s){ return s.id === state.selectedImportSlideId; });
+          if (curSl) {
+            curSl.decisionState = impDec.getAttribute('data-import-decision');
+            renderApp();
+          }
+          return;
+        }
+
+        if (e.target.closest('#btn-apply-import')) {
+          state.importSlides.forEach(function(sl){ sl.applied = true; });
+          const linked = state.issues.find(function(x){ return x.id === 'ISS-2026-0001'; });
+          if (linked) {
+            linked.actionPlan = '10/23(금) 신품 밸브 교체 완료 후 10/25 해상시운전 부하시험 입회 확정 (외부 PPT SL-01에서 반영됨)';
+          }
+          renderApp();
+          showToast('외부 자료 원장 반영 완료', 'SL-01은 ISS-2026-0001에 사실 역반영, SL-02는 새 이슈로 등록, SL-03은 건너뛰었습니다.', 'emerald');
+          return;
+        }
+
+        if (e.target.closest('#btn-simulate-upload')) {
+          showToast('외부 파일 파싱 준비됨', '.pptx 및 .html 파일의 장별 텍스트·표·근거 영역을 추출해 원장 후보와 대조합니다.', 'sky');
+          return;
+        }
+
+        if (e.target.closest('#btn-save-metrics')) {
+          document.querySelectorAll('[data-metric-input]').forEach(function(inp) {
+            const mId = inp.getAttribute('data-metric-input');
+            const m = state.weeklyMetrics.find(function(x){ return x.id === mId; });
+            if (m) m.history[m.history.length - 1] = Number(inp.value);
+          });
+          renderApp();
+          showToast('이번 주 지표 저장 완료', '평소 범위 판정과 6주 추이가 갱신되었습니다.', 'emerald');
+          return;
+        }
+
+        if (e.target.closest('#btn-ask-knowledge')) {
+          const qInp = document.getElementById('input-knowledge-query');
+          if (qInp) state.knowledgeQuery = qInp.value;
+          renderApp();
+          showToast('지식창고 근거 검색 완료', '관련 종결 사례 3건(CASE-0298, CASE-0311, CASE-0352)을 인용해 요약했습니다.', 'emerald');
+          return;
+        }
+      });
+
+      // Initial render
+      renderApp();
+    })();
+  </script>
+</body>
+</html>

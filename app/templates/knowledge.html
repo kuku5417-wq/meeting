@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}지식창고{% if params.q %} · {{ params.q }}{% endif %} · {{ app_title }}{% endblock %}
+{% macro case_card(d, v) %}
+  <a class="case" href="{{ qs(case=d.key) }}#detail"{% if params.case == d.key %} aria-current="true"{% endif %}>
+    <div class="row"><span class="pill p-ok">종결 사례</span><span class="id">{{ d.key }}</span><strong class="grow">{{ d.title }}</strong></div>
+    <div class="triple">
+      <div><b>증상</b>{{ d.obj.symptom_text }}</div>
+      <div><b>원인</b>{{ d.obj.cause_text }}</div>
+      <div><b>조치</b>{{ d.obj.action_text }}</div>
+    </div>
+    <span class="src">{{ v.first_week }} ~ {{ d.obj.approved_week_id }} · {{ v.dept_path | join(" → ") }}{% if v.dept_path | length > 1 %} 이관{% endif %}{% if v.photos %} · 사진 {{ v.photos }}{% endif %}</span>
+  </a>
+{% endmacro %}
+{% block content %}
+<div class="stack">
+  <form class="search" method="get" action="/knowledge" role="search">
+    <label for="q" class="sr">지식창고 검색</label>
+    <input type="text" id="q" name="q" value="{{ params.q }}" placeholder="LNGC 발전기 배기온도 편차, 과거에 어떻게 조치했나?">
+    {% for k, v in filters.items() if v %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+    <button class="btn" type="submit" name="ask" value="">찾기</button>
+    <button class="btn primary" type="submit" name="ask" value="1" title="AI 가 찾은 사례만 근거로 답합니다 — 사례 번호를 반드시 인용, 근거가 없으면 답하지 않음">질문하기</button>
+  </form>
+
+  <nav class="lib" aria-label="지식 종류">
+    {% for k, lab in kinds.items() %}<a href="{{ qs(kind=k, case='') }}"{% if res.kind == k %} aria-current="true"{% endif %}>{{ lab }}<span class="c">{{ res.counts[k] }}</span></a>{% endfor %}
+  </nav>
+
+  <div class="kgrid{% if detail %} with-detail{% endif %}">
+    <aside class="facets" aria-label="필터">
+      {% for key, lab in facet_keys %}
+      <div class="facet"><h3>{{ lab }}</h3>
+        {% for val, n in res.facets[key] %}
+          <a href="{{ qs(**{key: ('' if filters[key] == val else val), 'case': ''}) }}"{% if filters[key] == val %} aria-current="true"{% endif %}>{{ val }}<span class="c">{{ n }}</span></a>
+        {% else %}<span class="muted small">—</span>{% endfor %}
+      </div>
+      {% endfor %}
+      <div class="facet"><h3>기간</h3>
+        {% for k, lab in periods.items() %}<a href="{{ qs(period=k, case='') }}"{% if params.period == k %} aria-current="true"{% endif %}>{{ lab }}</a>{% endfor %}
+      </div>
+    </aside>
+
+    <div class="kmain">
+      {% if ans %}
+      <div class="answer" aria-live="polite">
+        {% if ans.ok %}
+          <p class="eyebrow ac">AI 요약 · 사례 {{ ans.citations | length }}건 근거</p>
+          <p>{{ ans.text }}</p>
+          <p class="cites">{% for c in ans.citations %}<a class="cite" href="{{ qs(case=c) }}#detail">{{ c }}</a>{% endfor %}</p>
+        {% else %}
+          <p class="eyebrow">AI 요약</p>
+          <p class="muted">{{ ans.problem }}</p>
+        {% endif %}
+      </div>
+      {% endif %}
+
+      <div class="results">
+        {% for d in res.results %}
+          {% if d.kind == "case" %}{{ case_card(d, case_views[d.key]) }}
+          {% elif d.kind == "share" %}
+          <div class="case share">
+            <div class="row"><span class="pill p-share">공유정보</span><span class="id">{{ d.key }}</span><strong class="grow">{{ d.title }}</strong></div>
+            <p class="small">{{ d.obj.body }}</p>
+            <span class="src">{{ d.facets.week }} · {{ d.facets.dept }}{% if d.obj.valid_until %} · {{ d.obj.valid_until }}까지{% endif %}</span>
+          </div>
+          {% else %}
+          <div class="case photo-hit">
+            <img src="/photos/{{ d.extra.photo_id }}/render?block={{ d.extra.block.id }}&w=240" alt="{{ d.title }}" width="120">
+            <div><div class="row"><span class="pill p-neutral">사진</span><strong>{{ d.title }}</strong></div>
+              <p class="small">{{ d.extra.no }}. {{ d.obj.label or "설명 없음" }}{% if d.extra.comp %} · <b>{{ d.extra.comp.name }}</b>{% endif %}</p>
+              <span class="src">{{ d.facets.hull or "" }} · {{ d.facets.dept }}</span></div>
+          </div>
+          {% endif %}
+        {% else %}
+          <section class="panel empty"><p class="muted">{% if params.q or filters.values() | select | list %}조건에 맞는 지식이 없습니다. 낱말을 줄이거나 필터를 풀어보세요.{% else %}아직 쌓인 지식이 없습니다. 회의에서 종결 승인된 이슈·문제점이 사례로 쌓입니다.{% endif %}</p></section>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if detail %}
+    <aside class="panel detail" id="detail" aria-labelledby="dtH">
+      <div class="panel-h"><h2 id="dtH">{{ detail.c.id }} 이력</h2><a class="small" href="{{ qs(case='') }}">닫기</a></div>
+      <p><b>{{ detail.b.title }}</b></p>
+      {% if detail.eq %}<p class="small"><a href="/hub/equipment/{{ detail.eq.id }}">{{ detail.eq.hull_id }} {{ detail.eq.name }} 장비 허브 →</a></p>{% endif %}
+      <ol class="timeline">
+        {% for h in detail.history %}<li><span class="w">{{ h.week_id }}</span><span class="dot"></span><span>{{ h.status }}{% if h.note %} · {{ h.note }}{% endif %}</span></li>{% endfor %}
+      </ol>
+      {% if detail.similar %}
+      <p class="eyebrow">비슷한 사례</p>
+      {% for x in detail.similar %}<p class="small"><a href="{{ qs(case=x.c.id) }}#detail">{{ x.c.id }}</a> {{ x.c.symptom_text }} · {{ x.c.cause_text }}{% if x.why %} <span class="muted">({{ x.why | join(", ") }})</span>{% endif %}</p>{% endfor %}
+      {% endif %}
+    </aside>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

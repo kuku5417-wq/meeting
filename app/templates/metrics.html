@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}{{ dept_name }} 지표 · {{ app_title }}{% endblock %}
+{% block content %}
+{# 지표(F16, 2026-10-23) — 주간 지표(이번 주만 입력·6주 추이·평소 범위 이탈·차이 사유·숨기기·순서) + 기간 표(행 × 날짜 × 계획/실적, 행 이름 자유).
+   값은 블록 없이 (지표, 주차) 에 쌓인다. 회의자료에는 스튜디오에서 「지표 요약」 장으로 넣는다 #}
+<div class="v-ph">
+  <div><h1>지표 — {{ dept_name }}</h1><span class="mono muted small">{{ week.label }}</span></div>
+  <div class="row">
+    <a class="btn sm" href="?week={{ prev_week }}" aria-label="이전 주">◀ {{ prev_week[-3:] }}</a>
+    <a class="btn sm" href="?week={{ next_week }}" aria-label="다음 주">{{ next_week[-3:] }} ▶</a>
+    <label class="sr" for="mdept">부서</label>
+    <select id="mdept" onchange="location.href='/metrics/' + this.value + '?week={{ week.id }}'">{% for d in depts %}<option value="{{ d.id }}"{% if d.id == dept_id %} selected{% endif %}>{{ d.name }}</option>{% endfor %}</select>
+  </div>
+</div>
+{% if msg %}<p class="flash ok" role="status">{{ msg }}</p>{% endif %}
+{% if err %}<p class="flash bad" role="alert">{{ err }}</p>{% endif %}
+
+<section class="panel" id="weekly" aria-labelledby="wkH">
+  <div class="panel-h"><h2 id="wkH">주간 지표</h2><span class="small muted">이번 주 칸만 넣습니다 · 평소 범위를 벗어나면 차이 사유를 한 줄</span></div>
+  <div class="dash" data-week="{{ week.id }}">
+  {% if metrics %}
+  <form method="post" action="/metrics/{{ dept_id }}/values" class="dash-split">
+    <input type="hidden" name="week" value="{{ week.id }}"><input type="hidden" name="week_id" value="{{ week.id }}">
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>지표</th><th>{{ week.id[-3:] }} 값</th><th>단위</th><th>{{ metrics[0].weeks | length }}주 추이</th><th>코멘트 · 차이 사유</th><th><span class="sr">순서</span></th></tr></thead>
+        <tbody>
+        {% for mv in metrics %}
+          <tr data-metric="{{ mv.d.id }}" data-series="{{ mv.series[:-1] | tojson | forceescape }}" data-low="{{ mv.low if mv.low is not none else '' }}" data-high="{{ mv.high if mv.high is not none else '' }}" data-src="{{ mv.range_src }}" data-labels="{{ mv.extra.labels | tojson | forceescape }}">
+            <td><button type="button" class="linkish" data-show-bar="{{ mv.d.id }}" title="막대 그래프 보기">{{ mv.d.name }} <span class="gr" aria-hidden="true">그래프</span></button>
+              <span class="pill p-problem flag"{% if not mv.flag %} hidden{% endif %}>{% if mv.flag %}평소보다 {{ mv.flag }}{% endif %}</span>
+              <span class="pill p-issue needs"{% if not mv.needs_note %} hidden{% endif %}>사유를 적어주세요</span></td>
+            <td><label class="sr" for="v-{{ mv.d.id }}">{{ mv.d.name }} 값</label><input id="v-{{ mv.d.id }}" class="num-in" type="number" step="any" name="v_{{ mv.d.id }}" value="{{ '%g' % mv.value if mv.value is not none else '' }}"></td>
+            <td>{{ mv.d.unit }}</td>
+            <td class="spark-cell">{{ mv.spark | safe }}</td>
+            <td><label class="sr" for="c-{{ mv.d.id }}">{{ mv.d.name }} 코멘트</label><input id="c-{{ mv.d.id }}" class="cm" type="text" name="c_{{ mv.d.id }}" maxlength="500" value="{{ mv.comment }}" placeholder="{{ '차이 사유' if mv.flag else '' }}"></td>
+            <td class="mv-ord"><button class="btn sm" type="submit" formaction="/metric-defs/{{ mv.d.id }}/move" name="step" value="-1" aria-label="{{ mv.d.name }} 위로"{% if loop.first %} disabled{% endif %}>▲</button><button class="btn sm" type="submit" formaction="/metric-defs/{{ mv.d.id }}/move" name="step" value="1" aria-label="{{ mv.d.name }} 아래로"{% if loop.last %} disabled{% endif %}>▼</button></td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <div>
+      {% for mv in metrics %}
+      <div class="bar-box" data-bar="{{ mv.d.id }}"{% if not loop.first %} hidden{% endif %}>
+        <p class="eyebrow">{{ mv.d.name }} · 주차별{% if mv.range_src %} <span class="muted">(초록 띠 = 평소 범위, {{ mv.range_src }})</span>{% endif %}</p>
+        <div class="bar-svg">{{ mv.bar | safe }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    <div class="row"><button class="btn primary sm" type="submit">지표 저장</button><span class="muted small">값을 바꾸면 추이·차트가 바로 바뀌고, 저장하면 주차별로 쌓입니다</span></div>
+  </form>
+  {% else %}
+  <p class="muted small">보이는 지표가 없습니다. 아래에서 추가하거나, 메모에 숫자를 적고 AI 정리를 하면 만들어집니다.</p>
+  {% endif %}
+  <form method="post" action="/metrics/{{ dept_id }}/defs" class="mdef-row mdef-add">
+    <input type="hidden" name="week" value="{{ week.id }}">
+    <b class="small">+ 지표 추가</b>
+    <label class="sr" for="nm-new">새 지표 이름</label><input id="nm-new" name="name" type="text" placeholder="새 지표 이름" required>
+    <label class="sr" for="nu-new">단위</label><input id="nu-new" name="unit" type="text" placeholder="단위">
+    <label class="sr" for="nl-new">평소 하한</label><input id="nl-new" name="low" type="number" step="any" placeholder="평소 하한">
+    <label class="sr" for="nh-new">평소 상한</label><input id="nh-new" name="high" type="number" step="any" placeholder="평소 상한">
+    <button class="btn sm" type="submit">지표 추가</button>
+  </form>
+  {% if metrics or hidden %}
+  <details class="hist mdefs" id="manage"><summary>지표 관리 · 평소 범위·숨기기·지우기</summary>
+    {% for mv in metrics %}
+    <form method="post" action="/metric-defs/{{ mv.d.id }}/update" class="mdef-row">
+      <input type="hidden" name="week_id" value="{{ week.id }}">
+      <span>{{ mv.d.name }}</span>
+      <label class="sr" for="u-{{ mv.d.id }}">단위</label><input id="u-{{ mv.d.id }}" name="unit" value="{{ mv.d.unit }}" placeholder="단위">
+      <label class="sr" for="lo-{{ mv.d.id }}">평소 하한</label><input id="lo-{{ mv.d.id }}" name="low" type="number" step="any" value="{{ '%g' % mv.d.normal_low if mv.d.normal_low is not none else '' }}" placeholder="하한">
+      <label class="sr" for="hi-{{ mv.d.id }}">평소 상한</label><input id="hi-{{ mv.d.id }}" name="high" type="number" step="any" value="{{ '%g' % mv.d.normal_high if mv.d.normal_high is not none else '' }}" placeholder="상한">
+      <button class="btn sm" type="submit">저장</button>
+      <button class="btn sm" type="submit" formaction="/metric-defs/{{ mv.d.id }}/hide" name="hidden" value="1">숨기기</button>
+      <button class="btn sm" type="submit" formaction="/metric-defs/{{ mv.d.id }}/delete">지우기</button>
+    </form>
+    {% endfor %}
+    {% for d in hidden %}
+    <form method="post" action="/metric-defs/{{ d.id }}/hide" class="mdef-row"><input type="hidden" name="week_id" value="{{ week.id }}"><input type="hidden" name="hidden" value="0">
+      <span class="muted">{{ d.name }} (숨김)</span><button class="btn sm" type="submit">다시 보이기</button></form>
+    {% endfor %}
+    <p class="muted small">평소 범위를 비워 두면 최근 {{ range_weeks }}주 값(3주 이상 있을 때)의 평균 ± 2σ 로 판단합니다(기간은 설정 화면). 값이 쌓인 지표는 지우지 못하고 숨깁니다.</p>
+  </details>
+  {% endif %}
+  </div>
+</section>
+
+<section class="panel" id="tables" aria-labelledby="tbH">
+  <div class="panel-h"><h2 id="tbH">기간 표</h2><span class="small muted">특근 인원처럼 날짜별 계획·실적 — 행 이름은 표마다 자유(1과·2과, 호선, 작업조…)</span></div>
+  {% for tv in tables %}{% set t = tv.t %}
+  <form method="post" action="/metric-tables/{{ t.id }}/cells" class="ptable" id="t{{ t.id }}">
+    <input type="hidden" name="week" value="{{ week.id }}">
+    <div class="row"><b>{{ t.name }}</b><span class="small muted">{{ t.start_date.strftime('%m/%d') }}–{{ t.end_date.strftime('%m/%d') }}{% if t.unit %} · {{ t.unit }}{% endif %} · 계획 {{ '%g' % tv.plan }} · 실적 {{ '%g' % tv.actual }}</span></div>
+    <div class="tablewrap"><table class="pt">
+      <thead><tr><th>행</th>{% for d in tv.days %}<th class="pt-d">{{ d.strftime('%m/%d') }}<br><span class="small muted">{{ '월화수목금토일'[d.weekday()] }}</span></th>{% endfor %}<th>계획</th><th>실적</th><th>차이</th><th>차이 사유</th></tr></thead>
+      <tbody>
+      {% for r in tv.rows %}
+        <tr data-prow>
+          <th scope="row">{{ r.name }}</th>
+          {% for c in r.cells %}<td class="pt-c"><label class="sr" for="p{{ t.id }}-{{ r.i }}-{{ c.key }}">{{ r.name }} {{ c.day.strftime('%m/%d') }} 계획</label><input id="p{{ t.id }}-{{ r.i }}-{{ c.key }}" class="pt-in" data-p type="number" step="any" name="p_{{ r.i }}_{{ c.key }}" value="{{ '%g' % c.plan if c.plan is not none else '' }}" placeholder="계획"><label class="sr" for="a{{ t.id }}-{{ r.i }}-{{ c.key }}">{{ r.name }} {{ c.day.strftime('%m/%d') }} 실적</label><input id="a{{ t.id }}-{{ r.i }}-{{ c.key }}" class="pt-in{% if c.diff %} off{% endif %}" data-a type="number" step="any" name="a_{{ r.i }}_{{ c.key }}" value="{{ '%g' % c.actual if c.actual is not none else '' }}" placeholder="실적"></td>{% endfor %}
+          <td class="pt-n" data-sp>{{ '%g' % r.plan if r.plan is not none else '' }}</td><td class="pt-n" data-sa>{{ '%g' % r.actual if r.actual is not none else '' }}</td>
+          <td class="pt-n{% if r.diff %} v-late{% endif %}" data-sd>{{ ('%+g' % r.diff) if r.diff else '' }}</td>
+          <td><label class="sr" for="n{{ t.id }}-{{ r.i }}">{{ r.name }} 차이 사유</label><input id="n{{ t.id }}-{{ r.i }}" type="text" name="n_{{ r.i }}" maxlength="300" value="{{ r.note }}" placeholder="{{ '사유를 적어주세요' if r.needs_note else '' }}"{% if r.needs_note %} class="needs-in"{% endif %}></td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table></div>
+    <div class="row"><button class="btn primary sm" type="submit">{{ t.name }} 저장</button><span class="small muted">위 칸 = 계획, 아래 칸 = 실적. 계획과 실적이 다르면 그 행에 차이 사유를 적어주세요</span></div>
+  </form>
+  <details class="hist"><summary>{{ t.name }} — 이름·기간·행 고치기 · 숨기기 · 지우기</summary>
+    <form method="post" action="/metric-tables/{{ t.id }}/update" class="ptable-edit">
+      <input type="hidden" name="week" value="{{ week.id }}">
+      <label class="f">이름<input name="name" value="{{ t.name }}" required></label><label class="f">단위<input name="unit" value="{{ t.unit }}"></label>
+      <label class="f">시작일<input name="start" type="date" value="{{ t.start_date }}"></label><label class="f">끝날<input name="end" type="date" value="{{ t.end_date }}"></label>
+      <label class="f">행(한 줄에 하나)<textarea name="rows" rows="3">{{ tv.rows | map(attribute='name') | join('\n') }}</textarea></label>
+      <div class="row"><button class="btn sm" type="submit">고치기</button>
+        <button class="btn sm" type="submit" formaction="/metric-tables/{{ t.id }}/hide" name="hidden" value="1">숨기기</button>
+        <button class="btn sm" type="submit" formaction="/metric-tables/{{ t.id }}/delete">지우기</button></div>
+    </form>
+  </details>
+  {% else %}
+  <p class="muted small">기간 표가 없습니다.</p>
+  {% endfor %}
+  {% for t in hidden_tables %}<form method="post" action="/metric-tables/{{ t.id }}/hide" class="mdef-row"><input type="hidden" name="week" value="{{ week.id }}"><input type="hidden" name="hidden" value="0"><span class="muted">{{ t.name }} (숨김)</span><button class="btn sm" type="submit">다시 보이기</button></form>{% endfor %}
+  <details class="hist"><summary>+ 기간 표 만들기</summary>
+    <form method="post" action="/metrics/{{ dept_id }}/tables" class="ptable-edit">
+      <input type="hidden" name="week" value="{{ week.id }}">
+      <label class="f">이름<input name="name" placeholder="특근 인원" required></label><label class="f">단위<input name="unit" placeholder="명"></label>
+      <label class="f">시작일<input name="start" type="date" value="{{ week.start }}" required></label><label class="f">끝날<input name="end" type="date" value="{{ week.end }}" required></label>
+      <label class="f">행(한 줄에 하나 — 1과·2과, 호선, 작업조…)<textarea name="rows" rows="3" placeholder="1과&#10;2과&#10;3과" required></textarea></label>
+      <div class="row"><button class="btn primary sm" type="submit">만들기</button><span class="small muted">기간 {{ 62 }}일 · 행 20개까지</span></div>
+    </form>
+  </details>
+</section>
+<script type="module" src="{{ url_for('static', path='js/metrics.js') }}?v={{ asset_v }}"></script>
+{% endblock %}

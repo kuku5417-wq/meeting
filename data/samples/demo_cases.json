@@ -1,0 +1,26 @@
+{
+  "_설명": "가상 과거 사례 — design/mockups 의 지식창고(C)·장비 허브(D) 예시와 같은 내용. 개발·시연용이며 실제 회사 데이터가 아니다. scripts/seed_demo.py 가 넣는다(다시 실행해도 중복 없음).",
+  "cases": [
+    {"block_id": "ISS-2025-0298", "case_id": "CASE-0298", "title": "SN2510 발전기 No.2 배기온도 편차", "eq": "EQ-SN2510-GE-02",
+     "dept": "D3", "created_week": "2026-W27", "approved_week": "2026-W30",
+     "symptom_text": "배기온도 편차 +35℃", "symptom_code": "SY-EXH-DEV",
+     "cause_text": "분사밸브 노즐 마모", "cause_code": "CA-INJ", "action_text": "연료분사밸브 교체 후 부하시험 정상"},
+    {"block_id": "ISS-2025-0311", "case_id": "CASE-0311", "title": "SN2433 발전기 No.1 배기온도 편차", "eq": "EQ-SN2433-GE-01",
+     "dept": "D3", "transfer_to": "D5", "created_week": "2025-W38", "approved_week": "2025-W42",
+     "symptom_text": "4번 실린더 +42℃", "symptom_code": "SY-EXH-DEV",
+     "cause_text": "연료분사밸브 노즐 마모", "cause_code": "CA-INJ", "action_text": "밸브 교체, 부하시험 정상"},
+    {"block_id": "ISS-2025-0287", "case_id": "CASE-0287", "title": "SN2402 발전기 No.3 배기온도 불균형", "eq": "EQ-SN2402-GE-03",
+     "dept": "D3", "created_week": "2025-W11", "approved_week": "2025-W13",
+     "symptom_text": "2·5번 실린더 편차", "symptom_code": "SY-EXH-DEV",
+     "cause_text": "분사밸브 개방압 저하", "cause_code": "CA-INJ", "action_text": "밸브 2개 교체"},
+    {"block_id": "ISS-2025-0352", "case_id": "CASE-0352", "title": "SN2433 발전기 No.2 배기온도 단일 실린더 이상", "eq": "EQ-SN2433-GE-02",
+     "dept": "D6", "created_week": "2025-W45", "approved_week": "2025-W45",
+     "symptom_text": "1번 실린더만 지시값 튐", "symptom_code": "SY-TEMP",
+     "cause_text": "열전대 센서 오차", "cause_code": "CA-SENSOR", "action_text": "센서 교체"}
+  ],
+  "open": [
+    {"block_id": "ISS-2026-0120", "title": "SN2512 발전기 No.1 기동 실패", "eq": "EQ-SN2512-GE-01", "dept": "D3",
+     "created_week": "2026-W40", "symptom_text": "기동 실패", "symptom_code": "SY-START",
+     "cause_text": "연료 필터 막힘", "cause_code": "CA-FILTER"}
+  ]
+}

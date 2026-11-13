@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 이슈 작업대 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="../tokens.css">
+<link rel="stylesheet" href="v2.css">
+<style>
+/* 이슈 작업대: 왼쪽 원장 목록(필터·업데이트 필요·한 줄 입력) · 가운데 이슈 하나(기록·매핑) 또는 메모 입력 · 오른쪽 이 이슈의 쓰임(회의·사례·이력)
+   2026-10-21: 메모 입력은 「+ 메모로 만들기」로 접음, 저장 줄 바닥 고정, 「업데이트 필요」 탭 */
+.desk{display:grid;grid-template-columns:330px minmax(0,1fr) 300px;gap:14px;align-items:start}
+.issue-h{display:grid;gap:8px}
+.issue-h .title{font-family:var(--display);font-size:var(--fs-4);font-weight:700;border:1px solid transparent;border-radius:6px;padding:4px 6px;background:none;width:100%}
+.issue-h .title:hover,.issue-h .title:focus{border-color:var(--field-line);background:var(--bg)}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.mapgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.mapcell{border:1px solid var(--line);border-radius:6px;padding:8px;display:grid;gap:4px;font-size:var(--fs-2)}
+.mapcell .k{font-size:var(--fs-1);color:var(--muted);font-weight:600}
+.mapcell.ok{border-color:var(--ok)} .mapcell.todo{border-color:var(--signal);background:var(--signal-soft)} .mapcell.unreg{border-style:dashed}
+.att{display:flex;gap:8px;flex-wrap:wrap}
+.att .ph{width:150px;aspect-ratio:4/3;border-radius:6px;background:var(--photo-bg);position:relative;display:grid;place-items:end start;padding:4px;font-size:var(--fs-1);color:var(--slide-fg)}
+.att .ph .mk{position:absolute;width:20px;height:20px;border-radius:50%;background:#d4402a;color:#fff;font-size:var(--fs-1);display:grid;place-items:center;border:2px solid #fff}
+.att .add{width:150px;aspect-ratio:4/3;border:1px dashed var(--field-line);border-radius:6px;display:grid;place-items:center;color:var(--muted);font-size:var(--fs-1);text-align:center}
+.tl{list-style:none;margin:0;padding:0;display:grid;gap:6px;font-size:var(--fs-2)}
+.tl li{display:grid;grid-template-columns:70px minmax(0,1fr);gap:8px}
+.tl .w{font-family:var(--mono);font-size:var(--fs-1);color:var(--muted)}
+.used{display:grid;gap:6px}
+.used a{display:grid;gap:2px;padding:8px;border:1px solid var(--line);border-radius:6px;text-decoration:none;color:inherit;font-size:var(--fs-2)}
+.newbar{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;align-items:start}
+.newbar textarea{min-height:44px;font-family:var(--mono);font-size:var(--fs-2)}
+.cand{display:grid;gap:6px;border-top:1px dashed var(--line);padding-top:8px}
+.decision{color:var(--decide)}
+.decision input{border-color:var(--decide);background:var(--decide-soft)}
+.tabs{display:flex;gap:2px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tabs button{font:inherit;font-size:var(--fs-2);font-weight:600;border:0;border-bottom:2px solid transparent;background:none;color:var(--muted);padding:6px 10px;cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--accent);border-bottom-color:var(--accent)}
+.tabs .n{font-size:var(--fs-1);background:var(--surface-2);border-radius:999px;padding:0 6px;margin-left:2px}
+.tabp{display:grid;gap:8px}
+.add.wide{width:100%;aspect-ratio:auto;padding:24px}
+table.mini{border-collapse:collapse;width:100%;font-size:var(--fs-1);font-variant-numeric:tabular-nums}
+table.mini th{background:var(--surface-2);color:var(--muted);font-weight:600;text-align:left;padding:4px 6px}
+table.mini td{border-bottom:1px solid var(--line);padding:4px 6px}
+table.mini td.todo{color:var(--signal);font-weight:600}
+table.mini td.late{color:var(--danger);font-weight:700} table.mini td.early{color:var(--ok);font-weight:700}
+.gantt{display:grid;gap:4px;font-size:var(--fs-1)}
+.gantt .gr{display:grid;grid-template-columns:110px minmax(0,1fr);gap:8px;align-items:center}
+.gantt .tr{position:relative;height:30px;background:repeating-linear-gradient(90deg,var(--line) 0 1px,transparent 1px calc(100%/12));border-radius:3px}
+.gantt .b{position:absolute;height:12px;border-radius:2px}
+.gantt .b.p{top:2px;background:var(--muted)} .gantt .b.a{top:16px;background:var(--share)}
+.gantt .ax{display:grid;grid-template-columns:110px repeat(3,minmax(0,1fr));gap:0 8px;color:var(--muted);font-family:var(--mono);font-size:var(--fs-1)}
+.gantt .lg{display:flex;gap:12px;color:var(--muted)} .gantt .lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+.prog{display:grid;grid-template-columns:110px minmax(0,1fr) 48px;gap:8px;align-items:center;font-size:var(--fs-2);color:var(--muted)}
+.prog .bar{height:10px;border-radius:5px;background:var(--surface-2);overflow:hidden}.prog .bar i{display:block;height:100%;background:var(--accent)}
+.prog b{text-align:right;font-variant-numeric:tabular-nums;color:var(--fg)}
+.draft{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:12px;align-items:start}
+.dslide{font-size:11px}.dslide .band{font-size:12px}
+.dslide .dg{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.dslide .dg div{border:1px solid var(--slide-line);border-radius:2px;padding:3px 5px}
+.dslide .dg i{display:block;font-style:normal;font-weight:700;color:var(--slide-band);font-size:10px}
+.dslide .dg .dec{border-color:var(--slide-decide);background:var(--slide-decide-soft)}.dslide .dg .dec i{color:var(--slide-decide)}
+.dside{display:grid;gap:8px;align-content:start;justify-items:start}
+.used2{display:grid;gap:4px;padding-top:6px;border-top:1px dashed var(--line);width:100%}
+@media (max-width:860px){.draft{grid-template-columns:1fr}}
+.center{display:grid;gap:14px;min-width:0}
+.savebar{position:sticky;bottom:0;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;margin:0 -14px -14px;background:var(--surface);border-top:1px solid var(--line);border-radius:0 0 8px 8px}
+.seg button.need[aria-pressed="false"]{color:var(--signal);font-weight:700}
+.item .quick{grid-column:1/-1;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px}
+.cand .c{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px;align-items:center;font-size:var(--fs-2)}
+/* 2026-10-23 벤치마킹(docs/08) — B1 원장 그리드 · B2 원장에서 바로 채택 · B3 초안 형태 바꿔 보기 */
+.desk{grid-template-columns:minmax(0,1.1fr) minmax(0,1fr)}
+.lcol{display:grid;gap:14px;min-width:0;align-content:start}
+.gwrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px}
+table.ledger{border-collapse:collapse;width:100%;min-width:640px;font-size:var(--fs-1)}
+.ledger th{position:sticky;top:0;background:var(--surface-2);color:var(--muted);font-weight:600;text-align:left;padding:6px 8px;white-space:nowrap}
+.ledger td{border-top:1px solid var(--line);padding:8px;vertical-align:top}
+.ledger tr[data-id]{cursor:pointer}
+.ledger tr[data-id]:hover td{background:var(--bg)}
+.ledger tr.me td{background:var(--accent-soft)}
+.ledger tr.me td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.ledger .t{font-size:var(--fs-2);font-weight:600;color:var(--fg)}
+.ledger .sub{display:block;color:var(--muted);margin-top:2px}
+.ledger .sub.need{color:var(--signal);font-weight:600}
+.ledger .eq{color:var(--fg)}
+.ledger .dd{font-family:var(--mono);white-space:nowrap}
+.ledger .dd.soon{color:var(--signal);font-weight:600}
+.ledger .adopted{display:inline-flex;margin-top:4px}
+.ledger.dense td{padding:4px 8px}
+.ledger.dense .sub{display:none}
+.gbar{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px;border:1px solid var(--line);border-radius:6px;background:var(--surface-2)}
+.gbar select{width:auto;padding:4px 8px;font-size:var(--fs-1)}
+.gbar .cnt{font-weight:700;font-size:var(--fs-1)}
+.gbar .msg{flex-basis:100%;font-size:var(--fs-1);color:var(--ok);font-weight:600}
+.gbar:has(.cnt[data-n="0"]) .needsel{opacity:.5;pointer-events:none}
+.fromhome{font-size:var(--fs-1);color:var(--accent)}
+.dslide table{border-collapse:collapse;width:100%;font-size:9px}
+.dslide th{background:var(--slide-sec);color:var(--slide-sec-fg);padding:2px 4px;text-align:left}
+.dslide td{border-bottom:1px solid var(--slide-line);padding:2px 4px}
+.dslide .ln{border-left:3px solid var(--slide-issue);padding-left:5px;display:grid;gap:1px}
+.dslide .ln b{font-size:10px}
+.dslide .gm{display:grid;gap:4px}
+.dslide .gm .r{display:grid;grid-template-columns:70px 1fr;gap:4px;align-items:center}
+.dslide .gm .tr{position:relative;height:16px;border:1px solid var(--slide-line);border-radius:2px;background:repeating-linear-gradient(90deg,var(--slide-line) 0 1px,transparent 1px calc(100%/12))}
+.dslide .gm .tr span{position:absolute;height:5px;top:2px;background:var(--slide-muted)}.dslide .gm .tr span.a{top:9px;background:var(--slide-share)}
+.big .draft{grid-template-columns:1fr}
+@media (max-width:1240px){.desk{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:860px){.facts{grid-template-columns:repeat(2,minmax(0,1fr))}.newbar{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">커미셔닝팀 회의·지식</span>
+  <nav class="nav" aria-label="메뉴">
+    <a href="v2-home.html">홈</a>
+    <a href="v2-issue-desk.html" aria-current="page">이슈</a>
+    <a href="v2-meetings.html">회의</a>
+    <a href="v2-metrics.html">지표</a>
+    <a href="#">지식창고</a>
+    <a href="#">장비 허브</a>
+  </nav>
+  <div class="right"><span class="small muted">시운전1부 · 김 대리</span></div>
+</header>
+<p class="v2-note">재설계 시안 v2 — 이슈 작업대. 여기는 <b>기록과 지식 매핑</b>이 중심입니다. 새 메모는 원장 위 「+ 메모로 만들기」. 회의자료에는 「회의」에서 고르거나, 원장에서 체크해 「회의자료에 넣기」로 바로 넣습니다(2026-10-23 벤치마킹 B1·B2·B3, docs/08). 데이터는 가상입니다.</p>
+
+<main class="page">
+  <div class="desk">
+    <!-- 왼쪽: 이슈 원장 -->
+    <div class="lcol">
+    <section class="panel" aria-labelledby="listH">
+      <div class="panel-h"><h2 id="listH">이슈 원장</h2>
+        <div class="row"><span class="small muted" id="gN"></span>
+          <div class="seg" role="group" aria-label="표 밀도"><button aria-pressed="true" data-dense="0">여유</button><button aria-pressed="false" data-dense="1">조밀</button></div></div></div>
+      <div class="row"><button class="btn primary" type="button" id="memoOpen">+ 메모로 만들기</button><a class="btn" href="v2-import.html">PPT 가져오기</a>
+        <label class="sr" for="q">찾기</label><input id="q" type="search" placeholder="찾기 — 호선·장비·제목 (예: 2511 DG2)" style="flex:1;min-width:180px;width:auto"></div>
+      <div class="filters">
+        <div class="seg" role="group" aria-label="상태" id="fSt"><button aria-pressed="true" data-st="open">열림</button><button aria-pressed="false" data-st="req">종결 요청</button><button aria-pressed="false" data-st="all">전체</button></div>
+        <select aria-label="부서" id="fDept" style="width:auto"></select>
+        <select aria-label="호선" id="fHull" style="width:auto"></select>
+        <div class="seg" role="group" aria-label="이번 주" id="fWk"><button aria-pressed="false" class="need" data-f="upd">업데이트 필요</button><button aria-pressed="false" data-f="map">매핑 빈 곳</button><button aria-pressed="false" data-f="long">장기 미결</button></div>
+      </div>
+      <span class="fromhome" id="fromHome" hidden></span>
+      <!-- B2: 원장에서 골라 바로 회의자료에 넣기 + 한꺼번에 바꾸기(F23) -->
+      <div class="gbar" aria-label="고른 이슈 처리">
+        <span class="cnt" id="selN" data-n="0">고른 이슈 0건</span>
+        <span class="needsel row" style="gap:6px">
+          <label class="sr" for="toMtg">채택 대상 회의</label>
+          <select id="toMtg"><option>시운전1부 W43 부서 회의자료</option><option>W43 부서 현안 공유회</option><option>W43 팀장 정보회의</option><option>SN2511 호선별 회의 10/24</option></select>
+          <button class="btn sm primary" type="button" id="adoptBtn">회의자료에 넣기</button>
+          <button class="btn sm" type="button" data-bulk="담당 부서">부서 바꾸기</button>
+          <button class="btn sm" type="button" data-bulk="상태">상태 바꾸기</button>
+          <button class="btn sm" type="button" data-bulk="합치기">합치기</button>
+          <button class="btn sm" type="button" data-bulk="요약 항목">요약 항목 만들기</button>
+        </span>
+        <span class="msg" id="bulkMsg" hidden></span>
+      </div>
+      <div class="gwrap"><table class="ledger" id="ledger">
+        <thead><tr><th><label class="sr" for="allChk">모두 고르기</label><input type="checkbox" id="allChk"></th><th>ID · 유형</th><th>호선 · 일정</th><th>장비 ← 현장 표기</th><th>제목 · 이번 주 진행</th><th>매핑</th><th>상태</th></tr></thead>
+        <tbody id="gBody"></tbody></table></div>
+      <p class="small muted" style="margin:0">행을 누르면 오른쪽에 그 이슈가 열립니다. 체크한 이슈는 위 줄에서 회의자료에 바로 넣거나 한꺼번에 고칩니다. 일정은 마일스톤(실적 → 전망 → 계획) 기준 다음 이벤트입니다.</p>
+    </section>
+    <!-- 이 이슈의 쓰임 (원장 아래) -->
+    <aside class="panel side" aria-labelledby="useH">
+      <h2 id="useH">이 이슈가 쓰인 회의</h2>
+      <div class="used" id="usedList">
+        <a href="v2-meeting-view.html"><span class="row"><span class="pill kind">부서 현안 공유회</span><span class="id">W43</span></span><span>채택 · 카드 · 「밸브 입고 지연, 다음 주 교체」</span></a>
+        <a href="#"><span class="row"><span class="pill kind">호선별</span><span class="id">SN2511 · 10/24</span></span><span>채택 예정 (후보)</span></a>
+      </div>
+      <h2>유사 사례</h2>
+      <div class="used">
+        <a href="#"><span class="row"><b>CASE-0298</b><span class="pill p-issue">자매선</span></span><span class="small">SN2510 발전기 No.2 — 분사밸브 노즐 마모 → 밸브 교체</span></a>
+      </div>
+      <p class="small muted" style="margin:0">「회의용 한 줄」은 회의마다 따로 둡니다(2026-10-21 결정). 원장의 진행 한 줄은 바뀌지 않습니다.</p>
+    </aside>
+    </div>
+
+    <div class="center">
+  <!-- 메모로 이슈 만들기 — 「+ 메모로 만들기」를 누르면 가운데 칸이 이것으로 바뀐다 -->
+    <section class="panel" aria-labelledby="newH" id="memoPanel" hidden>
+      <div class="panel-h"><h2 id="newH">메모로 이슈 만들기</h2><button class="btn sm ghost" type="button" id="memoClose">닫기 — 이슈로 돌아가기</button></div>
+      <div class="panel-h" style="margin-top:-6px"><span class="small muted">붙여넣고 「AI 정리」 → 후보를 확인하고 원장에 등록 · 원문은 그대로 보관</span></div>
+      <div class="newbar">
+        <label class="sr" for="memo">메모</label>
+        <textarea id="memo" rows="6">- 2511 DG2 배기온도 편차 계속, 3번 실린더 +38도. 연료밸브 교체품 금요일 입고
+- 안전사고 예방 캠페인 실시 10/6~10/30</textarea>
+        <button class="btn primary" type="button">AI 정리</button>
+      </div>
+      <div class="cand" aria-label="AI 정리 결과">
+        <div class="c"><input type="checkbox" checked aria-label="등록"><span><span class="pill p-issue">이슈</span> <b>SN2511 발전기 No.2 배기온도 편차</b> <span class="small muted">— 기존 ISS-2026-0001 에 이번 주 진행으로 붙음</span></span><span class="map" title="매핑 4/5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i> 4/5</span></div>
+        <div class="c"><input type="checkbox" checked aria-label="등록"><span><span class="pill p-share">공유정보</span> <b>안전사고 예방 캠페인 10/6~10/30</b> <span class="small muted">— 새로 등록</span></span><span class="map" title="매핑 해당 없음">—</span></div>
+        <div class="row"><button class="btn sm primary" type="button">원장에 등록 2건</button><span class="small muted">등록만 합니다. 어느 회의자료에 넣을지는 회의에서 고릅니다.</span></div>
+      </div>
+    </section>
+    <!-- 가운데: 이슈 하나 — 기록과 매핑 -->
+    <section class="panel" aria-labelledby="isH" id="detail">
+      <div class="issue-h">
+        <div class="row"><span class="pill p-issue" id="hKind">이슈</span><span class="id" id="hId">ISS-2026-0001</span><span class="pill" id="hSt">진행 · 3주째</span><span class="small muted" id="hDept">시운전1부 · 메모 MEMO-2026-00001 에서</span></div>
+        <h2 id="isH" class="sr">이슈 상세</h2>
+        <input class="title" id="hTitle" type="text" value="SN2511 발전기 No.2 배기온도 편차" aria-label="제목">
+        <div class="facts">
+          <label class="f">상태<select><option>진행</option><option>신규</option><option>종결 요청</option></select></label>
+          <label class="f">담당 부서<select><option>시운전1부</option></select></label>
+          <label class="f">호선<select><option>SN2511</option></select></label>
+          <label class="f">다음 할 일<input type="text" value="연료밸브 교체 후 부하시험"></label>
+        </div>
+        <label class="f">내용<textarea rows="2">3번 실린더 배기온도 +38℃ 편차 계속. 연료밸브 교체품 금요일 입고 예정, 정비업체 일정 조율 중.</textarea></label>
+        <label class="f decision">결정 필요 <span class="small">— 회의에서 정해야 할 것 (비우면 없음). 회의 진행 화면에 따로 모입니다</span><input type="text" value="선주 협의: 부하시험을 해상에서 할지 안벽에서 할지"></label>
+      </div>
+
+      <div class="panel-h"><h2>지식 매핑</h2><span class="map" title="매핑 4/5"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i> 4/5</span></div>
+      <p class="small muted" style="margin:0">지식창고·유사 사례·장비 허브에 쓰이는 정보입니다. 비어 있어도 회의자료에는 넣을 수 있고, 회의 전에 채워 두면 좋습니다.</p>
+      <div class="mapgrid">
+        <div class="mapcell ok"><span class="k">호선</span>SN2511 <span class="small muted">LNGC · 자매선 SN2510·SN2512</span></div>
+        <div class="mapcell ok"><span class="k">탑재 장비</span>발전기 No.2 <span class="small muted">← 「DG2」 · EQ-SN2511-GE-02</span></div>
+        <div class="mapcell ok"><span class="k">시스템 · 부위</span>주발전기 › 연소·배기</div>
+        <div class="mapcell ok"><span class="k">증상</span>배기온도 편차</div>
+        <div class="mapcell todo"><span class="k">원인</span><span>아직 모름</span><span class="row"><button class="btn sm" type="button">원인 고르기</button><button class="btn sm ghost" type="button">조사 중</button></span></div>
+      </div>
+
+      <div class="panel-h"><h2>붙인 것</h2><span class="small muted">회의자료에서 「상세 한 장」으로 보이면 같이 나갑니다</span></div>
+      <div class="tabs" role="tablist" aria-label="붙인 것">
+        <button role="tab" aria-selected="true" data-tab="photo">사진 · 표 <span class="n">2</span></button>
+        <button role="tab" aria-selected="false" data-tab="sched">계획 대비 실적 <span class="n">1</span></button>
+        <button role="tab" aria-selected="false" data-tab="prog">진행률</button>
+        <button role="tab" aria-selected="false" data-tab="cmp">호선 비교 <span class="n">1</span></button>
+        <button role="tab" aria-selected="false" data-tab="slide">원본 슬라이드</button>
+      </div>
+      <div class="tabp" data-p="photo">
+        <div class="att">
+          <div class="ph"><span class="mk" style="left:46%;top:30%">1</span>[조치 전] 3번 실린더</div>
+          <div class="ph" style="background:var(--photo-metal)">[사진] 배기 매니폴드</div>
+          <div class="add">+ 사진 · 표<br><span class="small">끌어다 놓기 · Ctrl+V</span></div>
+        </div>
+      </div>
+      <div class="tabp" data-p="sched" hidden>
+        <p class="small muted" style="margin:0">항목마다 계획·실적 시작/종료만 넣으면 간트와 차이 표가 그려집니다. 눈금 6시간.</p>
+        <div class="gantt" id="gantt"></div>
+        <div style="overflow-x:auto"><table class="mini"><thead><tr><th>항목</th><th>계획 시작</th><th>계획 종료</th><th>h</th><th>실적 시작</th><th>실적 종료</th><th>h</th><th>차이 h</th><th>종료 지연 h</th></tr></thead><tbody id="gtbl"></tbody></table></div>
+        <button class="btn sm" type="button">+ 항목</button>
+      </div>
+      <div class="tabp" data-p="prog" hidden>
+        <p class="small muted" style="margin:0">구역·항목마다 단계와 진행률 — 출장·수리 진행 현황용. 이 이슈에는 아직 없습니다.</p>
+        <div class="prog"><span>예) 3rd Deck</span><span class="bar"><i style="width:63%"></i></span><b>63%</b></div>
+        <div class="prog"><span>예) 4th Deck</span><span class="bar"><i style="width:100%"></i></span><b>100%</b></div>
+        <button class="btn sm" type="button">+ 진행률 표 만들기</button>
+      </div>
+      <div class="tabp" data-p="cmp" hidden>
+        <p class="small muted" style="margin:0">같은 문제의 다른 호선 이슈를 연결하면 호선을 열로 하는 비교표가 됩니다. 추천: 자매선 · 같은 장비 모델.</p>
+        <table class="mini cmp"><thead><tr><th>구분</th><th>SN2511 (이 이슈)</th><th>SN2510 · CASE-0298</th></tr></thead>
+          <tbody><tr><td>발생 시점</td><td>W42 해상시운전 부하시험</td><td>2025-03 해상시운전</td></tr>
+          <tr><td>위치</td><td>발전기 No.2 · 3번 실린더</td><td>발전기 No.2 · 5번 실린더</td></tr>
+          <tr><td>증상</td><td>배기온도 +38℃</td><td>배기온도 +41℃</td></tr>
+          <tr><td>원인</td><td class="todo">조사 중</td><td>분사밸브 노즐 마모</td></tr>
+          <tr><td>조치</td><td>연료밸브 교체 예정</td><td>분사밸브 교체 → 정상</td></tr></tbody></table>
+        <div class="row"><button class="btn sm" type="button">+ 호선 연결</button><span class="small muted">추천 — SN2512 발전기 No.1 기동 지연(같은 모델)</span></div>
+      </div>
+      <div class="tabp" data-p="slide" hidden>
+        <div class="add wide">PPT 파일을 놓으면 장을 고를 수 있습니다 · 이미지도 됩니다<br><span class="small">틀에 안 맞는 분석·전략 장을 그대로 씁니다. 원본은 바꾸지 않습니다.</span></div>
+      </div>
+
+      <div class="panel-h"><h2>1차 초안</h2><span class="small muted">위 칸을 채우면 자동으로 그려집니다 · 부서 회의자료의 재료</span></div>
+      <!-- B3: 회의에서 어떤 형태로 보일지 여기서 바로 바꿔 본다. 실제 형태는 회의자료마다 정한다 -->
+      <div class="row"><div class="seg" role="group" aria-label="미리보기 형태" id="dForm"><button aria-pressed="true" data-df="detail">상세 한 장</button><button aria-pressed="false" data-df="line">한 줄</button><button aria-pressed="false" data-df="cmp">호선 비교표</button><button aria-pressed="false" data-df="gantt">간트</button></div>
+        <button class="btn sm ghost" type="button" id="dBig">크게 보기</button>
+        <span class="small muted">형태는 미리보기용 — 회의자료마다 따로 고릅니다. 칸을 고치면 바로 다시 그려집니다</span></div>
+      <div class="draft" id="draft">
+        <div class="slide dslide"><div class="band"><span>시운전1부</span><span id="dId">ISS-2026-0001</span></div>
+          <div class="sb" id="dBody"></div>
+          <div class="foot" id="dFoot">1차 초안 · 시운전1부 · 10/21</div></div>
+        <div class="dside">
+          <div class="seg" role="group" aria-label="초안 종류"><button aria-pressed="true">자동 (상세 한 장)</button><button aria-pressed="false">PPT 한 장</button></div>
+          <button class="btn sm" type="button">초안 문구 손보기</button>
+          <button class="btn sm" type="button">PPT 장으로 바꾸기…</button>
+          <div class="used2"><b class="small">이 초안이 쓰인 곳</b>
+            <span class="small">시운전1부 W43 회의자료 — 이 부장이 「원인」 고침 (10/22) <span class="pill p-ok">이슈에 반영됨</span></span>
+            <span class="small muted">팀장 정보회의 W43 — 한 줄 요약으로 (표현만, 이슈 그대로)</span></div>
+        </div>
+      </div>
+
+      <div class="panel-h"><h2>주차별 진행</h2><span class="small muted">회의에서 남긴 코멘트·결정도 여기 쌓임</span></div>
+      <ol class="tl">
+        <li><span class="w">W43</span><span>연료밸브 입고 지연, 다음 주 교체 <span class="small muted">· 부서 현안 공유회 코멘트: 부하시험 결과 공유</span></span></li>
+        <li><span class="w">W42</span><span>신규 등록 — 3번 실린더 +38℃</span></li>
+      </ol>
+      <details><summary class="small">근거 메모 원문 보기 (MEMO-2026-00001 · 1행)</summary><pre class="mono small" style="white-space:pre-wrap;margin:6px 0 0">- 2511 DG2 배기온도 편차 계속, 3번 실린더 +38도. 연료밸브 교체품 금요일 입고 예정</pre></details>
+      <div class="savebar"><button class="btn primary" type="button">저장</button><button class="btn" type="button">종결 요청 (조치 내용 필수)</button><button class="btn ghost" type="button">부서 이관</button><span class="small muted">이 줄은 화면 바닥에 붙어 있습니다</span></div>
+    </section>
+    </div>
+  </div>
+</main>
+<script>
+// 시안용 — 붙인 것 탭, 계획 대비 실적 간트(3일 = 72h, 눈금 6h)
+document.querySelectorAll('[data-tab]').forEach((b) => b.addEventListener('click', () => {
+  document.querySelectorAll('[data-tab]').forEach((x) => x.setAttribute('aria-selected', x === b));
+  document.querySelectorAll('.tabp').forEach((p) => { p.hidden = p.dataset.p !== b.dataset.tab; });
+}));
+const G = [ // 시작 기준 10/22 00:00 부터의 시간
+  {n: '연료밸브 교체', p: [8, 20], a: [30, 44]},
+  {n: '부하시험', p: [24, 36], a: [48, 60]},
+];
+const H = 72, fmt = (h) => { const d = 22 + Math.floor(h / 24), t = h % 24; return `10/${d} ${String(t).padStart(2, '0')}:00`; };
+document.getElementById('gantt').innerHTML = '<div class="lg"><span><i style="background:var(--muted)"></i>계획</span><span><i style="background:var(--share)"></i>실적</span></div><div class="ax"><span></span><span>10/22</span><span>10/23</span><span>10/24</span></div>' +
+  G.map((g) => `<div class="gr"><span>${g.n}</span><div class="tr"><span class="b p" style="left:${g.p[0] / H * 100}%;width:${(g.p[1] - g.p[0]) / H * 100}%"></span><span class="b a" style="left:${g.a[0] / H * 100}%;width:${(g.a[1] - g.a[0]) / H * 100}%"></span></div></div>`).join('');
+const sg = (v) => `<td class="${v > 0 ? 'late' : v < 0 ? 'early' : ''}">${v > 0 ? '+' : ''}${v}</td>`;
+document.getElementById('gtbl').innerHTML = G.map((g) => { const ph = g.p[1] - g.p[0], ah = g.a[1] - g.a[0]; return `<tr><td>${g.n}</td><td>${fmt(g.p[0])}</td><td>${fmt(g.p[1])}</td><td>${ph}</td><td>${fmt(g.a[0])}</td><td>${fmt(g.a[1])}</td><td>${ah}</td>${sg(ah - ph)}${sg(g.a[1] - g.p[1])}</tr>`; }).join('');
+// 시안용 — 가운데 칸을 메모 입력 ↔ 이슈 상세로 바꾼다
+const mp = document.getElementById('memoPanel'), dt = document.getElementById('detail');
+document.getElementById('memoOpen').onclick = () => { mp.hidden = false; dt.hidden = true; document.getElementById('memo').focus(); };
+document.getElementById('memoClose').onclick = () => { mp.hidden = true; dt.hidden = false; };
+
+// 시안용 — B1 원장 그리드 · B2 원장에서 바로 채택 · B3 초안 형태 바꿔 보기 (2026-10-23, docs/08)
+// 실제 구현: 행 = block, 일정 = central.hull_brief(다음 이벤트·D-n), 장비 = block_tag(installed_equipment) + raw_text
+const ROWS = [
+  {id: 'ISS-2026-0001', t: 'issue', dept: '시운전1부', hull: 'SN2511', ev: 'S/T 11/03', dd: 12, eq: '발전기 No.2', raw: 'DG2', title: 'SN2511 발전기 No.2 배기온도 편차', wk: '연료밸브 입고 지연, 다음 주 교체', map: 4, st: '진행', weeks: 3,
+    sym: '3번 실린더 배기온도 +38℃', cause: '조사 중', act: '연료밸브 교체 → 부하시험', dec: '부하시험 해상/안벽', used: ['W43 부서 현안 공유회']},
+  {id: 'PRB-2026-0001', t: 'problem', dept: '시운전1부', hull: 'SN2514', ev: 'G/T 10/27', dd: 5, eq: '카고펌프 No.3', raw: '카고펌프 3번', title: 'SN2514 카고펌프 No.3 메카니컬씰 누유', wk: '씰 교체 후 4시간 무누유 확인', map: 5, st: '종결 요청', weeks: 2,
+    sym: '메카니컬씰 누유', cause: '씰 면 손상 — 초기 건운전', act: '씰 교체 → 4시간 무누유', used: ['W43 부서 현안 공유회']},
+  {id: 'PRB-2026-0007', t: 'problem', dept: '기획운영', hull: 'SN2402', ev: '인도 완료', dd: null, eq: null, raw: 'Sterntube', title: 'Sterntube 금속이물질 발견', wk: '', map: 1, st: '신규', weeks: 1},
+  {id: 'SHR-2026-0001', t: 'share', dept: '시운전1부', hull: 'SN2511', ev: 'S/T 11/03', dd: 12, eq: '조타기 No.1', raw: '조타기', title: 'SN2511 조타기 선급 검사 10/21 → 10/23', wk: '~10/23 유효', map: 5, st: '게시', weeks: 1},
+  {id: 'ISS-2026-0004', t: 'issue', dept: '시운전기술', hull: 'SN2512', ev: 'L/C 11/19', dd: 28, eq: '발전기 No.1', raw: 'DG1', title: 'SN2512 발전기 No.1 기동 지연', wk: '', map: 3, st: '진행', weeks: 5, dec: '제조사 현장 점검 요청 여부'},
+  {id: 'ISS-2026-0009', t: 'issue', dept: '시운전2부', hull: 'SN2511', ev: 'S/T 11/03', dd: 12, eq: '청수 발생기', raw: 'FWG', title: 'SN2511 청수 발생기 생산량 저하', wk: '세관 세척 예정', map: 5, st: '진행', weeks: 2},
+  {id: 'ISS-2026-0012', t: 'issue', dept: '시운전1부', hull: 'SN2514', ev: 'G/T 10/27', dd: 5, eq: '카고펌프 No.1', raw: '카고 1번', title: 'SN2514 카고펌프 No.1 토출압 변동', wk: '', map: 3, st: '진행', weeks: 2},
+];
+const KIND = {issue: '이슈', problem: '문제점', share: '공유정보'};
+const DEPTS = ['기획운영', '시운전기술', '시운전1부', '시운전2부', '시운전3부', '해운부', '안벽의장그룹', '친환경실증Lab'];
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"]/g, (c) => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;'}[c]));
+const needUpd = (r) => !r.wk && r.st !== '게시';
+const F = {st: 'open', dept: '', hull: '', wk: '', q: ''};
+let cur = 'ISS-2026-0001';
+const sel = new Set();
+const adopted = new Map(ROWS.filter((r) => r.used).map((r) => [r.id, new Set(r.used)]));
+
+$('fDept').innerHTML = '<option value="">전 부서</option>' + DEPTS.map((d) => `<option>${d}</option>`).join('');
+$('fHull').innerHTML = '<option value="">호선 전체</option>' + [...new Set(ROWS.map((r) => r.hull))].sort().map((h) => `<option>${h}</option>`).join('');
+// 홈에서 넘어온 필터(?dept=·?f=)
+const qs = new URLSearchParams(location.search);
+if (qs.get('dept')) { F.dept = qs.get('dept'); $('fDept').value = F.dept; }
+if (qs.get('f')) F.wk = qs.get('f');
+if (qs.get('dept') || qs.get('f')) { $('fromHome').hidden = false; $('fromHome').textContent = `홈에서 온 필터 — ${[F.dept, {upd: '업데이트 필요', map: '매핑 빈 곳', long: '장기 미결'}[F.wk]].filter(Boolean).join(' · ')}`; }
+
+const mapDots = (n) => `<span class="map" title="매핑 ${n}/5">${[0, 1, 2, 3, 4].map((i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('')} ${n}/5</span>`;
+function visible() {
+  return ROWS.filter((r) => (F.st === 'all' || (F.st === 'req' ? r.st === '종결 요청' : r.st !== '종결'))
+    && (!F.dept || r.dept === F.dept) && (!F.hull || r.hull === F.hull)
+    && (!F.wk || (F.wk === 'upd' ? needUpd(r) : F.wk === 'map' ? r.map < 5 : r.weeks >= 4))
+    && (!F.q || (r.title + r.raw + r.hull + r.id).toLowerCase().includes(F.q.toLowerCase())));
+}
+function renderGrid() {
+  const rows = visible();
+  $('gBody').innerHTML = rows.map((r) => `<tr data-id="${r.id}" class="${r.id === cur ? 'me' : ''}">
+    <td><input type="checkbox" data-sel="${r.id}" ${sel.has(r.id) ? 'checked' : ''} aria-label="${r.id} 고르기"></td>
+    <td><span class="pill p-${r.t}">${KIND[r.t]}</span><span class="sub id">${r.id}</span><span class="sub">${r.dept}</span></td>
+    <td><b>${r.hull}</b><span class="sub dd ${r.dd !== null && r.dd <= 14 ? 'soon' : ''}">${esc(r.ev)}${r.dd !== null ? ' · D-' + r.dd : ''}</span></td>
+    <td>${r.eq ? `<span class="eq">${esc(r.eq)}</span>` : '<span class="pill">미등록</span>'}<span class="sub">← ${esc(r.raw)}</span></td>
+    <td><span class="t">${esc(r.title)}</span>${r.wk ? `<span class="sub">W43 ${esc(r.wk)}</span>` : `<span class="sub need">W43 한 줄 없음</span>`}
+      ${adopted.has(r.id) ? [...adopted.get(r.id)].map((m) => `<span class="chip adopted">채택 · ${esc(m)}</span>`).join(' ') : ''}</td>
+    <td>${mapDots(r.map)}</td>
+    <td><span class="pill ${r.st === '종결 요청' ? 'p-ok' : r.weeks >= 4 ? 'p-problem' : ''}">${r.st}${r.weeks >= 4 ? ' · ' + r.weeks + '주' : ''}</span>${r.dec ? '<span class="sub"><span class="pill p-decide">결정 필요</span></span>' : ''}</td></tr>`).join('')
+    || '<tr><td colspan="7" class="muted">조건에 맞는 이슈가 없습니다 — 필터를 풀어 보세요</td></tr>';
+  $('gN').textContent = `${rows.length}건 / 전체 ${ROWS.length}`;
+  document.querySelector('#fWk [data-f="upd"]').textContent = `업데이트 필요 ${ROWS.filter(needUpd).length}`;
+  document.querySelectorAll('#fWk [data-f]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.f === F.wk));
+  document.querySelectorAll('#fSt [data-st]').forEach((b) => b.setAttribute('aria-pressed', b.dataset.st === F.st));
+  $('selN').textContent = `고른 이슈 ${sel.size}건`; $('selN').dataset.n = sel.size;
+  $('allChk').checked = rows.length > 0 && rows.every((r) => sel.has(r.id));
+}
+function openIssue(id) {
+  cur = id; const r = ROWS.find((x) => x.id === id);
+  $('hKind').className = `pill p-${r.t}`; $('hKind').textContent = KIND[r.t];
+  $('hId').textContent = r.id; $('hSt').textContent = `${r.st} · ${r.weeks}주째`; $('hDept').textContent = r.dept;
+  $('hTitle').value = r.title; $('dId').textContent = r.id;
+  $('usedList').innerHTML = adopted.has(id) ? [...adopted.get(id)].map((m) => `<a href="#"><span class="row"><span class="pill kind">${esc(m)}</span></span><span>채택</span></a>`).join('') : '<span class="small muted">아직 어느 회의자료에도 없습니다</span>';
+  renderGrid(); renderDraft();
+}
+// B3 — 초안 미리보기 형태
+let dform = 'detail';
+const G2 = [{n: '연료밸브 교체', p: [8, 20], a: [30, 44]}, {n: '부하시험', p: [24, 36], a: [48, 60]}];
+function renderDraft() {
+  const r = ROWS.find((x) => x.id === cur), title = $('hTitle').value;
+  const dec = cur === 'ISS-2026-0001' ? document.querySelector('.decision input').value : r.dec;
+  let b = '';
+  if (dform === 'detail') b = `<div class="it ${r.t}"><b>${esc(title)}</b></div><div class="dg"><div><i>현상</i>${esc(r.sym || r.wk || '—')}</div><div><i>원인</i>${esc(r.cause || '—')}</div><div><i>조치 · 계획</i>${esc(r.act || r.wk || '—')}</div><div class="dec"><i>결정 필요</i>${esc(dec || '없음')}</div></div>`;
+  else if (dform === 'line') b = `<div class="ln"><b>[${KIND[r.t]}] ${esc(title)}</b><span>${esc(r.wk || '이번 주 한 줄 없음')}</span><span style="color:var(--slide-muted)">${r.dept} · ${r.hull} · ${esc(r.ev)}${r.dd !== null ? ' D-' + r.dd : ''}</span></div>`;
+  else if (cur !== 'ISS-2026-0001') b = `<div class="it ${r.t}"><b>${esc(title)}</b></div><span style="color:var(--slide-muted)">이 이슈에는 아직 ${dform === 'cmp' ? '연결한 호선이 없습니다 — 「붙인 것 › 호선 비교」에서 연결' : '계획 대비 실적이 없습니다 — 「붙인 것 › 계획 대비 실적」에서 입력'}</span>`;
+  else if (dform === 'cmp') b = `<div class="it ${r.t}"><b>${esc(title)} — 호선 비교</b></div><table><tr><th>구분</th><th>${r.hull} (이 이슈)</th><th>SN2510 · CASE-0298</th></tr><tr><td>위치</td><td>${esc(r.eq || r.raw)}</td><td>발전기 No.2 · 5번 실린더</td></tr><tr><td>증상</td><td>${esc(r.sym || '—')}</td><td>배기온도 +41℃</td></tr><tr><td>원인</td><td>${esc(r.cause || '조사 중')}</td><td>분사밸브 노즐 마모</td></tr><tr><td>조치</td><td>${esc(r.act || '—')}</td><td>분사밸브 교체 → 정상</td></tr></table>`;
+  else b = `<div class="it ${r.t}"><b>${esc(title)} — 계획 대비 실적</b></div><div class="gm">${G2.map((g) => `<div class="r"><span>${g.n}</span><div class="tr"><span style="left:${g.p[0] / 72 * 100}%;width:${(g.p[1] - g.p[0]) / 72 * 100}%"></span><span class="a" style="left:${g.a[0] / 72 * 100}%;width:${(g.a[1] - g.a[0]) / 72 * 100}%"></span></div></div>`).join('')}<span style="color:var(--slide-muted)">회색 계획 · 파랑 실적 · 10/22–10/24</span></div>`;
+  $('dBody').innerHTML = b;
+  document.querySelectorAll('#dForm [data-df]').forEach((x) => x.setAttribute('aria-pressed', x.dataset.df === dform));
+}
+document.addEventListener('click', (e) => {
+  const st = e.target.closest('#fSt [data-st]'), wk = e.target.closest('#fWk [data-f]'), dn = e.target.closest('[data-dense]'), df = e.target.closest('[data-df]'), bulk = e.target.closest('[data-bulk]');
+  if (st) { F.st = st.dataset.st; renderGrid(); }
+  if (wk) { F.wk = F.wk === wk.dataset.f ? '' : wk.dataset.f; renderGrid(); }
+  if (dn) { $('ledger').classList.toggle('dense', dn.dataset.dense === '1'); document.querySelectorAll('[data-dense]').forEach((x) => x.setAttribute('aria-pressed', x === dn)); }
+  if (df) { dform = df.dataset.df; renderDraft(); }
+  if (bulk) { $('bulkMsg').hidden = false; $('bulkMsg').textContent = `시안 — 고른 ${sel.size}건의 「${bulk.dataset.bulk}」 창이 열립니다(이력·작성자 알림이 남습니다)`; }
+  const tr = e.target.closest('tr[data-id]');
+  if (tr && !e.target.closest('input')) openIssue(tr.dataset.id);
+});
+document.addEventListener('change', (e) => {
+  if (e.target.matches('[data-sel]')) { e.target.checked ? sel.add(e.target.dataset.sel) : sel.delete(e.target.dataset.sel); renderGrid(); }
+  if (e.target.id === 'allChk') { visible().forEach((r) => (e.target.checked ? sel.add(r.id) : sel.delete(r.id))); renderGrid(); }
+  if (e.target.id === 'fDept') { F.dept = e.target.value; renderGrid(); }
+  if (e.target.id === 'fHull') { F.hull = e.target.value; renderGrid(); }
+});
+$('q').addEventListener('input', (e) => { F.q = e.target.value; renderGrid(); });
+$('hTitle').addEventListener('input', renderDraft);
+document.querySelector('.decision input').addEventListener('input', renderDraft);
+$('adoptBtn').addEventListener('click', () => {
+  if (!sel.size) return;
+  const m = $('toMtg').value.replace(/^W43 |^시운전1부 W43 /, '');
+  sel.forEach((id) => { if (!adopted.has(id)) adopted.set(id, new Set()); adopted.get(id).add(m); });
+  $('bulkMsg').hidden = false; $('bulkMsg').textContent = `${sel.size}건을 「${$('toMtg').value}」에 넣었습니다 — 순서·형태·회의용 한 줄은 그 회의자료에서 정합니다`;
+  sel.clear(); openIssue(cur);
+});
+$('dBig').addEventListener('click', (e) => { const on = $('detail').classList.toggle('big'); e.target.textContent = on ? '작게 보기' : '크게 보기'; });
+openIssue(cur);
+</script>
+</body>
+</html>

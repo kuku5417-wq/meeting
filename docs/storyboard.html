@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>주간 회의자료 발표</title>
+<style>
+/* 발표용 단일 파일 — 인터넷 없이 열린다(외부 요청 0).
+   디자인: design-system-with-git/ppt-executive (2026-10-21 적용)
+   · 표지만 navy 배경, 본문은 라이트 bg  · 헤더 = eyebrow + 큰 타이틀  · 슬라이드당 메시지 1개
+   · 액센트는 슬라이드당 mint(개선) 또는 amber(경고) 하나, **도형 면·막대에만** — 텍스트 톤은 mint-text/amber-text
+   · slate-soft 는 구분선·비활성 전용(텍스트 금지)  · 글꼴 Calibri (한글은 맑은 고딕으로 이어진다) */
+:root{
+  --navy:#0A2540; --navy-deep:#07182C; --teal:#028090; --teal-dark:#065F66;
+  --mint:#02C39A; --mint-light:#B8F0DE; --mint-text:#017A61;
+  --amber:#F59E0B; --amber-light:#FEF3C7; --amber-text:#B45309;
+  --slate:#1E293B; --slate-mid:#475569; --slate-mute:#64748B; --slate-soft:#94A3B8;
+  --bg:#F5F7FA; --card:#FFFFFF; --border:#E2E8F0;
+  --font:Calibri,"맑은 고딕","Malgun Gothic","Apple SD Gothic Neo",sans-serif;
+  --mono:Consolas,"맑은 고딕",monospace;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;height:100%;background:var(--navy-deep);overflow:hidden}
+body{font-family:var(--font);color:var(--slate)}
+/* 1920×1080 고정 캔버스(앱 회의자료 장과 같은 기준)를 화면에 맞춰 축소·확대 */
+.viewport{position:fixed;inset:0}
+.deck{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center}
+.slide{position:absolute;inset:0;background:var(--bg);overflow:hidden;opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s}
+.slide.cur{opacity:1;visibility:visible}
+.slide.dark{background:var(--navy)}
+
+/* 헤더·푸터 (palette.js addHeader / addFooter 와 같은 배치) */
+.hd{position:absolute;left:96px;right:96px;top:72px}
+.eyebrow{font-size:21px;font-weight:700;letter-spacing:6px;color:var(--teal-dark);text-transform:uppercase}
+.title{font-size:57px;font-weight:700;color:var(--navy);margin:9px 0 0;line-height:1.2;letter-spacing:-.01em}
+.ft{position:absolute;left:96px;right:96px;bottom:33px;display:flex;justify-content:space-between;font-size:18px;color:var(--slate-mute)}
+.body{position:absolute;left:96px;right:96px;top:252px;bottom:96px}
+.two{display:grid;grid-template-columns:7fr 5fr;gap:72px;height:100%}
+
+/* 본문 조각 */
+.msg{display:grid;gap:33px;align-content:start}
+.msg ul{margin:0;padding:0;list-style:none;display:grid;gap:24px}
+.msg li{font-size:30px;line-height:1.45;color:var(--slate);padding-left:33px;position:relative}
+.msg li::before{content:"";position:absolute;left:0;top:16.5px;width:12px;height:12px;background:var(--teal);border-radius:3px}
+.take{border-left:9px solid var(--teal);background:var(--card);padding:24px 30px;font-size:31.5px;font-weight:700;color:var(--navy);line-height:1.4;box-shadow:0 1.5px 0 var(--border)}
+.take.mint{border-left-color:var(--mint)} .take.amber{border-left-color:var(--amber)}
+.note{font-size:19.5px;color:var(--slate-mute)}
+.big{font-size:96px;font-weight:700;color:var(--navy);line-height:1;letter-spacing:-.02em}
+.big small{font-size:36px;margin-left:6px}
+.cap{font-size:21px;color:var(--slate-mute);margin-top:9px}
+
+/* 미니 화면 (앱을 닮은 무대) */
+.stage{background:var(--card);border:1.5px solid var(--border);border-radius:18px;box-shadow:0 15px 45px rgba(10,37,64,.08);overflow:hidden;display:flex;flex-direction:column;max-height:100%;align-self:start}
+.st-h{display:flex;gap:9px;align-items:center;padding:15px 21px;border-bottom:1.5px solid var(--border);font-size:18px;color:var(--slate-mute);background:var(--bg)}
+.st-h b{width:13.5px;height:13.5px;border-radius:50%;background:var(--slate-soft);display:inline-block}
+.st-h .url{margin-left:12px;font-family:var(--mono)}
+.st-b{padding:27px;display:grid;gap:18px;font-size:22.5px;align-content:start;flex:1;min-height:0;position:relative}
+.lbl{display:inline-flex;align-items:center;font-size:18px;font-weight:700;padding:3px 13.5px;border-radius:1498.5px;border:1.5px solid var(--border);color:var(--slate-mid);background:var(--card);white-space:nowrap}
+.lbl.navy{background:var(--navy);border-color:var(--navy);color:#fff}
+.lbl.mint{background:var(--mint-light);border-color:var(--mint);color:var(--mint-text)}
+.lbl.amber{background:var(--amber-light);border-color:var(--amber);color:var(--amber-text)}
+.id{font-family:var(--mono);font-size:18px;color:var(--slate-mute)}
+.chip{display:inline-flex;gap:6px;align-items:center;font-size:19.5px;border:1.5px solid var(--border);border-radius:9px;padding:3px 12px;background:var(--card)}
+.chip i{font-style:normal;color:var(--slate-mid);font-size:18px}
+.chip.mint{background:var(--mint-light);border-color:var(--mint)}
+.chip.amber{background:var(--amber-light);border-color:var(--amber)}
+.chip .ln{font-family:var(--mono);font-size:16.5px;color:var(--teal-dark)}
+.blk{border:1.5px solid var(--border);border-radius:15px;background:var(--card);overflow:hidden}
+.blk-h{display:flex;gap:12px;align-items:center;padding:13.5px 18px;background:var(--bg);border-bottom:1.5px solid var(--border);font-weight:700;color:var(--navy);font-size:22.5px}
+.blk-h .id{margin-left:auto;font-weight:400}
+.blk-b{padding:15px 18px;display:grid;gap:12px;font-size:19.5px}
+.tags{display:flex;flex-wrap:wrap;gap:9px}
+.ev{font-size:18px;color:var(--slate-mid);border-left:4.5px solid var(--border);padding-left:12px;margin:0}
+.ask{border:1.5px solid var(--amber);background:var(--amber-light);color:var(--amber-text);border-radius:12px;padding:12px 15px;font-size:19.5px;font-weight:700;display:grid;gap:9px}
+.ask.ok{border-color:var(--mint);background:var(--mint-light);color:var(--mint-text)}
+.input{background:var(--card);color:var(--slate);border:1.5px solid var(--border);border-radius:9px;padding:7.5px 13.5px;font-weight:400;min-height:45px;font-family:var(--mono);font-size:19.5px;white-space:pre-wrap}
+.memo{font-family:var(--mono);font-size:20.25px;line-height:1.7;white-space:pre-wrap;background:var(--bg);border:1.5px solid var(--border);border-radius:12px;padding:18px 21px;min-height:225px}
+.cursor::after{content:"▍";animation:blink 1s steps(1) infinite;color:var(--teal)}
+@keyframes blink{50%{opacity:0}}
+.btn{display:inline-flex;align-items:center;gap:9px;font:inherit;font-size:21px;font-weight:700;border:1.5px solid var(--border);background:var(--card);color:var(--navy);padding:10.5px 24px;border-radius:12px}
+.btn.navy{background:var(--navy);border-color:var(--navy);color:#fff}
+.press{animation:press .5s}
+@keyframes press{40%{transform:scale(.92)}}
+
+/* 등장 효과 — data-at(ms) 에 .in */
+[data-at]{transition:opacity .5s ease,transform .5s ease,background .3s,border-color .3s,color .3s}
+.fx-fade:not(.in){opacity:0}
+.fx-up:not(.in){opacity:0;transform:translateY(24px)}
+.fx-left:not(.in){opacity:0;transform:translateX(-70px)}
+.fx-right:not(.in){opacity:0;transform:translateX(105px)}
+.fx-pop:not(.in){opacity:0;transform:scale(.4)}
+.fx-pop.in{animation:pop .45s ease}
+@keyframes pop{0%{transform:scale(.4)}70%{transform:scale(1.12)}100%{transform:scale(1)}}
+.fx-drop:not(.in){opacity:0;transform:translateY(-44px)}
+.fx-drop.in{animation:drop .55s cubic-bezier(.3,1.6,.6,1)}
+@keyframes drop{0%{transform:translateY(-44px)}100%{transform:translateY(0)}}
+
+/* 표지 */
+.cover{position:absolute;inset:0;padding:144px 144px 108px;display:grid;align-content:space-between;color:#fff}
+.cover .eyebrow{color:var(--mint-light);letter-spacing:9px}
+.cover h1{font-size:96px;line-height:1.15;margin:27px 0 0;font-weight:700;letter-spacing:-.02em}
+.cover .sub{font-size:36px;color:#D7E0EA;margin-top:33px;max-width:30em;line-height:1.5}
+.cover .meta{display:flex;gap:42px;font-size:22.5px;color:#B9C6D4;align-items:center}
+.cover .bar{width:180px;height:9px;background:var(--mint);margin-top:51px}
+.cover .virtual{font-size:19.5px;color:#B9C6D4;border:1.5px solid #33506F;padding:6px 15px;border-radius:1498.5px}
+
+/* 흐름 다이어그램 (해결 슬라이드) */
+.flow{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:21px;align-items:stretch;margin-top:18px}
+.step{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:30px 24px;display:grid;gap:12px;align-content:start;position:relative}
+.step .n{font-family:var(--mono);font-size:19.5px;color:var(--teal-dark);font-weight:700}
+.step b{font-size:31.5px;color:var(--navy)}
+.step span{font-size:21px;color:var(--slate-mid);line-height:1.45}
+.step.out{background:var(--navy);border-color:var(--navy)}
+.step.out b,.step.out .n{color:#fff} .step.out span{color:#D7E0EA}
+.step:not(:last-child)::after{content:"";position:absolute;right:-12px;top:50%;width:15px;height:3px;background:var(--slate-soft)}
+.outcomes{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:27px;margin-top:51px}
+.oc{display:grid;grid-template-columns:15px minmax(0,1fr);gap:21px;align-items:stretch}
+.oc i{background:var(--mint);border-radius:4.5px}
+.oc b{font-size:33px;color:var(--navy);display:block}
+.oc span{font-size:22.5px;color:var(--slate-mid)}
+
+/* 문제 슬라이드 */
+.pains{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:30px}
+.pain{background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:33px;display:grid;gap:15px;align-content:start;border-top:9px solid var(--amber)}
+.pain .k{font-size:21px;color:var(--amber-text);font-weight:700;letter-spacing:3px}
+.pain b{font-size:39px;color:var(--navy)}
+.pain p{margin:0;font-size:24px;color:var(--slate-mid);line-height:1.5}
+.chores{display:grid;gap:15px;margin-top:39px}
+.chore{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:21px;align-items:center;font-size:25.5px}
+.chore .track{height:21px;background:var(--border);border-radius:10.5px;overflow:hidden}
+.chore .fill{display:block;height:100%;width:0;background:var(--amber);transition:width 1s ease}
+.chore .fill.in{width:var(--w)}
+
+/* 사진 */
+.photo{position:relative;background:#CBD5DC;border-radius:12px;overflow:hidden;aspect-ratio:16/8}
+.photo svg{position:absolute;inset:0;width:100%;height:100%}
+.mk{position:absolute;width:45px;height:45px;border-radius:50%;background:#D4402A;color:#fff;font-weight:700;font-size:22.5px;display:grid;place-items:center;border:3px solid #fff;font-family:var(--mono)}
+.draw{fill:none;stroke:#D4402A;stroke-width:4;stroke-dasharray:640;stroke-dashoffset:640;transition:stroke-dashoffset 1.2s ease}
+.draw.in{stroke-dashoffset:0}
+.mosaic{position:absolute;left:6%;top:9%;width:15%;height:24%;border-radius:4.5px;background:repeating-conic-gradient(#9AA8B1 0 25%,#CBD5DC 0 50%) 0 0/18px 18px}
+.lock{position:absolute;right:15px;top:15px;background:var(--card);border:1.5px solid var(--border);border-radius:1498.5px;font-size:18px;padding:4.5px 15px;font-weight:700;color:var(--navy)}
+.mrow{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:12px;align-items:center;font-size:21px}
+.mrow .num{width:36px;height:36px;border-radius:50%;background:#D4402A;color:#fff;font-size:18px;display:grid;place-items:center;font-family:var(--mono)}
+
+/* 지표 */
+.mt{width:100%;border-collapse:collapse;font-size:21px}
+.mt th,.mt td{padding:12px;border-bottom:1.5px solid var(--border);text-align:left}
+.mt th{font-size:18px;color:var(--slate-mute);font-weight:700}
+.chart{display:flex;align-items:flex-end;gap:21px;height:255px;padding:15px 9px 0;position:relative;border-bottom:3px solid var(--border)}
+.chart .band{position:absolute;left:0;right:0;bottom:56%;height:22%;background:repeating-linear-gradient(135deg,var(--border) 0 9px,transparent 9px 18px);border-top:1.5px dashed var(--slate-soft);border-bottom:1.5px dashed var(--slate-soft)}
+.chart .b{flex:1;background:var(--slate-soft);height:0;transition:height .8s cubic-bezier(.2,.9,.3,1),background .3s;position:relative;z-index:1;border-radius:4.5px 4.5px 0 0}
+.chart .b.last{background:var(--navy)}
+.chart .b.hot{background:var(--amber)}
+.chart-l{display:flex;gap:21px;font-family:var(--mono);font-size:18px;color:var(--slate-mute);padding:6px 9px 0}
+.chart-l span{flex:1;text-align:center}
+.spark path{stroke:var(--slate-mid);stroke-width:2;fill:none;stroke-dasharray:140;stroke-dashoffset:140;transition:stroke-dashoffset 1s}
+.spark.in path{stroke-dashoffset:0}
+
+/* 확정 */
+.checks{display:grid;gap:15px}
+.ck{display:grid;grid-template-columns:33px minmax(0,1fr);gap:15px;font-size:22.5px;align-items:center}
+.ck i{width:30px;height:30px;border:3px solid var(--slate-soft);border-radius:7.5px;display:grid;place-items:center;font-style:normal;font-size:19.5px;color:#fff}
+.ck.in i{background:var(--mint);border-color:var(--mint)}
+.ck.in i::after{content:"✓"}
+.ck.in span{color:var(--slate-mute);text-decoration:line-through}
+.confirm{opacity:.4;justify-content:center}
+.confirm.in{opacity:1}
+.sl{aspect-ratio:16/9;border:1.5px solid var(--border);border-radius:9px;background:#fff;display:grid;grid-template-rows:auto 1fr auto;font-size:15px;overflow:hidden;box-shadow:0 6px 21px rgba(10,37,64,.10)}
+.sl .band{background:var(--navy);color:#fff;padding:6px 12px;font-weight:700;display:flex;justify-content:space-between;font-size:15px}
+.sl .sb{display:grid;grid-template-columns:1.2fr 1fr;gap:9px;padding:9px 12px;transition:grid-template-columns .6s}
+.sl .it{border-left:4.5px solid var(--teal);padding-left:7.5px;margin-bottom:6px;font-weight:700;color:var(--navy)}
+.sl .ph{background:#CBD5DC;border-radius:4.5px}
+.sl .kp{border-top:1.5px solid var(--border);padding:4.5px 12px;font-family:var(--mono);color:var(--slate-mid)}
+.sl.l2 .sb{grid-template-columns:.8fr 1.4fr} .sl.l3 .sb{grid-template-columns:1fr} .sl.l3 .ph{display:none}
+.seg{display:flex;gap:9px;font-size:18px}
+.seg span{flex:1;text-align:center;border:1.5px solid var(--border);border-radius:9px;padding:4.5px;color:var(--slate-mid)}
+.seg span.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+
+/* 이어받기 */
+.weeks{display:grid;grid-template-columns:1fr 1fr;gap:21px}
+.wk{border:1.5px dashed var(--slate-soft);border-radius:15px;padding:18px;display:grid;gap:12px;align-content:start;min-height:330px}
+.wk h3{font-size:22.5px;margin:0;color:var(--navy)}
+.wk.old{opacity:.55}
+.carry{border:1.5px solid var(--border);border-radius:12px;background:var(--card);padding:12px 15px;font-size:21px;display:grid;gap:7.5px}
+
+/* 회의 */
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}
+.kpi{border:1.5px solid var(--border);border-radius:12px;padding:15px 18px;background:var(--card)}
+.kpi .v{font-weight:700;font-size:51px;line-height:1.1;color:var(--navy)}
+.kpi .l{font-size:18px;color:var(--slate-mute)}
+.depts{display:flex;gap:9px;flex-wrap:wrap}
+.dc{font-size:18px;border:1.5px solid var(--border);border-radius:9px;padding:4.5px 13.5px;background:var(--card);color:var(--slate-mid)}
+.dc.done{background:var(--mint-light);border-color:var(--mint);color:var(--mint-text);font-weight:700}
+.present{position:relative;height:126px;overflow:hidden;border:1.5px solid var(--border);border-radius:12px;background:var(--bg)}
+.present .pg{position:absolute;inset:0;padding:15px 21px;display:grid;gap:4.5px;font-size:21px;transition:transform .5s ease;transform:translateX(100%)}
+.present .pg.in{transform:translateX(0)} .present .pg.out{transform:translateX(-100%)}
+.nextweek{border:1.5px dashed var(--teal);border-radius:12px;padding:12px 18px;font-size:21px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+
+/* 승인 */
+.close{border:1.5px solid var(--border);border-radius:15px;padding:18px;display:grid;gap:12px;background:var(--card);transition:transform .9s cubic-bezier(.5,0,.3,1),opacity .9s}
+.close.gone{transform:translate(300px,240px) scale(.2);opacity:0}
+.action{background:var(--bg);border-radius:9px;padding:12px 15px;font-size:21px}
+.triple{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;font-size:21px}
+.triple div{background:var(--bg);border-radius:12px;padding:12px 15px}
+.triple b{display:block;font-size:18px;color:var(--slate-mute)}
+.shelf{display:flex;align-items:center;gap:21px;border:1.5px solid var(--border);border-radius:15px;padding:15px 21px;background:var(--card);font-weight:700;color:var(--navy)}
+.books{display:flex;gap:6px;align-items:flex-end}
+.books i{display:block;width:18px;border-radius:3px;background:var(--slate-soft)}
+.books i.new{background:var(--mint)}
+
+/* 지도·답 */
+.map{width:100%;height:auto;display:block}
+.map line{stroke:var(--slate-soft);stroke-width:2;stroke-dasharray:300;stroke-dashoffset:300;transition:stroke-dashoffset .8s}
+.map line.in{stroke-dashoffset:0}
+.map line.strong{stroke:var(--navy)}
+.map .nd rect{stroke-width:1.4;fill:var(--card);stroke:var(--border)}
+.map .nd text{font-size:18px;font-family:var(--font);fill:var(--slate-mid)}
+.map .nd .n{font-weight:700;font-size:19.5px;fill:var(--navy)}
+.map .nd.c rect{fill:var(--navy);stroke:var(--navy)} .map .nd.c text{fill:#fff}
+.map .nd.w rect{fill:var(--amber-light);stroke:var(--amber)}
+.warn{border:1.5px solid var(--amber);background:var(--amber-light);color:var(--slate);border-radius:12px;padding:13.5px 18px;font-size:21px}
+.warn b.k{color:var(--amber-text)}
+.answer{border:1.5px solid var(--border);border-left:7.5px solid var(--navy);background:var(--card);border-radius:12px;padding:15px 18px;font-size:21px;display:grid;gap:7.5px}
+.cite{font-family:var(--mono);font-size:16.5px;background:var(--bg);border:1.5px solid var(--border);border-radius:6px;padding:0 7.5px;color:var(--teal-dark)}
+
+/* PPT */
+.fan{position:relative;height:450px;width:100%}
+.fan .sl{position:absolute;width:315px;left:50%;top:60px;margin-left:-105px;transition:transform .7s cubic-bezier(.2,.9,.3,1)}
+.fan .sl.f1.in{transform:translate(-180px,24px) rotate(-10deg)}
+.fan .sl.f2.in{transform:translate(-60px,-4px) rotate(-3deg)}
+.fan .sl.f3.in{transform:translate(90px,-4px) rotate(3deg)}
+.fan .sl.f4.in{transform:translate(270px,24px) rotate(10deg)}
+.pptx{display:inline-flex;gap:15px;align-items:center;font-weight:700;border:1.5px solid var(--border);border-radius:15px;padding:15px 24px;background:var(--card);color:var(--navy);font-size:24px}
+.pptx i{font-style:normal;background:#C43E1C;color:#fff;border-radius:6px;padding:3px 10.5px;font-size:18px}
+.mini-bars{display:flex;align-items:flex-end;gap:6px;height:100%;padding:4.5px}
+.mini-bars i{flex:1;background:var(--slate-soft)} .mini-bars i:last-child{background:var(--navy)}
+.state{background:#fff;color:var(--amber-text);border-radius:3px;padding:0 6px;font-size:12px}
+
+/* 비교·원리·약속·현황 */
+.cmp{width:100%;border-collapse:collapse;font-size:25.5px}
+.cmp th,.cmp td{text-align:left;padding:16.5px 18px;border-bottom:1.5px solid var(--border);vertical-align:top}
+.cmp th{font-size:19.5px;color:var(--slate-mute);letter-spacing:3px}
+.cmp td:first-child{font-weight:700;color:var(--navy);width:195px}
+.cmp td:nth-child(2){color:var(--slate-mid)}
+.cmp td:nth-child(3){font-weight:700;color:var(--slate);position:relative;padding-left:36px}
+.cmp td:nth-child(3)::before{content:"";position:absolute;left:12px;top:27px;width:12px;height:12px;border-radius:50%;background:var(--mint)}
+.three{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:36px;margin-top:42px}
+.pill3{background:var(--card);border:1.5px solid var(--border);border-radius:21px;padding:39px;display:grid;gap:18px;align-content:start;border-top:9px solid var(--mint)}
+.pill3 .k{font-size:21px;color:var(--teal-dark);font-weight:700;letter-spacing:4.5px}
+.pill3 b{font-size:39px;color:var(--navy)}
+.pill3 span{font-size:24px;color:var(--slate-mid);line-height:1.5}
+.source{display:flex;justify-content:center}
+.source div{background:var(--navy);color:#fff;font-size:33px;font-weight:700;padding:21px 51px;border-radius:1498.5px}
+.promise{display:grid;gap:21px;margin-top:9px}
+.pr{display:grid;grid-template-columns:84px minmax(0,1fr);gap:27px;align-items:center;background:var(--card);border:1.5px solid var(--border);border-radius:18px;padding:21px 27px}
+.pr .no{font-size:45px;font-weight:700;color:var(--teal-dark);font-family:var(--mono)}
+.pr b{font-size:31.5px;color:var(--navy)}
+.pr span{font-size:24px;color:var(--slate-mid);margin-left:15px}
+.stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:36px}
+.stat{background:var(--card);border:1.5px solid var(--border);border-radius:21px;padding:39px}
+.todo{display:grid;gap:15px;margin-top:42px}
+.todo div{display:grid;grid-template-columns:15px minmax(0,1fr);gap:21px;font-size:27px;align-items:stretch}
+.todo i{background:var(--amber);border-radius:4.5px}
+
+/* 조작부 (마우스를 멈추면 숨는다) */
+.ui{position:fixed;left:0;right:0;bottom:0;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 16px;background:linear-gradient(transparent,rgba(7,24,44,.85));transition:opacity .3s;font-family:var(--font);z-index:4}
+.ui.idle{opacity:0}
+.ui > div{display:flex;gap:8px;flex-wrap:wrap}
+.ui button{font:inherit;font-size:14px;color:#fff;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:6px 12px;cursor:pointer}
+.ui button[aria-pressed="true"]{background:var(--mint);border-color:var(--mint);color:var(--navy)}
+.ui button:focus-visible{outline:2px solid var(--mint-light);outline-offset:2px}
+.ui .count{color:#D7E0EA;font-size:13px;font-family:var(--mono)}
+.prog{position:fixed;left:0;top:0;height:4px;background:var(--mint);width:0;transition:width .3s;z-index:4}
+.overview{position:fixed;inset:0;background:rgba(7,24,44,.96);overflow:auto;padding:28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;align-content:start;z-index:5}
+.overview button{font:inherit;text-align:left;cursor:pointer;background:#10304F;border:1px solid #33506F;border-radius:10px;padding:14px;color:#fff;display:grid;gap:6px;min-height:96px}
+.overview button[aria-current="true"]{border-color:var(--mint)}
+.overview .n{font-family:var(--mono);font-size:12px;color:var(--mint-light)}
+.overview b{font-size:15px}
+.help{position:fixed;right:16px;top:12px;color:#B9C6D4;font-size:12px;font-family:var(--font);transition:opacity .3s;z-index:4}
+@media (max-width:640px){.ui .count{display:none}.help{display:none}}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="prog" id="prog"></div>
+<div class="viewport"><div class="deck" id="deck">
+
+<!-- 1 표지 -->
+<section class="slide dark" data-title="표지">
+  <div class="cover">
+    <div>
+      <div class="eyebrow">커미셔닝팀 · 주간 회의자료 지식화</div>
+      <h1>주간 회의자료,<br>쓰는 순간 지식이 된다</h1>
+      <div class="bar"></div>
+      <p class="sub">메모·메신저·PPT·메일을 넣으면 AI가 이슈로 정리하고, 회의에서 정한 것은 다시 이슈와 지식으로 쌓입니다.</p>
+    </div>
+    <div class="meta"><span>2026. 10 · 재설계 v2</span><span>시운전 · 커미셔닝팀</span><span class="virtual">화면 속 인물·호선·숫자는 모두 가상</span></div>
+  </div>
+</section>
+
+<!-- 2 문제 -->
+<section class="slide" data-title="지금의 불편">
+  <div class="hd"><div class="eyebrow">지금 · Before</div><h2 class="title">주간 회의자료, 내용보다 모양 맞추기에 시간이 간다</h2></div>
+  <div class="body">
+    <div class="pains">
+      <div class="pain fx-up" data-at="300"><span class="k">불편 ①</span><b>검색이 안 된다</b><p>노하우가 PPT 안에 그림처럼 갇힌다. 지난 사례는 담당자 기억에 의존.</p></div>
+      <div class="pain fx-up" data-at="700"><span class="k">불편 ②</span><b>이슈가 새어 나간다</b><p>끝났는지 흐지부지, 회의에서 정한 결정·지시는 아무도 적지 않는다.</p></div>
+      <div class="pain fx-up" data-at="1100"><span class="k">불편 ③</span><b>작성이 힘들다</b><p>사진 마킹, 지난주 내용 다시 쓰기, 8개 부서 파일 취합.</p></div>
+    </div>
+    <div class="chores">
+      <p class="note" style="margin:0 0 6px">매주 반복되는 손작업 — 부담 정도 (예시)</p>
+      <div class="chore fx-fade" data-at="1700"><span>지난주 파일 복사 · 날짜 고치기</span><span class="track"><i class="fill" data-at="1800" style="--w:20%"></i></span></div>
+      <div class="chore fx-fade" data-at="2000"><span>사진 붙이고 빨간 동그라미 그리기</span><span class="track"><i class="fill" data-at="2100" style="--w:70%"></i></span></div>
+      <div class="chore fx-fade" data-at="2300"><span>지난주 문장 다시 다듬기 · 표 칸 맞추기</span><span class="track"><i class="fill" data-at="2400" style="--w:55%"></i></span></div>
+      <div class="chore fx-fade" data-at="2600"><span>8개 부서 파일을 하나로 합치기</span><span class="track"><i class="fill" data-at="2700" style="--w:90%"></i></span></div>
+    </div>
+  </div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 3 해결 -->
+<section class="slide" data-title="한 번 쓰면 세 가지">
+  <div class="hd"><div class="eyebrow">해결 · 한 장 요약</div><h2 class="title">이슈는 원장에 한 번, 회의자료는 그 이슈를 골라 엮는다</h2></div>
+  <div class="body">
+    <div class="flow">
+      <div class="step fx-up" data-at="200"><span class="n">01</span><b>가져오기</b><span>메모·메신저·PPT·메일 → AI가 이슈로</span></div>
+      <div class="step fx-up" data-at="500"><span class="n">02</span><b>이슈 원장</b><span>사실·매핑·사진·일정을 한 곳에</span></div>
+      <div class="step fx-up" data-at="800"><span class="n">03</span><b>부서 자료</b><span>초안을 골라 엮고 제출(판)</span></div>
+      <div class="step fx-up" data-at="1100"><span class="n">04</span><b>공유회 발행</b><span>제출판을 참조로 모아 발행</span></div>
+      <div class="step fx-up" data-at="1400"><span class="n">05</span><b>회의 진행</b><span>결정·지시·종결 → 다시 이슈로</span></div>
+      <div class="step out fx-up" data-at="1700"><span class="n">06</span><b>세 가지 결과</b><span>PPT · 웹 보기 · 지식창고</span></div>
+    </div>
+    <div class="outcomes">
+      <div class="oc fx-up" data-at="2300"><i></i><div><b>한 번 쓰는 사실</b><span>어느 회의에서 고쳐도 같은 이슈가 갱신</span></div></div>
+      <div class="oc fx-up" data-at="2600"><i></i><div><b>끝까지 추적되는 이슈</b><span>같은 번호 · 일정 경보 · 회의 결정·지시</span></div></div>
+      <div class="oc fx-up" data-at="2900"><i></i><div><b>검색되는 보고서</b><span>사례 카드 · 근거 인용 답 · 자매선 선행 사례</span></div></div>
+    </div>
+  </div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 4 가져오기 -->
+<section class="slide" data-title="① 가져오기">
+  <div class="hd"><div class="eyebrow">장면 1 · 가져오기 · 김 대리</div><h2 class="title">메모·메신저·PPT·메일, 입구는 하나 — AI가 이슈로 나눈다</h2></div>
+  <div class="body"><div class="two">
+    <div class="stage"><div class="st-h"><b></b><b></b><b></b><span class="url">/import · 가져오기</span></div>
+      <div class="st-b">
+        <div class="seg"><span class="on">메모 붙여넣기</span><span>PPT·HTML 올리기</span><span>메일함</span></div>
+        <div class="memo" style="min-height:144px" data-at="300" data-type="[홍길동] [오후 3:12] 2511 DG2 배기온도 편차 계속, 3번 실린더 +38도
+[김철수] [오후 3:16] 2514 카고펌프 No.3 씰 누유 발견. 일단 운전 정지"></div>
+        <div class="memo fx-up" data-at="4200" style="min-height:0;background:var(--card)">2511 DG2 배기온도 편차 계속, 3번 실린더 +38도
+2514 카고펌프 No.3 씰 누유 발견. 일단 운전 정지</div>
+        <span class="lbl mint fx-pop" data-at="4600" style="justify-self:start">메신저 머리줄 2줄 걷음 · 이름 저장 안 함</span>
+        <div class="blk fx-right" data-at="5600"><div class="blk-h"><span class="lbl">이슈</span>SN2511 발전기 No.2 배기온도 편차<span class="id">ISS-2026-0001</span></div>
+          <div class="blk-b"><div class="tags"><span class="chip mint"><i>호선</i>SN2511</span><span class="chip mint"><i>장비</i>발전기 No.2 <span class="ln">← DG2</span></span></div>
+            <p class="ev">근거 · 메모 1행 "DG2 배기온도 편차 계속, 3번 실린더 +38도"</p></div></div>
+        <div class="nextweek fx-up" data-at="7000"><span>주간_외부자료.pptx · 조각 3 — 2장 후보 <b>ISS-2026-0121</b> (이슈 ID · 호선 · 장비 「DG2」)</span><span class="lbl navy">붙이기</span></div>
+      </div></div>
+    <div class="msg">
+      <ul>
+        <li>메모·<b>사내 메신저 대화</b>를 그대로 — 시간·이름 줄은 걷는다.</li>
+        <li>모든 칸에 <b>근거 줄</b>, 현장 표기는 별칭 사전으로 연결.</li>
+        <li>PPT·HTML·<b>메일함</b>은 조각마다 붙이기 / 새 이슈 / 건너뛰기.</li>
+      </ul>
+      <div class="take mint fx-up" data-at="7800">흩어진 현장 기록이 근거와 함께 한 원장에 모인다</div>
+      <p class="note">원본 메모·파일은 그대로 보관 · 사내 AI 장애 시 다음 공급자로 자동 전환</p>
+    </div>
+  </div></div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 5 이슈 원장 -->
+<section class="slide" data-title="② 이슈 원장">
+  <div class="hd"><div class="eyebrow">장면 2 · 이슈 원장 · 김 대리</div><h2 class="title">사실은 이슈 한 곳에 — 칸이 곧 1차 초안이다</h2></div>
+  <div class="body"><div class="two">
+    <div class="stage"><div class="st-h"><b></b><b></b><b></b><span class="url">/issues?id=ISS-2026-0001 · 이슈 원장</span></div>
+      <div class="st-b" style="grid-template-columns:1fr 1fr;align-items:start;gap:21px">
+        <div style="display:grid;gap:12px">
+          <span><span class="lbl">이슈</span> <span class="id">ISS-2026-0001 · 진행</span> <span class="lbl amber fx-pop" data-at="5200">S/T 전 D-9</span></span>
+          <b style="color:var(--navy)">SN2511 발전기 No.2 배기온도 편차</b>
+          <span class="note">현상</span><span class="input">3번 실린더 평균 대비 +38℃</span>
+          <span class="note">원인</span><span class="input" data-at="600" data-type="분사밸브 노즐 마모 추정"></span>
+          <span class="note">결정 필요</span><span class="input" data-at="2000" data-type="선주 협의 — 보증 연장 여부"></span>
+          <span class="lbl mint fx-pop" data-at="3600" style="justify-self:start">저장됨 · 방금 (AI 값 / 사람 값 함께 기록)</span>
+        </div>
+        <div style="display:grid;gap:12px">
+          <span class="note">1차 초안 「상세 한 장」 — 칸을 고치면 바로</span>
+          <div class="sl"><div class="band"><span>시운전3부</span><span>ISS-2026-0001</span></div>
+            <div class="sb" style="grid-template-columns:1fr 1fr"><div><div class="it">현상 +38℃</div><div class="it fx-fade" data-at="1400">원인 노즐 마모</div></div><div><div class="it">조치 밸브 교체</div><div class="it fx-fade" data-at="3000" style="border-color:#6a3fb5">결정 필요</div></div></div>
+            <div class="kp">상세 한 장</div></div>
+          <div class="tags"><span class="chip mint"><i>호선</i>SN2511</span><span class="chip mint"><i>장비</i>발전기 No.2</span><span class="chip amber"><i>원인</i>＋연결</span></div>
+          <div class="warn fx-up" data-at="4400" style="font-size:18px"><b class="k">유사 사례</b> CASE-0298 자매선 SN2510 같은 위치</div>
+        </div>
+      </div></div>
+    <div class="msg">
+      <ul>
+        <li>칸을 고치면 <b>자동 저장</b>, 미리보기가 바로 바뀐다.</li>
+        <li>매핑·사진 마킹·표·유사 사례가 <b>이슈 화면 한 곳</b>에.</li>
+        <li>「초안 완료 → 다음 초안」, 여러 건 <b>한꺼번에</b> 정리.</li>
+      </ul>
+      <div class="take mint fx-up" data-at="6000">같은 사실을 회의마다 다시 쓰지 않는다</div>
+    </div>
+  </div></div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 6 홈 -->
+<section class="slide" data-title="③ 홈 · 이어받기">
+  <div class="hd"><div class="eyebrow">장면 3 · 홈 · 다음 주</div><h2 class="title">끝나지 않은 이슈는 같은 번호로 올라오고, 할 일은 한 줄씩</h2></div>
+  <div class="body"><div class="two">
+    <div class="stage"><div class="st-h"><b></b><b></b><b></b><span class="url">/home · 이번 주 할 일 · 작성자</span></div>
+      <div class="st-b">
+        <div class="seg"><span class="on">작성자</span><span>부서 편집자</span><span>기획</span></div>
+        <div class="carry fx-left" data-at="400"><span><span class="lbl amber">일정 임박</span> <span class="id">ISS-2026-0001 · S/T 전 D-9</span></span>SN2511 발전기 No.2 배기온도 편차</div>
+        <div class="carry fx-left" data-at="900"><span><span class="lbl">이번 주 한 줄</span> <span class="id">PRB-2026-0001</span> <span class="lbl navy">같은 번호</span></span>SN2514 카고펌프 No.3 씰 누유
+          <span class="input" data-at="1900" data-type="교체 완료, 재시운전 예정 ⏎"></span></div>
+        <div class="carry fx-left" data-at="1400"><span><span class="lbl">이번 주 한 줄</span> <span class="id">PRB-0097</span> <span class="lbl amber fx-pop" data-at="4600">5주 미결</span></span>냉동기 고압 트립 <span class="btn" style="justify-self:start;font-size:18px;padding:4.5px 15px">변동 없음</span></div>
+        <div class="carry fx-left" data-at="5400"><span><span class="lbl">지시사항</span> <span class="id">공유회 W42 · 기한 W43</span></span>선주 회신 받아 공유 — 한 줄 보고로 완료</div>
+      </div></div>
+    <div class="msg">
+      <ul>
+        <li>지난주 내용을 <b>다시 쓰지 않는다</b> — Enter 로 한 줄, 다음 칸으로.</li>
+        <li>역할별로 다르다 — 부서 편집자는 부서 자료·지시·지표, 기획은 종결 승인.</li>
+        <li>부서를 옮겨도 번호 그대로 — 누가 어떻게 해결했는지 끝까지.</li>
+      </ul>
+      <div class="take amber fx-up" data-at="6200">오래 묵은 이슈와 임박한 일정이 맨 위에 뜬다</div>
+    </div>
+  </div></div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 7 일정 경보 -->
+<section class="slide" data-title="④ 일정 경보">
+  <div class="hd"><div class="eyebrow">장면 4 · 일정 경보</div><h2 class="title">「S/T 전에 해결」 — 마일스톤 날짜로 D-n 부터 알린다</h2></div>
+  <div class="body"><div class="two">
+    <div class="stage"><div class="st-h"><b></b><b></b><b></b><span class="url">/issues?id=ISS-2026-0001#due · 일정</span></div>
+      <div class="st-b">
+        <div style="display:flex;gap:15px;flex-wrap:wrap;align-items:center"><span class="note">~전 해결</span><span class="input" style="min-width:300px">S/T 해상시운전 (추천)</span><span class="note">경보 일수</span><span class="input" style="min-width:90px">기본 14</span></div>
+        <p class="ev fx-fade" data-at="600">목표 S/T 해상시운전 2026-11-03(전망) — 중앙 마일스톤 실적 → 전망 → 계획</p>
+        <div class="kpis" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+          <div class="kpi"><div class="v" data-at="1200" data-count="9">0</div><div class="l">남은 날(D-9)</div></div>
+          <div class="kpi"><div class="v">14</div><div class="l">이 날부터 경보</div></div>
+          <div class="kpi"><div class="v" style="color:var(--amber-text)">임박</div><div class="l">원장·홈·회의자료 후보</div></div>
+        </div>
+        <div class="ask fx-up" data-at="2600">경보 끄기 — 사유 한 줄
+          <div class="input" data-at="3000" data-type="선주 합의로 인도 뒤 처리"></div></div>
+        <span class="lbl fx-pop" data-at="5200" style="justify-self:start">해제됨 · 이력에 남음</span>
+        <span class="lbl amber fx-pop" data-at="6400" style="justify-self:start">S/T 전망이 10/30 으로 당겨짐 → 다시 켜짐 D-5</span>
+      </div></div>
+    <div class="msg">
+      <ul>
+        <li>날짜는 볼 때마다 <b>마일스톤</b>에서 — 일정이 바뀌면 경보도 움직인다.</li>
+        <li>이벤트별 기본 일수(처음 14) + 이슈마다 수정.</li>
+        <li>해제는 사유와 함께, <b>당겨지면 다시 켜지고</b> 지나면 「기한 지남」.</li>
+      </ul>
+      <div class="take amber fx-up" data-at="7200">회의 전에 일정에 쫓기는 이슈가 먼저 보인다</div>
+    </div>
+  </div></div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 8 지표 -->
+<section class="slide" data-title="⑤ 지표">
+  <div class="hd"><div class="eyebrow">장면 5 · 지표 · 최 부장</div><h2 class="title">숫자만 넣으면 추이·이상치, 벗어나면 차이 사유를 묻는다</h2></div>
+  <div class="body"><div class="two">
+    <div class="stage"><div class="st-h"><b></b><b></b><b></b><span class="url">/metrics/D5 · 지표</span></div>
+      <div class="st-b">
+        <table class="mt"><thead><tr><th>주간 지표</th><th>W43</th><th>6주 추이</th><th>판단</th></tr></thead>
+          <tbody><tr><td>시운전 항목 완료율</td>
+            <td><span class="input" style="display:inline-block;min-width:72px" data-at="400" data-type="95"></span> %</td>
+            <td><svg class="spark" data-at="1300" width="150" height="42" viewBox="0 0 100 28"><path d="M3 22 L22 20 L41 18 L60 16 L78 14 L97 4"/></svg></td>
+            <td><span class="lbl amber fx-pop" data-at="2000">평소보다 높음</span> <span class="lbl fx-pop" data-at="2600">사유를 적어주세요</span></td></tr></tbody></table>
+        <table class="mt fx-up" data-at="3400"><thead><tr><th>기간 표 · 특근 인원(명)</th><th>10/19</th><th>10/20</th><th>계획</th><th>실적</th><th>차이 · 사유</th></tr></thead>
+          <tbody><tr><td>1과</td><td>3 / 5</td><td>2 / 2</td><td>5</td><td>7</td><td><b style="color:var(--amber-text)">+2</b> <span class="input" style="display:inline-block" data-at="4400" data-type="선주 검사 대응"></span></td></tr>
+            <tr><td>작업조 A</td><td>4 / 4</td><td>4 / 4</td><td>8</td><td>8</td><td></td></tr></tbody></table>
+        <span class="lbl mint fx-pop" data-at="6200" style="justify-self:start">회의자료 「지표 요약」 장 → PPT 에선 PowerPoint 차트</span>
+      </div></div>
+    <div class="msg">
+      <ul>
+        <li>이번 주 칸만 — 평소 범위를 안 정하면 <b>지난 값</b>으로 판단.</li>
+        <li><b>기간 표</b>: 행 이름 자유(1과·2과, 호선, 작업조) × 날짜 × 계획/실적.</li>
+        <li>차이가 있는데 사유가 비면 알려 준다.</li>
+      </ul>
+      <div class="take amber fx-up" data-at="6800">튀는 값과 그 이유가 같이 남는다</div>
+    </div>
+  </div></div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 9 부서 회의자료 -->
+<section class="slide" data-title="⑥ 부서 회의자료">
+  <div class="hd"><div class="eyebrow">장면 6 · 부서 회의자료 스튜디오 · 최 부장</div><h2 class="title">초안을 골라 엮고, 사실은 이슈로·표현은 자료에만</h2></div>
+  <div class="body"><div class="two">
+    <div class="stage"><div class="st-h"><b></b><b></b><b></b><span class="url">/studio/… · W43 시운전3부 회의자료</span></div>
+      <div class="st-b" style="grid-template-columns:225px 1fr;align-items:start;gap:21px">
+        <div class="checks">
+          <span class="btn navy" data-press-at="300" style="font-size:18px;padding:6px 15px">지난주 이어받기</span>
+          <div class="ck" data-at="900"><i></i><span style="text-decoration:none;color:var(--slate)">표지</span></div>
+          <div class="ck" data-at="1200"><i></i><span style="text-decoration:none;color:var(--slate)">발전기 No.2</span></div>
+          <div class="ck" data-at="1500"><i></i><span style="text-decoration:none;color:var(--slate)">카고펌프 씰</span></div>
+          <div class="ck" data-at="1800"><i></i><span style="text-decoration:none;color:var(--slate)">지표 요약</span></div>
+        </div>
+        <div style="display:grid;gap:12px">
+          <div class="seg"><span id="sg1" class="on">카드</span><span id="sg2">상세 한 장</span><span id="sg3">한 줄</span></div>
+          <div class="sl" id="sl6"><div class="band"><span>시운전3부 · <span style="color:#F59E0B">[S/T 전 D-9]</span></span><span>2 / 5</span></div>
+            <div class="sb"><div><div class="it">발전기 No.2 배기온도 편차</div><div class="it">밸브 교체 일정 확정</div></div><div class="ph"></div></div>
+            <div class="kp">● 원인 「노즐 마모」 → 이슈에 바로 반영</div></div>
+          <span class="note">○ 회의용 한 줄·형태·순서 = 이 자료에만</span>
+          <span class="btn navy confirm" data-at="8200" data-press-at="8600" style="justify-self:start">제출</span>
+          <span class="lbl mint fx-pop" data-at="9000" style="justify-self:start">제출 1판 — 공유회 자료에 실림</span>
+        </div>
+      </div></div>
+    <div class="msg">
+      <ul>
+        <li>시작은 <b>지난주 이어받기</b> 또는 빈 자료.</li>
+        <li>장마다 형태 4종(상세 한 장·카드·사진 강조·한 줄), 두 장을 <b>요약 한 장</b>으로.</li>
+        <li>「제출」하면 <b>판으로 고정</b> — 제출 뒤 고치면 「수정됨」, 다시 제출하면 2판.</li>
+      </ul>
+      <div class="take mint fx-up" data-at="9400">같은 이슈를 회의마다 다르게 보여 줘도 사실은 하나</div>
+    </div>
+  </div></div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 10 공유회 발행 -->
+<section class="slide" data-title="⑦ 공유회 발행">
+  <div class="hd"><div class="eyebrow">장면 7 · 부서 현안 공유회 · 한 대리</div><h2 class="title">모으지 않아도 모여 있고, 발행하면 회의에서 본 그대로 남는다</h2></div>
+  <div class="body"><div class="two">
+    <div class="stage"><div class="st-h"><b></b><b></b><b></b><span class="url">/studio/… · W43 부서 현안 공유회</span></div>
+      <div class="st-b">
+        <div class="depts">
+          <span class="dc done fx-drop" data-at="300">기획운영 제출 1판</span><span class="dc fx-drop" data-at="450">시운전기술 미제출</span><span class="dc done fx-drop" data-at="600">시운전1부 제출 1판</span>
+          <span class="dc done fx-drop" data-at="750">시운전2부 제출 1판</span><span class="dc done fx-drop" data-at="900">시운전3부 제출 2판</span><span class="dc fx-drop" data-at="1050">해운부 미제출</span>
+          <span class="dc done fx-drop" data-at="1200">안벽의장 제출 1판</span><span class="dc done fx-drop" data-at="1350">친환경Lab 제출 1판</span>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="v" data-at="1600" data-count="6">0</div><div class="l">부서 제출 / 8</div></div>
+          <div class="kpi"><div class="v" data-at="1600" data-count="21">0</div><div class="l">안건</div></div>
+          <div class="kpi"><div class="v" data-at="1600" data-count="3">0</div><div class="l">종결 승인 대기</div></div>
+          <div class="kpi"><div class="v" data-at="1600" data-count="2">0</div><div class="l">결정 필요</div></div>
+        </div>
+        <div class="nextweek fx-right" data-at="2800"><span>해운부 미제출 — 열린 이슈를 한 줄로</span><span class="lbl navy">원장으로 채우기</span></div>
+        <div class="nextweek fx-right" data-at="3600"><span>PRB-2026-0001 카고펌프 씰 — 종결 요청 자동 채택</span><span class="lbl amber">종결승인 대기</span></div>
+        <span class="btn navy" data-at="4800" data-press-at="5200" style="justify-self:start">발행</span>
+        <span class="lbl mint fx-pop" data-at="5600" style="justify-self:start">발행 1판 고정</span>
+        <span class="lbl amber fx-pop" data-at="7000" style="justify-self:start">발행 뒤 이슈 사실이 바뀐 장 1 — 다시 발행하면 2판</span>
+      </div></div>
+    <div class="msg">
+      <ul>
+        <li>부서 칸 = 그 부서 <b>제출판을 참조</b>(복사하지 않음).</li>
+        <li>늦은 부서는 <b>원장으로 채우기</b>, 종결 요청은 자동으로.</li>
+        <li>팀장 정보회의도 같은 방식 — 공유회 발행본·중요·장기 미결·이번 주 종결에서.</li>
+      </ul>
+      <div class="take mint fx-up" data-at="7800">8개 파일 취합이 사라지고, 회의 자료가 판으로 남는다</div>
+    </div>
+  </div></div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 11 회의 진행 -->
+<section class="slide" data-title="⑧ 회의 진행">
+  <div class="hd"><div class="eyebrow">장면 8 · 회의 진행 · 박 팀장</div><h2 class="title">안건마다 「기록하고 다음」 — 결정·지시·종결이 이슈로 돌아간다</h2></div>
+  <div class="body"><div class="two">
+    <div class="stage"><div class="st-h"><b></b><b></b><b></b><span class="url">/meetings/…/run · 진행자 화면 + 발표 창</span></div>
+      <div class="st-b" style="grid-template-columns:1fr 1fr;align-items:start;gap:21px">
+        <div style="display:grid;gap:12px">
+          <div class="present" style="height:180px">
+            <div class="pg" data-at="300" data-out="2600"><b>발전기 No.2 배기온도 편차</b><span class="note">[결정필요 · S/T 전 D-9]</span></div>
+            <div class="pg" data-at="2600" data-out="5600"><b>카고펌프 No.3 씰 누유</b><span class="note">[종결승인 대기] 조치: 메카니컬씰 교체</span></div>
+            <div class="pg" data-at="5600"><b>BOG 압축기 진동</b><span class="note">다음 안건</span></div>
+          </div>
+          <span class="note">발표 창이 진행자 쪽을 그대로 따라간다</span>
+          <div class="blk fx-up" data-at="4800"><div class="blk-h"><span class="lbl mint">종결 사례</span>CASE-0001<span class="id">PRB-2026-0001</span></div>
+            <div class="blk-b"><div class="triple"><div><b>증상</b>씰 누유</div><div><b>원인</b>씰 면 손상</div><div><b>조치</b>씰 교체</div></div></div></div>
+        </div>
+        <div style="display:grid;gap:12px">
+          <span class="note">이 안건 기록</span>
+          <span class="note">코멘트</span><span class="input" data-at="500" data-type="도면 회신 대기"></span>
+          <span class="note" style="color:#6a3fb5">결정 — 결정 필요 칸이 비워진다</span><span class="input" data-at="1300" data-type="다음 주 선주와 일정 확정"></span>
+          <span class="note">＋ 지시 · 시운전3부 · W44</span><span class="input" data-at="2000" data-type="선주 회신 받아 공유"></span>
+          <span style="display:flex;gap:12px"><span class="btn navy" data-press-at="3800">종결 승인</span><span class="btn">보류</span></span>
+          <span class="btn navy" data-press-at="2500" style="justify-self:start">기록하고 다음 →</span>
+        </div>
+      </div></div>
+    <div class="msg">
+      <ul>
+        <li>안건 = 공유회 <b>발행본</b>, Enter 한 번에 기록하고 다음.</li>
+        <li><b>지시</b>는 다음 주 그 부서 회의자료 맨 위 「지난 지시사항」으로.</li>
+        <li><b>종결 승인</b> = 사례 카드. 확인 창 대신 되돌리기.</li>
+      </ul>
+      <div class="take mint fx-up" data-at="6400">회의에서 정한 것이 새어 나가지 않는다</div>
+    </div>
+  </div></div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 12 자매선 선행 사례 -->
+<section class="slide" data-title="⑨ 자매선 선행 사례">
+  <div class="hd"><div class="eyebrow">장면 9 · 장비 허브 · 지식창고 · 이 기사</div><h2 class="title">같은 장비 문제를 다시 만나면, 자매선이 먼저 겪은 일이 뜬다</h2></div>
+  <div class="body"><div class="two">
+    <div class="stage"><div class="st-h"><b></b><b></b><b></b><span class="url">/hub/equipment/EQ-SN2511-GE-02 · 장비 허브</span></div>
+      <div class="st-b" style="gap:15px">
+        <svg class="map" viewBox="0 0 720 230" role="img" aria-label="연결 지도">
+          <line data-at="700" x1="360" y1="115" x2="130" y2="40"/><line data-at="850" x1="360" y1="115" x2="130" y2="115"/><line data-at="1000" x1="360" y1="115" x2="130" y2="190"/>
+          <line class="strong" data-at="1150" x1="360" y1="115" x2="590" y2="40"/><line data-at="1300" x1="590" y1="40" x2="590" y2="115"/><line data-at="1450" x1="590" y1="115" x2="590" y2="190"/>
+          <g class="nd fx-pop" data-at="800"><rect x="55" y="22" width="150" height="38" rx="6"/><text x="130" y="37" text-anchor="middle">호선</text><text class="n" x="130" y="53" text-anchor="middle">SN2511 · LNGC</text></g>
+          <g class="nd fx-pop" data-at="950"><rect x="55" y="97" width="150" height="38" rx="6"/><text x="130" y="112" text-anchor="middle">자매선</text><text class="n" x="130" y="128" text-anchor="middle">SN2510 · SN2512</text></g>
+          <g class="nd fx-pop" data-at="1100"><rect x="55" y="172" width="150" height="38" rx="6"/><text x="130" y="187" text-anchor="middle">시스템</text><text class="n" x="130" y="203" text-anchor="middle">주발전기</text></g>
+          <g class="nd c fx-pop" data-at="500"><rect x="270" y="92" width="180" height="46" rx="8"/><text x="360" y="110" text-anchor="middle">탑재 장비</text><text class="n" x="360" y="127" text-anchor="middle">SN2511 발전기 No.2</text></g>
+          <g class="nd fx-pop" data-at="1250"><rect x="505" y="22" width="170" height="38" rx="6"/><text x="590" y="37" text-anchor="middle">장비 모델</text><text class="n" x="590" y="53" text-anchor="middle">6L 이중연료 발전엔진</text></g>
+          <g class="nd fx-pop" data-at="1400"><rect x="505" y="97" width="170" height="38" rx="6"/><text x="590" y="112" text-anchor="middle">동일 모델 탑재</text><text class="n" x="590" y="128" text-anchor="middle">6대</text></g>
+          <g class="nd w fx-pop" data-at="1550"><rect x="505" y="172" width="170" height="38" rx="6"/><text x="590" y="187" text-anchor="middle">주요 원인 1위</text><text class="n" x="590" y="203" text-anchor="middle">연료분사밸브 불량 3</text></g>
+        </svg>
+        <div class="warn fx-up" data-at="2400"><b class="k">선행 사례</b> 자매선 SN2510 같은 위치 발전기 No.2 · W30 종결 — 원인 <b>분사밸브 노즐 마모</b>, 조치 「연료분사밸브 교체 후 부하시험 정상」</div>
+        <span style="display:flex;gap:12px;align-items:center"><span class="input" style="flex:1" data-at="4300" data-type="LNGC 발전기 배기온도 편차, 과거에 어떻게 조치했나?"></span><span class="btn">찾기</span><span class="btn navy" data-press-at="7200">질문하기</span></span>
+        <div class="answer fx-up" data-at="7600"><span class="note" style="color:var(--teal-dark);font-weight:700">AI 요약 · 사례 4건 근거</span>
+          <span>연료분사밸브 불량 3건 — 연료분사밸브 교체 후 부하시험 정상 <span class="cite">CASE-0298</span> <span class="cite">CASE-0311</span> <span class="cite">CASE-0287</span> / 센서 오차 1건 — 센서 교체 <span class="cite">CASE-0352</span></span></div>
+      </div></div>
+    <div class="msg">
+      <ul>
+        <li>"2511 DG2"만 입력하면 장비의 <b>연결 지도</b>.</li>
+        <li>자매선 <b>같은 자리 장비</b>의 과거 사례가 경고로.</li>
+        <li>「찾기」는 검색만, <b>「질문하기」</b>는 근거 사례 번호를 인용한 답 — 근거 없으면 답하지 않는다.</li>
+      </ul>
+      <div class="take amber fx-up" data-at="8400">누군가 예전에 쓴 회의자료가 오늘의 정답 노트가 된다</div>
+    </div>
+  </div></div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+
+<!-- 13 보기 · PPT -->
+<section class="slide" data-title="⑩ 보기 · PPT">
+  <div class="hd"><div class="eyebrow">장면 10 · 회의자료 보기 · PPT</div><h2 class="title">회의에서 본 판 그대로, 받은 사람이 고칠 수 있는 PPT</h2></div>
+  <div class="body"><div class="two">
+    <div class="stage"><div class="st-h"><b></b><b></b><b></b><span class="url">/meetings/… · 보기 · 발행 2판</span></div>
+      <div class="st-b" style="justify-items:center;align-content:center">
+        <span class="btn navy" data-press-at="400">PPT · 공유회 발행 2판</span>
+        <div class="fan">
+          <div class="sl f1" data-at="1100"><div class="band"><span>W43 부서 현안 공유회</span><span>2판</span></div><div class="sb" style="grid-template-columns:repeat(4,1fr);font-size:27px;font-weight:700;color:var(--navy);align-items:center;text-align:center"><span>21</span><span>2</span><span>3</span><span>2</span></div><div class="kp">표지 · 부서 제출 6/8</div></div>
+          <div class="sl f2" data-at="1600"><div class="band"><span>시운전3부</span><span>W43</span></div><div class="sb" style="grid-template-columns:1fr;align-content:center;text-align:center;font-size:21px;font-weight:700;color:var(--navy)">시운전3부<br><span style="font-size:13.5px;color:var(--slate-mute)">제출 2판 · 안건 4</span></div><div class="kp">부서 구분 장</div></div>
+          <div class="sl f3" data-at="2100"><div class="band"><span>발전기 No.2</span><span>상세 한 장</span></div><div class="sb"><div><div class="it">현상 +38℃</div><div class="it">원인 노즐 마모</div></div><div class="ph"></div></div><div class="kp">결정 필요 · 선주 협의</div></div>
+          <div class="sl f4" data-at="2600"><div class="band"><span>시운전3부 지표</span><span>W43</span></div><div class="sb" style="grid-template-columns:1fr"><div class="mini-bars"><i style="height:40%"></i><i style="height:48%"></i><i style="height:52%"></i><i style="height:58%"></i><i style="height:62%"></i><i style="height:90%"></i></div></div><div class="kp">PowerPoint 차트</div></div>
+        </div>
+        <span class="pptx fx-pop" data-at="4000"><i>PPTX</i>W43 부서 현안 공유회_2판.pptx</span>
+      </div></div>
+    <div class="msg">
+      <ul>
+        <li>보기: 쪽을 세로로, 발행 뒤 이슈가 바뀐 장에 <b>「변경」</b>.</li>
+        <li>PPT: 표지 → 부서 구분 장 → 형태 4종 · 지난 지시사항 · 지표 요약.</li>
+        <li>글은 텍스트 상자 · 표는 PowerPoint 표 · 지표는 PowerPoint 차트.</li>
+      </ul>
+      <div class="take mint fx-up" data-at="5000">한 번 쓴 것이 PPT · 웹 보기 · 지식 데이터가 된다</div>
+    </div>
+  </div></div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 14 비교 -->
+<section class="slide" data-title="Before → After">
+  <div class="hd"><div class="eyebrow">정리 · Before → After</div><h2 class="title">같은 주간 회의자료, 일하는 방식이 이렇게 바뀐다</h2></div>
+  <div class="body">
+    <table class="cmp">
+      <thead><tr><th></th><th>지금 (PPT)</th><th>이 시스템</th></tr></thead>
+      <tbody>
+        <tr class="fx-up" data-at="200"><td>기록·작성</td><td>메신저·메일에 흩어짐 · 지난주 다시 쓰기</td><td>가져오기 → 이슈 원장, 칸이 곧 초안 · 한 줄만</td></tr>
+        <tr class="fx-up" data-at="450"><td>취합</td><td>8개 파일을 합친다</td><td>제출판을 참조로 모아 발행(판 고정)</td></tr>
+        <tr class="fx-up" data-at="700"><td>회의</td><td>정한 것이 남지 않음 · 종결 흐지부지</td><td>결정·지시·종결이 이슈와 지식으로</td></tr>
+        <tr class="fx-up" data-at="950"><td>일정·지표</td><td>기억에 의존 · 매주 그래프 새로</td><td>「~전 해결」 D-n 경보 · 숫자만 넣으면 추이·사유</td></tr>
+        <tr class="fx-up" data-at="1200"><td>검색</td><td>옛날 PPT를 하나씩 열어 봄</td><td>질문하면 근거 사례 인용 답</td></tr>
+        <tr class="fx-up" data-at="1450"><td>재활용</td><td>담당자 기억에 의존</td><td>자매선 선행 사례 · 유사 사례 추천</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 15 원리 -->
+<section class="slide" data-title="쓰는 순간 지식이 되는 원리">
+  <div class="hd"><div class="eyebrow">원리</div><h2 class="title">사실은 한 곳, 표현은 회의마다</h2></div>
+  <div class="body">
+    <div class="source fx-up" data-at="200"><div>이슈 원장 (사실 · 기준정보 번호에 연결) ← 회의자료는 참조만</div></div>
+    <div class="three">
+      <div class="pill3 fx-up" data-at="700"><span class="k">01 · 보고서</span><b>판으로 남는 회의자료</b><span>제출·발행판, PPT와 웹 보기가 같은 데이터에서 나온다.</span></div>
+      <div class="pill3 fx-up" data-at="1000"><span class="k">02 · 연결</span><b>호선·장비·원인으로 이어짐</b><span>SN2511 · EQ-SN2511-GE-02 · 원인 코드 → 같은 모델·자매선·같은 원인이 저절로 묶인다.</span></div>
+      <div class="pill3 fx-up" data-at="1300"><span class="k">03 · 회의 → 이슈</span><b>결정·지시·종결이 되돌아옴</b><span>회의 기록은 이슈 이력으로, 종결은 사례 카드로, 질문하면 근거 인용 답.</span></div>
+    </div>
+  </div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 16 약속 -->
+<section class="slide" data-title="사용자와의 약속">
+  <div class="hd"><div class="eyebrow">원칙</div><h2 class="title">시스템이 지키는 다섯 가지 약속</h2></div>
+  <div class="body">
+    <div class="promise">
+      <div class="pr fx-up" data-at="200"><span class="no">01</span><div><b>원본은 바꾸지 않는다</b><span>메모·사진·가져온 파일 원본은 그대로</span></div></div>
+      <div class="pr fx-up" data-at="450"><span class="no">02</span><div><b>근거 없는 AI 값은 보여주지 않는다</b><span>메모 줄·파일 장 위치가 근거</span></div></div>
+      <div class="pr fx-up" data-at="700"><span class="no">03</span><div><b>질문은 꼭 필요한 것만</b><span>제목·상태·원인, 3개 이내</span></div></div>
+      <div class="pr fx-up" data-at="950"><span class="no">04</span><div><b>종결은 공유회 또는 기획 주관자만</b><span>조치 내용이 있어야 요청 가능</span></div></div>
+      <div class="pr fx-up" data-at="1200"><span class="no">05</span><div><b>개인정보 최소수집</b><span>메신저·메일 이름은 저장하지 않음, 사진 모자이크</span></div></div>
+    </div>
+  </div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+<!-- 17 현황 -->
+<section class="slide" data-title="현황과 남은 결정">
+  <div class="hd"><div class="eyebrow">현황 · 2026-10-23</div><h2 class="title">기능은 모두 동작한다, 남은 것은 운영 결정</h2></div>
+  <div class="body">
+    <div class="stats">
+      <div class="stat fx-up" data-at="200"><div class="big"><span data-at="300" data-count="14">0</span><small>단계</small></div><p class="cap">개발 단계 완료 (M0~M13) + 지표·일정 경보</p></div>
+      <div class="stat fx-up" data-at="450"><div class="big"><span data-at="550" data-count="10">0</span><small>장면</small></div><p class="cap">오늘 보여 드린 흐름 전부 시연 가능</p></div>
+      <div class="stat fx-up" data-at="700"><div class="big"><span data-at="800" data-count="423">0</span><small>건</small></div><p class="cap">자동 회귀 검사 통과</p></div>
+    </div>
+    <div class="todo">
+      <p class="note" style="margin:0">운영 전에 정할 것</p>
+      <div class="fx-up" data-at="1500"><i></i><span>AI <b>외부 공급자</b>를 운영에서도 쓸지 (지금은 테스트 단계 — 사내 LLM 우선)</span></div>
+      <div class="fx-up" data-at="1800"><i></i><span><b>로그인 방식</b>(사내 SSO 여부) · 메일 <b>주기 수집</b> · 스캔본 OCR</span></div>
+      <div class="fx-up" data-at="2100"><i></i><span>운영 DB <b>옛 섹션 이전</b> — <span style="font-family:var(--mono)">migrate_sections.py --dry-run</span> 으로 먼저 확인</span></div>
+    </div>
+  </div>
+  <div class="ft"><span>주간 회의자료, 쓰는 순간 지식이 된다</span><span class="pgno"></span></div>
+</section>
+
+</div></div>
+
+<div class="help" id="help">← → 넘기기 · F 전체 화면 · G 목록</div>
+<div class="ui" id="ui">
+  <div>
+    <button type="button" id="prev">← 이전</button>
+    <button type="button" id="next">다음 →</button>
+    <button type="button" id="replay">↻ 다시</button>
+    <button type="button" id="auto" aria-pressed="false">▶ 자동 넘김</button>
+  </div>
+  <span class="count" id="count"></span>
+  <div>
+    <button type="button" id="grid">목록 (G)</button>
+    <button type="button" id="fs">전체 화면 (F)</button>
+  </div>
+</div>
+<nav class="overview" id="overview" hidden aria-label="슬라이드 목록"></nav>
+
+<script>
+// 발표 재생기 — 슬라이드에 들어갈 때마다 data-at(ms) 순서로 .in 을 붙인다.
+// data-type 타이핑 · data-count 숫자 올리기 · data-swap 클래스 교체(data-swap-at) · data-text 글 교체
+// data-press / data-press-at 눌림 · data-out 발표 화면 빠짐 · data-h 막대 높이
+(() => {
+  const deck = document.getElementById('deck');
+  const slides = [...deck.querySelectorAll('.slide')];
+  const N = slides.length;
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const AUTO_MS = 11000;
+  let cur = 0, timers = [], auto = false, autoTimer = 0;
+
+  slides.forEach((s, i) => {
+    s.querySelectorAll('[class],[data-at],[data-press-at]').forEach(el => { el.dataset.cls0 = el.getAttribute('class') || ''; });
+    s.querySelectorAll('[data-text]').forEach(el => { el.dataset.text0 = el.textContent; });
+    const pg = s.querySelector('.pgno'); if (pg) pg.textContent = `${i + 1} / ${N}`;
+  });
+
+  function fit() {
+    const k = Math.min(innerWidth / 1920, innerHeight / 1080);
+    deck.style.transform = `translate(-50%,-50%) scale(${k})`;
+  }
+  addEventListener('resize', fit); fit();
+
+  const later = (ms, fn) => { timers.push(setTimeout(fn, reduce ? 0 : ms)); };
+  function reset(s) {
+    timers.forEach(clearTimeout); timers = [];
+    s.querySelectorAll('[data-cls0]').forEach(el => el.setAttribute('class', el.dataset.cls0));
+    s.querySelectorAll('[data-type]').forEach(el => { el.textContent = ''; });
+    s.querySelectorAll('[data-count]').forEach(el => { el.textContent = '0'; });
+    s.querySelectorAll('[data-text0]').forEach(el => { el.textContent = el.dataset.text0; });
+    s.querySelectorAll('[data-h]').forEach(el => { el.style.height = '0'; });
+    if (s.querySelector('#sl6')) setLayout(1);
+  }
+  function type(el) {
+    const txt = el.dataset.type; let i = 0;
+    if (reduce) { el.textContent = txt; return; }
+    el.classList.add('cursor');
+    const step = () => { i++; el.textContent = txt.slice(0, i); if (i < txt.length) timers.push(setTimeout(step, txt.length > 60 ? 14 : 55)); else timers.push(setTimeout(() => el.classList.remove('cursor'), 600)); };
+    step();
+  }
+  function count(el) {
+    const to = +el.dataset.count; const t0 = performance.now(), dur = 1000;
+    if (reduce) { el.textContent = to; return; }
+    const step = () => { const p = Math.min(1, (performance.now() - t0) / dur); el.textContent = Math.round(to * p); if (p < 1) timers.push(setTimeout(step, 30)); };
+    step();
+  }
+  function press(el) { el.classList.remove('press'); void el.offsetWidth; el.classList.add('press'); }
+  function setLayout(n) {
+    const sl = document.getElementById('sl6');
+    sl.classList.remove('l2', 'l3'); if (n > 1) sl.classList.add('l' + n);
+    [1, 2, 3].forEach(k => document.getElementById('sg' + k).classList.toggle('on', k === n));
+  }
+  function play(s) {
+    s.querySelectorAll('[data-at]').forEach(el => {
+      const at = +el.dataset.at;
+      later(at, () => {
+        el.classList.add('in');
+        if (el.dataset.type !== undefined) type(el);
+        if (el.dataset.count !== undefined) count(el);
+        if (el.dataset.h) el.style.height = el.dataset.h;
+        if (el.dataset.text !== undefined && !el.dataset.swap) el.textContent = el.dataset.text;
+        if (el.dataset.press !== undefined) press(el);
+      });
+      if (el.dataset.swap) later(+(el.dataset.swapAt || at), () => {
+        el.setAttribute('class', el.dataset.swap + ' in');
+        if (el.dataset.text !== undefined) el.textContent = el.dataset.text;
+      });
+      if (el.dataset.out) later(+el.dataset.out, () => el.classList.add('out'));
+    });
+    s.querySelectorAll('[data-press-at]').forEach(el => later(+el.dataset.pressAt, () => press(el)));
+    if (s.querySelector('#sl6')) { later(5600, () => setLayout(2)); later(7000, () => setLayout(3)); }
+  }
+
+  const prog = document.getElementById('prog');
+  const countEl = document.getElementById('count');
+  function go(i) {
+    reset(slides[cur]); slides[cur].classList.remove('cur');
+    cur = Math.max(0, Math.min(N - 1, i));
+    const s = slides[cur];
+    s.classList.add('cur'); reset(s); play(s);
+    prog.style.width = ((cur + 1) / N * 100) + '%';
+    countEl.textContent = `${cur + 1} / ${N} · ${s.dataset.title}`;
+    try { history.replaceState(null, '', '#' + (cur + 1)); } catch (e) { /* 파일 열기 환경에서 막혀도 무시 */ }
+    if (auto) { clearTimeout(autoTimer); autoTimer = setTimeout(() => cur < N - 1 ? go(cur + 1) : toggleAuto(false), AUTO_MS); }
+    document.querySelectorAll('#overview button').forEach((b, k) => b.setAttribute('aria-current', k === cur ? 'true' : 'false'));
+  }
+  function toggleAuto(on) {
+    auto = on ?? !auto;
+    const b = document.getElementById('auto');
+    b.setAttribute('aria-pressed', String(auto)); b.textContent = auto ? '⏸ 자동 넘김 끄기' : '▶ 자동 넘김';
+    clearTimeout(autoTimer); if (auto) autoTimer = setTimeout(() => go(cur + 1), AUTO_MS);
+  }
+
+  // 목록(개요)
+  const ov = document.getElementById('overview');
+  slides.forEach((s, i) => {
+    const b = document.createElement('button'); b.type = 'button';
+    b.innerHTML = `<span class="n">${String(i + 1).padStart(2, '0')}</span><b>${s.dataset.title}</b>`;
+    b.addEventListener('click', () => { ov.hidden = true; go(i); });
+    ov.appendChild(b);
+  });
+  const toggleGrid = () => { ov.hidden = !ov.hidden; };
+  const toggleFs = () => { if (!document.fullscreenElement) document.documentElement.requestFullscreen?.(); else document.exitFullscreen?.(); };
+
+  document.getElementById('prev').addEventListener('click', () => go(cur - 1));
+  document.getElementById('next').addEventListener('click', () => go(cur + 1));
+  document.getElementById('replay').addEventListener('click', () => go(cur));
+  document.getElementById('auto').addEventListener('click', () => toggleAuto());
+  document.getElementById('grid').addEventListener('click', toggleGrid);
+  document.getElementById('fs').addEventListener('click', toggleFs);
+  document.querySelector('.viewport').addEventListener('click', () => go(cur + 1));
+  addEventListener('keydown', e => {
+    if (['ArrowRight', 'PageDown', ' ', 'Enter'].includes(e.key)) { e.preventDefault(); go(cur + 1); }
+    else if (['ArrowLeft', 'PageUp', 'Backspace'].includes(e.key)) { e.preventDefault(); go(cur - 1); }
+    else if (e.key === 'Home') go(0);
+    else if (e.key === 'End') go(N - 1);
+    else if (e.key === 'Escape') ov.hidden = true;
+    else if (e.key.toLowerCase() === 'f') toggleFs();
+    else if (e.key.toLowerCase() === 'g') toggleGrid();
+    else if (e.key.toLowerCase() === 'r') go(cur);
+  });
+  // 휴대폰 — 좌우로 밀어 넘기기
+  let x0 = null;
+  addEventListener('touchstart', e => { x0 = e.touches[0].clientX; }, { passive: true });
+  addEventListener('touchend', e => { if (x0 === null) return; const dx = e.changedTouches[0].clientX - x0; if (Math.abs(dx) > 50) go(cur + (dx < 0 ? 1 : -1)); x0 = null; });
+  // 조작부는 마우스를 멈추면 숨긴다
+  const ui = document.getElementById('ui'), help = document.getElementById('help'); let idle = 0;
+  const wake = () => { ui.classList.remove('idle'); help.style.opacity = 1; clearTimeout(idle); idle = setTimeout(() => { ui.classList.add('idle'); help.style.opacity = 0; }, 2500); };
+  addEventListener('mousemove', wake); wake();
+
+  const start = parseInt(location.hash.slice(1), 10);
+  go(Number.isFinite(start) ? start - 1 : 0);
+})();
+</script>
+</body>
+</html>

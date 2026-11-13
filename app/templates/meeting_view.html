@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ mt.title }} · 보기 · {{ app_title }}{% endblock %}
+{% block content %}
+{# 회의자료 보기(최종 시안 design/mockups/v2m-meeting-view) — M11. 보는 사람이 대부분이라 읽기만. 발행 뒤 이슈 사실이 바뀐 장에 「변경」 #}
+<div class="st-bar">
+  <a class="btn sm" href="/meetings">‹ 회의</a>
+  <div class="st-ttl"><b>{{ mt.title }}</b>
+    <span class="small muted">· {{ v.deck.meeting.kind_label }} · {% if v.published %}{{ '제출' if mt.kind == 'dept' else '발행' }} {{ v.deck.meeting.version }}판 · {{ v.published_at }}{% else %}구성 중(아직 {{ '제출' if mt.kind == 'dept' else '발행' }} 전){% endif %}</span></div>
+  <a class="btn sm" href="/studio/{{ mt.id }}">편집</a>
+  <a class="btn sm" href="/export/meeting/{{ mt.id }}/pptx">PPT</a>
+  {% if v.published and mt.kind != 'dept' %}<a class="btn primary" href="/meetings/{{ mt.id }}/run">{{ '회의 기록 보기' if mt.status == '종료' else '회의 시작' }}</a>{% endif %}
+</div>
+{% set err = request.query_params.get('err', '') %}{% if err %}<p class="flash bad" role="alert">{{ err }}</p>{% endif %}
+{% if v.changes %}<p class="flash bad" role="status">{{ v.deck.meeting.version }}판 뒤에 이슈 사실이 바뀐 장 {{ v.changes | length }}개 — 아래 「변경」 표시. 이 판은 그대로이고, 편집에서 다시 {{ '제출' if mt.kind == 'dept' else '발행' }}하면 {{ v.deck.meeting.version + 1 }}판이 됩니다.</p>{% endif %}
+{% if not v.published %}<p class="v-trial-note">구성 중인 자료입니다. 이슈 사실을 고치면 바로 따라 바뀝니다.</p>{% endif %}
+<div class="mv-wrap">
+  <nav class="st-pane mv-toc" aria-label="쪽 목록" id="toc"></nav>
+  <main class="mv-pages" id="pages" aria-label="회의자료"></main>
+</div>
+<script id="mvState" type="application/json">{{ view_json | safe }}</script>
+<script type="module" src="{{ url_for('static', path='js/meeting_view.js') }}?v={{ asset_v }}"></script>
+{% endblock %}

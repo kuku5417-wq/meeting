@@ -1,0 +1,8 @@
+id,code,name,parent_id
+SYS-ENG,ENG,기관,
+SYS-PWR,PWR,발전 시스템,SYS-ENG
+SYS-GE,GE,주발전기,SYS-PWR
+SYS-CGO,CGO,화물 시스템,
+SYS-CP,CP,카고펌프,SYS-CGO
+SYS-NAV,NAV,항해·조종,
+SYS-SG,SG,조타기,SYS-NAV

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>v2 B안 가져오기 — 시안</title>
+<link rel="stylesheet" href="../../app/static/css/fonts.css">
+<link rel="stylesheet" href="v2b.css">
+<style>
+/* 가져오기 B안(iPadOS) — 메모·메일함·PPT/HTML 입구 하나. 어디서 왔든 같은 「확인」 목록으로 모이고, 조각마다 판정하면 다음 조각으로 */
+.imp{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}
+.colx{display:grid;gap:12px;align-content:start;min-width:0}
+.pc{grid-template-columns:auto minmax(0,1fr);align-items:start}
+.pc.on{background:var(--accent-soft)}
+.pc.fin{opacity:.55}
+.pc .n{font-family:var(--mono);font-weight:700;color:var(--muted)}
+.pc .raw{grid-column:2;font-family:var(--mono);font-size:var(--fs-2);background:var(--warn-soft);padding:6px 10px;border-radius:8px;white-space:pre-wrap}
+.pc .ai{grid-column:2;display:grid;gap:2px}
+.pc .pick{grid-column:2;display:inline-flex;gap:2px;padding:2px;background:var(--fill);border-radius:9px;justify-self:start;flex-wrap:wrap}
+.pick button{font:inherit;font-size:var(--fs-2);font-weight:500;min-height:34px;padding:0 12px;border:0;border-radius:7px;background:none;color:var(--fg);cursor:pointer}
+.pick button[aria-pressed="true"]{background:var(--accent);color:var(--accent-fg);font-weight:600}
+.drop{display:grid;place-items:center;gap:6px;padding:32px;border-radius:12px;background:var(--fill-2);text-align:center;color:var(--muted)}
+.mail .m{grid-template-columns:auto minmax(0,1fr) auto;font-size:var(--fs-2)}
+@media (max-width:1150px){.imp{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+<header class="top">
+  <span class="brand">회의·지식</span>
+  <nav class="nav" aria-label="메뉴"><a href="v2b-home.html">홈</a><a href="v2b-issue-desk.html" aria-current="page">이슈</a><a href="v2b-meetings.html">회의</a><a href="v2-metrics.html">지표</a><a href="#">지식창고</a><a href="#">장비 허브</a></nav>
+  <div class="right"><span>시운전1부</span><a id="toA" href="#">A안 보기</a></div>
+</header>
+<details class="note"><summary>시안 설명 — B안 가져오기</summary>이슈로 들어오는 입구가 여기 하나입니다. 메모를 붙여넣든, 메일함에 전달했든, PPT·HTML 을 올렸든 AI 가 같은 「조각」으로 나눠 오른쪽에 줄 세웁니다. 조각마다 판정을 누르면 다음 조각으로 넘어가고, 끝나면 「반영하기」 한 번. 원본은 그대로 보관합니다. 데이터는 가상입니다.</details>
+<main class="page">
+  <div class="ph"><h1>가져오기</h1><a href="v2b-issue-desk.html" class="small">← 이슈 원장</a></div>
+  <div class="imp">
+    <section class="panel" aria-labelledby="sH">
+      <h2 id="sH" style="font-size:var(--fs-3)">어디서 가져올까요</h2>
+      <div class="seg" role="group" aria-label="가져올 곳"><button type="button" data-src="memo" aria-pressed="true">메모 붙여넣기</button><button type="button" data-src="mail" aria-pressed="false">메일함 <span class="mono">3</span></button><button type="button" data-src="file" aria-pressed="false">PPT · HTML 파일</button></div>
+      <div data-pane="memo"><label class="f">메모·메신저 대화 — 시간·보낸 사람 줄은 자동으로 걷어냅니다(이름은 저장하지 않음)<textarea id="memo" rows="8">[오전 9:12] 2511 DG2 배기온도 편차 계속, 3번 실린더 +38도. 연료밸브 교체품 금요일 입고
+[오전 9:15] 2514 카고 1번 토출압 흔들림 ±0.4, 스트레이너 볼 예정
+[오전 9:20] 안전사고 예방 캠페인 10/6~10/30</textarea></label>
+        <div class="row" style="margin-top:8px"><button class="btn primary" type="button" id="split">AI 로 나누기</button><span class="small muted">나눈 조각은 오른쪽에 쌓입니다</span></div></div>
+      <div data-pane="mail" hidden class="mail" style="display:grid;gap:8px">
+        <span class="small muted">Outlook 「회의자료」 폴더 — 10분마다 읽습니다. 현장에서는 그 폴더로 전달만 하면 됩니다.</span>
+        <div class="group"><div class="cell m"><span class="mono">10/22 08:40</span><span><b>FW: 2514 카고펌프 사진</b> · 사진 3 · 본문 2줄</span><span class="st new">새로 옴</span></div>
+        <div class="cell m"><span class="mono">10/21 17:02</span><span><b>FW: DG2 밸브 입고 일정</b> · 본문 4줄</span><span class="st done">조각으로 나눔</span></div>
+        <div class="cell m"><span class="mono">10/21 11:30</span><span><b>스캔: 점검표 SN2511</b> · PDF 2쪽 (글자 인식)</span><span class="st done">조각으로 나눔</span></div></div>
+      </div>
+      <div data-pane="file" hidden><div class="drop"><b>PPT · HTML 파일을 끌어다 놓기</b><span class="small">장·문단마다 조각이 됩니다. 원본 장은 회의자료에 「원본 슬라이드」로 그대로 쓸 수 있습니다.</span><button class="btn sm" type="button" id="fakeFile">예시 파일로 해 보기</button></div></div>
+    </section>
+
+    <section class="colx" aria-labelledby="cH">
+      <div class="ph"><h2 id="cH">확인 <span class="mono muted" id="cN" style="font-weight:400"></span></h2><span class="small muted">판정을 누르면 다음 조각으로</span></div>
+      <div id="pcs" class="group"></div>
+    </section>
+  </div>
+</main>
+<div class="actbar"><span class="state" id="state"></span><span class="keys"><kbd>1</kbd> 붙이기 · <kbd>2</kbd> 새 이슈 · <kbd>3</kbd> 건너뛰기</span><button class="btn primary" type="button" id="apply" disabled>반영하기</button></div>
+<script type="module">
+import {$, $$, esc, toast} from './v2b.js';
+// 조각 — 실제 구현: 메모·메일·파일을 같은 extract 파이프라인(근거 줄·별칭 연결)으로
+let pcs = [
+  {from: '메일 10/22 08:40', raw: '2514 카고펌프 3번 씰 교체 후 4시간 무누유', hit: 'PRB-2026-0001 SN2514 카고펌프 No.3 메카니컬씰 누유', pct: 94, add: '이번 주 진행 · 사진 3'},
+];
+let cur = 0;
+const V = {link: '기존 이슈에 붙이기', new: '새 이슈', skip: '건너뛰기'};
+function render() {
+  $('#pcs').innerHTML = pcs.map((p, i) => `<div class="cell pc ${i === cur ? 'on' : ''} ${p.v ? 'fin' : ''}" data-i="${i}"><span class="n">${i + 1}</span><span class="small muted">${esc(p.from)}</span>
+    <span class="raw">${esc(p.raw)}</span>
+    <div class="ai">${p.hit ? `<span>붙일 곳: <b>${esc(p.hit)}</b> <span class="mono small">일치 ${p.pct}%</span></span>` : '<span>기존 이슈 없음 — 새 이슈 후보</span>'}<span class="small muted">들어갈 것: ${esc(p.add)}</span></div>
+    <div class="pick">${Object.entries(V).filter(([k]) => p.hit || k !== 'link').map(([k, l]) => `<button type="button" data-v="${k}" aria-pressed="${p.v === k}">${l}</button>`).join('')}</div></div>`).join('') || '<div class="cell muted">아직 조각이 없습니다 — 왼쪽에서 가져오세요</div>';
+  const n = pcs.filter((p) => p.v && p.v !== 'skip').length, left = pcs.filter((p) => !p.v).length;
+  $('#cN').textContent = `${pcs.length - left}/${pcs.length}`;
+  $('#apply').disabled = !n; $('#apply').textContent = n ? `반영하기 ${n}건` : '반영하기';
+  $('#state').textContent = left ? `판정 남음 ${left}` : '모두 판정했습니다';
+}
+function decide(v) {
+  if (!pcs[cur]) return;
+  pcs[cur].v = v; const nx = pcs.findIndex((p, i) => i > cur && !p.v); cur = nx >= 0 ? nx : pcs.findIndex((p) => !p.v);
+  if (cur < 0) cur = pcs.length; render();
+  $('.pc.on')?.scrollIntoView({block: 'nearest'});
+}
+$('#split').onclick = () => {
+  const lines = $('#memo').value.split('\n').map((l) => l.replace(/^\[[^\]]*\]\s*/, '').trim()).filter(Boolean);
+  const guess = [['DG2', 'ISS-2026-0001 SN2511 발전기 No.2 배기온도 편차', 96, '이번 주 진행 한 줄'], ['카고 1번', 'ISS-2026-0012 SN2514 카고펌프 No.1 토출압 변동', 88, '이번 주 진행 한 줄']];
+  lines.forEach((l) => { const g = guess.find(([k]) => l.includes(k)); pcs.push({from: '메모', raw: l, hit: g?.[1], pct: g?.[2], add: g ? g[3] : '공유정보 새로 · 매핑 해당 없음'}); });
+  cur = pcs.findIndex((p) => !p.v); render(); toast(`${lines.length}조각으로 나눴습니다 — 시간 표기는 걷어냈습니다`);
+};
+$('#fakeFile').onclick = () => { pcs.push({from: '시운전1부_현안.pptx 1쪽', raw: 'SN2511 주발전기 #2 배기온도 원인 및 교체 일정', hit: 'ISS-2026-0001 SN2511 발전기 No.2 배기온도 편차', pct: 96, add: '원인·조치 · 원본 장 1'}, {from: '시운전1부_현안.pptx 2쪽', raw: '안전 캠페인 안내 (표지 장식)', add: '—'}); cur = pcs.findIndex((p) => !p.v); render(); };
+$('#apply').onclick = () => { const n = pcs.filter((p) => p.v && p.v !== 'skip').length; toast(`${n}건을 원장에 반영했습니다 — 이슈 원장에서 확인하세요`); $('#apply').textContent = '이슈 원장으로 →'; $('#apply').onclick = () => (location.href = 'v2b-issue-desk.html?f=line'); };
+document.addEventListener('click', (e) => {
+  const s = e.target.closest('[data-src]'), v = e.target.closest('[data-v]'), pc = e.target.closest('.pc');
+  if (s) { $$('[data-src]').forEach((b) => b.setAttribute('aria-pressed', b === s)); $$('[data-pane]').forEach((p) => (p.hidden = p.dataset.pane !== s.dataset.src)); }
+  if (v) { cur = +v.closest('.pc').dataset.i; decide(v.dataset.v); return; }
+  if (pc) { cur = +pc.dataset.i; render(); }
+});
+addEventListener('keydown', (e) => { if (e.target.closest('input,textarea')) return; const k = {1: 'link', 2: 'new', 3: 'skip'}[e.key]; if (k && pcs[cur] && (k !== 'link' || pcs[cur].hit)) decide(k); });
+render();
+</script>
+</body>
+</html>

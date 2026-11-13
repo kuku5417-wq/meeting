@@ -1,0 +1,4 @@
+id,code,name,system_id
+TI-GE-LOAD,GE-01,발전기 부하시험,SYS-GE
+TI-GE-PARA,GE-02,발전기 병렬운전 시험,SYS-GE
+TI-SG-STEER,SG-01,조타기 작동 시험,SYS-SG

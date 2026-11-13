@@ -1,0 +1,57 @@
+[project]
+name = "meeting"
+version = "0.1.0"
+description = "커미셔닝팀 주간 회의자료 · 지식화 — 메모 → AI 블록 정리 → PPT·웹 회의 화면 + 지식창고"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn>=0.30",
+    "sqlalchemy>=2.0,<3.0",
+    "jinja2>=3.1",
+    "python-dotenv>=1.0",   # app_config(.env 로드) 필수
+    "httpx>=0.27",          # _smoke.py 의 TestClient
+    "requests>=2.31",       # LLM 호출 — 사내 MITM 프록시에서 httpx 행 문제(형제 앱 costplan 실측) 회피
+    "jsonschema>=4.21",     # LLM 출력 검증 (schema/extraction.schema.json)
+    "python-multipart>=0.0.9",  # 화면 폼(POST)·사진 업로드
+    "pillow>=10.2",         # 사진 검증·합성(원본 + 주석 → 출력 이미지)
+    "python-pptx>=1.0",     # 편집 가능한 PPT 출력 (M7) — ⚠ 형제 앱이 안 써서 사내망 uv 캐시에 없다(lxml·XlsxWriter 포함)
+    "pyarrow>=14.0",        # 중앙 parquet(pjtlist·milestone) 읽기 전용 — pandas 없이 (2026-10-21)
+    "pywin32>=306; sys_platform == 'win32'",   # 메일함 가져오기(M13, Outlook COM) — dcost 와 같은 휠, 없으면 휴면
+    "pypdf>=5.0",           # PDF 가져오기(2026-10-29) — 순수 파이썬 휠(C 확장 없음). 엑셀(.xlsx)은 표준 zipfile·xml 로 읽는다
+]
+
+[tool.uv]
+package = false
+managed = true
+python-preference = "only-system"
+python-downloads = "never"
+# 사내망 공용PC 는 uv 캐시에 없는 휠을 받기 어렵다 — 형제 FastAPI 앱(log)·costplan 의 lock 버전에 맞춘다.
+constraint-dependencies = [
+    "fastapi==0.138.2",
+    "starlette==1.3.1",
+    "uvicorn==0.49.0",
+    "pydantic==2.13.4",
+    "pydantic-core==2.46.4",
+    "sqlalchemy==2.0.51",
+    "greenlet==3.5.3",
+    "jinja2==3.1.6",
+    "markupsafe==3.0.3",
+    "python-dotenv==1.2.2",
+    "anyio==4.14.1",
+    "h11==0.16.0",
+    "idna==3.18",
+    "click==8.4.2",
+    "typing-extensions==4.15.0",
+    "requests==2.34.2",
+    "urllib3==2.7.0",
+    "certifi==2026.6.17",
+    "charset-normalizer==3.4.7",
+    "jsonschema==4.26.0",
+    "jsonschema-specifications==2025.9.1",
+    "referencing==0.37.0",
+    "rpds-py==2026.5.1",
+    "attrs==26.1.0",
+    "python-multipart==0.0.32",
+    "pillow==12.2.0",
+    "pyarrow==25.0.1",       # pjtcost·dcost lock 과 같은 판
+]
