@@ -353,7 +353,12 @@ def _com_val(v) -> str:
 
 
 def _parse_drm_xlsx(data: bytes) -> list[Piece]:
-    """zip 이 아닌 .xlsx = 문서 보안(DRM)이 걸린 파일 → 서버 PC Excel 로 연다(drm_reader). 안 되면 사유 안내."""
+    """zip 이 아닌 .xlsx = 문서 보안(DRM)이 걸린 파일 → 서버 PC Excel 로 연다(drm_reader). 안 되면 사유 안내.
+    결정 ③: 1차 판에서는 열지 않고 안내만(MEETING_COM_IMPORTS=on 이면 연다)."""
+    from app import settings
+    if not settings.COM_IMPORTS:
+        raise ImportError_("문서 보안(DRM)이 걸린 엑셀은 1차 판에서 열지 않습니다(결정 ③) — "
+                           "문서 보안을 해제해 저장한 뒤 올려주세요. 일반 엑셀·PPT·PDF·HTML 은 그대로 올릴 수 있습니다.")
     sheets = drm_reader.read_sheets(data)
     if sheets is None:
         raise ImportError_(f"엑셀 파일을 읽지 못했습니다(DRM 복호 불가 — {drm_reader.last_error() or '사유 모름'}). "

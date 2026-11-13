@@ -171,3 +171,8 @@
 - A 결과: shi 0.5.0(1079375) — 판·에이전트 9개·store-reviewer 「SQLite 하나 + 잠금」 예외(결정 ①과 맞춤), guard-test 0/50, 설치 시험, agent_new zip 0.5.0. v0.5.0 태그는 원격 push 실패(PC에서)
 - B 결과: _smoke 를 t_base + GROUPS 로 정리, tests/ 영역별 12파일(test_00~10, 99) 29 passed, _smoke 432/432. 계획 단계 1 완료
 - 다음 세션 시작점: 단계 0(PC 미니맵 문서) → 단계 2 전환 지점 4곳
+
+## 2026-11-13 더 하기 (15:40~16:15, 끝에 전부 커밋)
+- [x] 단계 3-a 결정 ③ — 메일·DRM 1차에서 끔: 설정 MEETING_COM_IMPORTS(기본 off), 메일함 안내 문구, DRM 엑셀 안내, 검사(끔/켬 둘 다)
+- [ ] 단계 3-b 결정 ④ — LLM 기본 체인 sola,openai(Mock은 테스트 전용), 둘 다 실패하면 사람이 쓰는 길 확인·검사
+- [ ] 마감 — 로그·push·PC 폴더

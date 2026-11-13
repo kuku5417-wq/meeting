@@ -50,6 +50,9 @@ LLM_TIMEOUT_SEC = _int("MEETING_LLM_TIMEOUT_SEC", 60)
 LONG_OPEN_WEEKS = _int("MEETING_LONG_OPEN_WEEKS", 4)   # 장기 미결 기준 주 수(로드맵 「미정」, 기본 4)
 
 # ── 메일 수집(M13, F22) — 서버 PC 의 클래식 Outlook(COM)에서 읽는다. pywin32·Outlook 이 없으면 휴면 ──
+# 결정 ③(2026-11-13): 메일함·DRM 엑셀(Outlook·Excel COM)은 1차 판에서 끈다 — 각자 PC 실행이라 「서버 PC 한 대」 전제가 없어짐.
+# 코드는 그대로 두고 MEETING_COM_IMPORTS=on 일 때만 켠다(2차에서 어느 PC 에서 켤지 다시 정함).
+COM_IMPORTS = os.getenv("MEETING_COM_IMPORTS", "off").strip().lower() in ("on", "1", "true", "yes")
 MAIL_FOLDER = os.getenv("MEETING_MAIL_FOLDER", "").strip()     # 받은편지함 아래 경로(예: 회의자료). 비면 메일함 입구가 꺼진다
 MAIL_DAYS = _int("MEETING_MAIL_DAYS", 14)                       # 「메일함에서 가져오기」가 보는 기간(일)
 IMPORT_MAX_MB = _int("MEETING_IMPORT_MAX_MB", 30)               # 올리는 파일 한 개 크기 한도

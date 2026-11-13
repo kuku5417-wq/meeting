@@ -24,7 +24,14 @@ _IMG = (".png", ".jpg", ".jpeg", ".gif", ".bmp")
 LAST_ERRORS: list[str] = []
 
 
+COM_OFF_MSG = ("1차 판에서는 메일함 가져오기를 쓰지 않습니다(결정 ③) — 메일 본문은 「메모 붙여넣기」로, "
+               "첨부 파일은 「파일 올리기」로 넣어주세요.")
+
+
 def available() -> bool:
+    from app import settings
+    if not settings.COM_IMPORTS:                       # 결정 ③ — 1차 판에서 끔
+        return False
     if os.environ.get("MEETING_NO_OUTLOOK"):          # 회귀(_smoke)에서 켜진 Outlook 에 붙지 않게
         return False
     try:
@@ -37,6 +44,9 @@ def available() -> bool:
 
 def why_not(folder: str) -> str:
     """메일함 입구가 쉬는 이유 — 화면 안내용. 쓸 수 있으면 ''."""
+    from app import settings
+    if not settings.COM_IMPORTS:
+        return COM_OFF_MSG
     if not folder:
         return "메일 폴더가 정해지지 않았습니다 — secret/.env 에 MEETING_MAIL_FOLDER(받은편지함 아래 경로)를 넣어주세요."
     if not available():

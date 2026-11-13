@@ -1967,7 +1967,11 @@ def t_m13(c) -> None:
           and xps[0][2] == "sheet", repr(xps[:1]))
     # DRM 엑셀 — zip 이 아니면 Excel(COM)로 연다. 회귀에서는 Excel 을 띄우지 않고 drm_reader 를 갈아 끼운다
     from datetime import datetime as _dt
+    from app import settings as _settings
     from app.services import drm_reader as _drm
+    r = c.post("/import/file", files={"file": ("off.xlsx", b"DRM-ENCRYPTED-BLOB", "application/octet-stream")}, data={"dept_id": "D3"})
+    check("결정③ — DRM 엑셀은 1차 판에서 열지 않고 안내", "1차 판에서 열지 않습니다" in r.text and "문서 보안을 해제" in r.text)
+    _settings.COM_IMPORTS = True                       # 아래는 켰을 때(2차) 동작 — 코드는 유지
     _orig_read = _drm.read_sheets
     _drm.read_sheets = lambda data, suffix=".xlsx": [("보안 현안", [[None, None, None], [None, "호선", "기한"], [None, "SN2511", _dt(2026, 11, 5)],
                                                                   [None, 3.0, True], [None, None, None]])]
@@ -1986,6 +1990,10 @@ def t_m13(c) -> None:
     # 메일함 — 휴면 · 메일 조각
     r = c.post("/import/mail", data={"dept_id": "D3"})
     check("M13 메일함 — Outlook·폴더 설정이 없으면 휴면 안내(앱은 그대로)", r.status_code == 200 and ("MEETING_MAIL_FOLDER" in r.text or "pywin32" in r.text))
+    _settings.COM_IMPORTS = False                      # 결정 ③ 기본값으로 되돌림
+    r = c.post("/import/mail", data={"dept_id": "D3"})
+    check("결정③ — 메일함은 1차 판에서 끔(안내: 메모 붙여넣기·파일 올리기)", r.status_code == 200 and "1차 판에서는 메일함 가져오기를 쓰지 않습니다" in r.text)
+    check("결정③ — 가져오기 화면의 메일함 버튼 비활성 + 안내", "1차 판에서는 메일함" in c.get("/import?entry=mail").text)
     mail = {"message_id": "<m13-test@x>", "subject": "FW: 2514 카고펌프 현장 사진", "received_at": "2026-10-23 09:10",
             "html": "<p>[홍길동] [오후 3:12] 2514 카고펌프 씰 누유 재발</p><p>[김철수] [오후 3:16] 내일 씰 교체 예정</p>",
             "attachments": [("현장.png", buf.getvalue()), ("보고.pptx", data)]}
