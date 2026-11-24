@@ -19,6 +19,12 @@ tests/llm_eval/private/
 # ── 원본 번들(내용은 이미 풀려 있다) ────────────────────
 _bundle.tgz
 
+# ── PC 마다 다른 shi 설정 (2026-11-24 결정) ─────────────
+# net 이 external/internal 로 갈리므로 커밋하지 않는다 — 커밋하면 사내망 meeting_F 가
+# pull 할 때마다 external 로 덮여 사내망 판이 외부 LLM·프록시를 부른다.
+# 각 PC 에서 /shi:init (사내망은 /shi:init internal) 로 만든다.
+.claude/shi.json
+
 # ── 파이썬 ─────────────────────────────────────────────
 __pycache__/
 *.py[cod]

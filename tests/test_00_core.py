@@ -6,6 +6,10 @@ def test_paths(run):
     run(sm.t_paths)
 
 
+def test_switch(run):
+    run(sm.t_switch)
+
+
 def test_tokens(run):
     run(sm.t_tokens)
 

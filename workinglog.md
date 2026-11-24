@@ -210,3 +210,28 @@
 2. 단계 2: 전환 지점 4곳 + ⑤ (app_config·_netcheck 제거) — 범위 먼저 사용자 확인
 3. 작은 정리: requirements.md 5장 결정 기록에 ⑦·⑧·정본·글자·토큰 줄이 두 번씩 있음 → 하나로
 4. M15(15-2~) → M16 지식 그래프(G2 는 15-5 뒤)
+
+## 2026-11-24 (trans) 단계 2-a — 전환 지점 경로·설정 (개발 PC `code_N`, 사외망)
+받은 환경: `code_N\meeting_trans`(trans) 작업본 · `code_N\meeting` 은 원본(main) 읽기만 · shi 0.5.0 은 `code_N\shi_dev` 를
+`~/.claude/settings.json` 의 `extraKnownMarketplaces`(directory 소스)로 전역 등록(새 세션에서 로드).
+
+- [x] 범위안 합의 → `docs/단계2_범위안.md` (래퍼로 남김 · ⑤ 는 파이썬만 지금 · 커밋 3조각 2-a/2-b/2-c)
+- [x] 2-a: `config/settings.py`(`net`·`net_source`·`secret`·`value`·`proxies`·`ssl_verify`·`llm_keys`·`env_label`),
+      `config/paths.py`(path_config 내용 이동, `_nas_base` 가 `net` 을 따름 — 경로 존재로 망을 추론하지 않음),
+      `path_config.py` 33줄 래퍼(import 13곳·`_smoke` 5군데 그대로)
+- [x] 검사 5개 추가 — `_smoke.t_switch` + `tests/test_00_core.test_switch`, `test_99_count` 456 → **461**
+      (shi.json 없으면 external / 사외망 `proxies()` None / `SHI_NET=corporate` 가 덮음 / 빈 환경변수 존중 / 래퍼 동일값)
+- [x] `.gitignore` 에 `.claude/shi.json`(2026-11-24 결정 — PC 마다 `net` 이 달라 커밋하면 사내망 판이 external 로 덮인다)
+- 결과: `pytest -q tests` **31 passed** · `_smoke` **461/461** · `check_env --quick` PASS
+
+⚠ 사고: 작업본에서 `check_env.py --quick` 을 `MEETING_DATA_PATH` 없이 돌려 **운영 DB**(`code_N\data\meeting\meeting.db`)에
+`init_db` 가 돌았다 — 표 37 → 48(trans 스키마의 빈 표·널 칸). 행은 보존(block 13·memo 4·meeting 20·hull 26), `integrity_check` ok.
+`backups/` 는 비어 있었다(백업은 앱 시작 때만). 재발 방지는 범위안 §6 경고 — **작업본 명령은 `MEETING_DATA_PATH` 를 먼저 준다.**
+
+### 다음 세션 시작점 (2026-11-24)
+1. 단계 2-b — `modules/llm_client.py`(app/llm/client.py 이동 + 래퍼) · `modules/nas.py` 뼈대.
+   `_smoke._offline_llm` 이 `llm.ac.LLM_*` 를 직접 비우므로 `config.settings.llm_keys()` 로 바꿀 때 같이 고친다.
+   화면 오른쪽 위 「사외망/사내망」 표시를 `net` 그대로 둘지 NAS 접속 성공까지 합칠지 물어볼 것
+2. 단계 2-c — `app_config.py` 삭제 · `check_env.py` 6절 정리(읽은 `net` 과 출처 한 줄) · `python-dotenv` 제거 + `uv lock` 같이 커밋 · `requirements.md` 4·5장 갱신
+3. `/shi:init`(ROADMAP·guard.json·공통 규칙 절)은 플러그인이 로드된 새 세션에서 — `stack=fastapi`, `original=code_N\meeting`, `net=external`
+4. 단계 0(PC 미니맵 문서)은 이 PC 에 없다 — 다른 PC 에서

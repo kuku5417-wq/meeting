@@ -54,6 +54,43 @@ def t_paths() -> None:
     check("DB 파일이 데이터 폴더 안", pc.db_path().parent == Path(_TMP))
 
 
+def t_switch() -> None:
+    """전환 지점(단계 2-a) — 망은 `.claude/shi.json` 하나, 사외망에서 프록시가 새지 않는다, 옛 이름 래퍼가 산다."""
+    import path_config as pc
+
+    import config.paths as paths
+    from config import settings as cfg
+
+    had = os.environ.pop("SHI_NET", None)
+    try:
+        paths.invalidate_cache()
+        net, src = cfg.net_source()
+        check("결정⑤ — shi.json 이 없으면 사외망(external)", net == "external" and "기본값" in src, f"{net} / {src}")
+        check("결정⑤ — 사외망에서 proxies() 는 None (사내 프록시가 사외망으로 새지 않는다)", cfg.proxies() is None)
+        os.environ["SHI_NET"] = "corporate"
+        paths.invalidate_cache()
+        check("결정⑤ — SHI_NET 이 망을 덮는다 (corporate = 사내망)",
+              cfg.net() == "internal" and cfg.env_label() == "사내망", cfg.net())
+    finally:
+        os.environ.pop("SHI_NET", None)
+        if had is not None:
+            os.environ["SHI_NET"] = had
+        paths.invalidate_cache()
+
+    had_key = os.environ.pop("LLM_SOLAR_API_KEY", None)
+    try:
+        os.environ["LLM_SOLAR_API_KEY"] = ""
+        empty_ok = cfg.value("LLM_SOLAR_API_KEY") == ""      # 일부러 비운 환경변수를 .env 로 되살리지 않는다
+    finally:
+        os.environ.pop("LLM_SOLAR_API_KEY", None)
+        if had_key is not None:
+            os.environ["LLM_SOLAR_API_KEY"] = had_key
+    check("비밀 읽기 — 빈 환경변수를 존중한다(시험이 키를 비워 네트워크를 막는 방식)", empty_ok)
+
+    check("옛 이름 래퍼 path_config = config.paths 와 같은 값",
+          pc.db_path() == paths.db_path() and pc.get_data_dir() == paths.get_data_dir())
+
+
 def t_tokens() -> None:
     root = Path(__file__).resolve().parent
     a, b = root / "design" / "tokens.css", root / "app" / "static" / "css" / "tokens.css"
@@ -2437,7 +2474,7 @@ GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metr
 
 
 def main() -> int:
-    for fn in (t_paths, t_tokens, t_weeks, t_sn, t_app):
+    for fn in (t_paths, t_switch, t_tokens, t_weeks, t_sn, t_app):
         try:
             fn()
         except Exception as e:  # noqa: BLE001 — 한 묶음이 죽어도 나머지는 돌린다
