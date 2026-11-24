@@ -1,7 +1,7 @@
 """검사 수 확인 — _smoke.py 와 같은 수를 돌았는지(빠진 묶음이 없는지)."""
 import _smoke as sm
 
-EXPECTED_MIN_CHECKS = 461   # 2026-11-24 단계 2-a 전환 지점 검사 5개(456 → 461). 검사를 더하면 같이 올린다
+EXPECTED_MIN_CHECKS = 467   # 2026-11-24 단계 2-a 5개 + 2-b 6개(456 → 467). 검사를 더하면 같이 올린다
 
 
 def test_check_count():

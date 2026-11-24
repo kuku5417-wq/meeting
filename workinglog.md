@@ -228,10 +228,30 @@
 `init_db` 가 돌았다 — 표 37 → 48(trans 스키마의 빈 표·널 칸). 행은 보존(block 13·memo 4·meeting 20·hull 26), `integrity_check` ok.
 `backups/` 는 비어 있었다(백업은 앱 시작 때만). 재발 방지는 범위안 §6 경고 — **작업본 명령은 `MEETING_DATA_PATH` 를 먼저 준다.**
 
-### 다음 세션 시작점 (2026-11-24)
+### 다음 세션 시작점 (2026-11-24, 2-a 끝 — 아래 2-b 절이 더 최신)
 1. 단계 2-b — `modules/llm_client.py`(app/llm/client.py 이동 + 래퍼) · `modules/nas.py` 뼈대.
    `_smoke._offline_llm` 이 `llm.ac.LLM_*` 를 직접 비우므로 `config.settings.llm_keys()` 로 바꿀 때 같이 고친다.
    화면 오른쪽 위 「사외망/사내망」 표시를 `net` 그대로 둘지 NAS 접속 성공까지 합칠지 물어볼 것
 2. 단계 2-c — `app_config.py` 삭제 · `check_env.py` 6절 정리(읽은 `net` 과 출처 한 줄) · `python-dotenv` 제거 + `uv lock` 같이 커밋 · `requirements.md` 4·5장 갱신
 3. `/shi:init`(ROADMAP·guard.json·공통 규칙 절)은 플러그인이 로드된 새 세션에서 — `stack=fastapi`, `original=code_N\meeting`, `net=external`
 4. 단계 0(PC 미니맵 문서)은 이 PC 에 없다 — 다른 PC 에서
+
+## 2026-11-24 (trans) 단계 2-b — 전환 지점 LLM·NAS
+- [x] `modules/llm_client.py` 신설(app/llm/client.py 이동) — 키·프록시·SSL 을 호출마다 `config.settings` 에서 받는다.
+      SOLA 금기(프록시 우회·verify=False·`max_tokens`·`stream` 미전송)·체인 누적 사유·`llm_call_log`(본문 미저장) 그대로
+- [x] `app/llm/client.py` 25줄 래퍼 — `PROVIDERS`(dict)·`settings`·`jsonschema` 를 **같은 객체**로 넘겨
+      시험이 공급자를 끼우고 체인을 바꾸는 방식(`t_llm`)이 그대로 돈다. 부르는 5 파일은 안 고쳤다
+- [x] `modules/nas.py` 뼈대 — `is_configured`·`base_path`·`is_available`·`ensure_connected`,
+      사외망이면 무동작 True. 실제 접속(`WNetAddConnection2` 3회)·쓰기 차단은 단계 5
+- [x] `config/settings.py` 에 `is_vdi()` 추가 — VDI 는 사외망이어도 프록시를 쓴다(공통지침). `proxies()` 조건에 넣었다
+- [x] `_smoke._offline_llm` 을 환경변수 비우기로 바꿨다(옛 방식은 `app_config` 속성을 직접 비웠다)
+- [x] 결정: **`ENV_LABEL` 은 설정값(`net`) 그대로** — NAS 접속 상태는 설정 화면·check_env 에서 따로(2026-11-24)
+- 검사 6개 추가 → `test_99_count` 461 → **467**: 래퍼 동일 객체 / VDI 값 없으면 None / 사외망+VDI 는 프록시 사용 /
+  VDI 아니면 사외망에서 미사용 / NAS 사외망 무동작 / NAS 사내망 미연결 안내
+- 결과: `pytest -q tests` **31 passed** · `_smoke` **467/467** · `check_env --quick` PASS(`MEETING_DATA_PATH` 를 임시 폴더로 주고 돌렸다 — 운영 DB 안 건드림)
+
+### 다음 세션 시작점 (2026-11-24, 2-b 끝)
+1. 단계 2-c — `app_config.py` 삭제(`app/settings.py` 의 import 부수효과를 `config.settings` 로, `check_env.py` 6절에
+   읽은 `net` 과 출처 한 줄) · `python-dotenv` 제거 + `uv lock` 같이 커밋 · `requirements.md` 4·5장 갱신
+2. `/shi:init` 은 플러그인 로드된 새 세션에서 — `stack=fastapi`, `original=code_N\meeting`, `net=external`
+3. 그 뒤 단계 5(NAS 접속) → 6~10 M15 자유 편집 → 11 실행 파일(래퍼 2개·`_netcheck.py`·bat 정리) → 12 사내망

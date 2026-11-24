@@ -90,6 +90,40 @@ def t_switch() -> None:
     check("옛 이름 래퍼 path_config = config.paths 와 같은 값",
           pc.db_path() == paths.db_path() and pc.get_data_dir() == paths.get_data_dir())
 
+    # ── 단계 2-b: LLM·NAS 전환 지점 ──
+    from app.llm import client as llm_old
+
+    from modules import llm_client as llm_new
+    from modules import nas
+    check("옛 이름 래퍼 app.llm.client = modules.llm_client 와 같은 함수·같은 PROVIDERS",
+          llm_old.complete_json is llm_new.complete_json and llm_old.PROVIDERS is llm_new.PROVIDERS)
+
+    had = os.environ.pop("SHI_NET", None)
+    had_proxy = os.environ.pop("HTTP_PROXY", None)
+    had_proxys = os.environ.pop("HTTPS_PROXY", None)
+    had_vdi = os.environ.pop("VDI", None)
+    try:
+        os.environ["HTTP_PROXY"] = os.environ["HTTPS_PROXY"] = ""
+        os.environ["VDI"] = "true"
+        check("프록시 — VDI 예외는 살아 있지만 값이 없으면 None", cfg.proxies() is None)
+        os.environ["HTTP_PROXY"] = "http://127.0.0.1:9"          # 접속하지 않는다 — 값만 본다
+        check("프록시 — 사외망이어도 VDI 면 프록시를 쓴다(공통지침)",
+              (cfg.proxies() or {}).get("http") == "http://127.0.0.1:9", repr(cfg.proxies()))
+        os.environ["VDI"] = "false"
+        check("프록시 — VDI 가 아니면 사외망에서 값이 있어도 쓰지 않는다", cfg.proxies() is None)
+        ok_ext, msg_ext = nas.ensure_connected()
+        check("NAS — 사외망이면 아무것도 하지 않고 통과", ok_ext and "사외망" in msg_ext, msg_ext)
+        os.environ["SHI_NET"] = "corporate"
+        ok_int, msg_int = nas.ensure_connected()
+        check("NAS — 사내망에서 못 붙으면 무엇을 해야 하는지 알려 준다",
+              (not ok_int) and ("NAS" in msg_int), f"{ok_int} / {msg_int}")
+    finally:
+        for k, v in (("SHI_NET", had), ("HTTP_PROXY", had_proxy), ("HTTPS_PROXY", had_proxys), ("VDI", had_vdi)):
+            os.environ.pop(k, None)
+            if v is not None:
+                os.environ[k] = v
+        paths.invalidate_cache()
+
 
 def t_tokens() -> None:
     root = Path(__file__).resolve().parent
@@ -323,10 +357,14 @@ def t_dashboard_report(c) -> None:
 
 
 def _offline_llm():
-    """공급자 키를 비워 sola·upstage·openai 가 「미설정」으로 바로 넘어가게 한다(네트워크 없음)."""
+    """공급자 키를 비워 sola·upstage·openai 가 「미설정」으로 바로 넘어가게 한다(네트워크 없음).
+
+    단계 2-b: 전환 지점(`modules/llm_client`)은 호출할 때마다 `config.settings.llm_keys()` 를 읽으므로
+    환경변수를 비우면 된다 — 빈 환경변수는 「일부러 비운 것」으로 존중된다(`config.settings.value`).
+    """
     from app.llm import client as llm
     for k in ("LLM_SOLAR_API_URL", "LLM_SOLAR_API_KEY", "LLM_UPSTAGE_API_KEY", "LLM_OPENAI_API_KEY"):
-        setattr(llm.ac, k, "")
+        os.environ[k] = ""
     return llm
 
 

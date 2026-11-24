@@ -102,8 +102,17 @@ def is_internal() -> bool:
 
 
 def env_label() -> str:
-    """화면 표시용 — 「사내망」/「사외망」."""
+    """화면 표시용 — 「사내망」/「사외망」. 설정값(`net`)을 그대로 보여 준다.
+
+    NAS 에 실제로 붙었는지는 여기서 섞지 않는다 — 접속 상태는 `modules/nas.py` 가 알고,
+    설정 화면·`check_env.py` 가 따로 보여 준다(2026-11-24 결정).
+    """
     return "사내망" if is_internal() else "사외망"
+
+
+def is_vdi() -> bool:
+    """VDI 는 사외망이어도 프록시를 쓴다(`.env` 의 `VDI=true`, 공통지침)."""
+    return value("VDI").strip().lower() in ("true", "1", "yes", "y")
 
 
 # ── 프록시 ───────────────────────────────────────────────
@@ -116,11 +125,11 @@ def _normalize_proxy(v: str) -> str:
 
 
 def proxies() -> dict | None:
-    """requests 용 프록시 — **사내망일 때만**. 값이 없으면 None.
+    """requests 용 프록시 — **사내망(또는 VDI)일 때만**. 값이 없으면 None.
 
     사외망에서 None 을 돌려주는 것이 이 함수의 핵심이다(사내 프록시가 사외망으로 새지 않는다).
     """
-    if not is_internal():
+    if not (is_internal() or is_vdi()):
         return None
     http = _normalize_proxy(value("HTTP_PROXY"))
     https = _normalize_proxy(value("HTTPS_PROXY"))
