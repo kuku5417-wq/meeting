@@ -129,15 +129,18 @@ async def api_objects(iid: int, request: Request, s: Session = Depends(get_sessi
 
 @router.post("/api/studio/items/{iid}/link")
 async def api_link(iid: int, request: Request, s: Session = Depends(get_session)):
-    """연결 다루기 (결정 ⑦ 15-3) — op: apply(이슈에도 반영) · pull(다시 가져오기) · unlink · relink · add.
+    """연결·갈래 다루기 (결정 ⑦ 15-3·15-4) — op: apply(이슈에도 반영) · pull(다시 가져오기) ·
+    unlink · relink · add(장에 없는 칸) · pick(더한 개체의 갈래 칩).
 
-    **기본은 이 자료만 바뀐다.** 이슈의 사실을 바꾸는 것은 `apply` 하나뿐이고, 그때만 이슈 변경 기록에
-    「사실변경」이 남는다(케이스 A3 — 줄여 쓰기와 오타 고치기는 손동작이 같아서 한 번 더 누르게 한다).
+    **기본은 이 자료만 바뀐다.** 이슈의 사실을 바꾸는 것은 `apply` 와 `pick`(scope=사실) 뿐이고,
+    그때만 이슈 변경 기록에 「사실변경」이 남는다(케이스 A3 — 줄여 쓰기와 오타 고치기는 손동작이 같아서
+    한 번 더 누르게 한다). `pick`(scope=새이슈)은 이슈를 새로 떼어낸다.
     """
     it, data = _item(s, iid), await request.json()
     mt = _meeting(s, it.meeting_id)
     from app.services import freeform as ff
     op, oid, field = str(data.get("op", "")), str(data.get("oid", "")), str(data.get("field", ""))
+    scope = str(data.get("scope", ""))
 
     def go():
         item = st.item_json(s, it, mt)
@@ -151,9 +154,12 @@ async def api_link(iid: int, request: Request, s: Session = Depends(get_session)
             return ff.add_field(it, item, field)
         if op == "apply":
             return ff.apply_to_issue(s, it, item, oid, mt)
+        if op == "pick":
+            return ff.pick(s, it, item, oid, scope, field, mt)
         raise ff.FreeError("모르는 동작입니다. 화면을 새로 고쳐주세요.")
 
-    return _run(s, mt, go, lambda _o: {"free": ff.json_with(it, st.item_json(s, it, mt))})
+    return _run(s, mt, go, lambda out: {"free": ff.json_with(it, st.item_json(s, it, mt)),
+                                        "new_block": out if isinstance(out, str) else ""})
 
 
 @router.post("/api/studio/items/{iid}/undo-form")

@@ -45,13 +45,14 @@ export function overflowing(root) {
 
 /**
  * 편집 붙이기. frame 안의 .v-stage 를 편집기로 만든다.
- * opts: {save(objects, rev) -> Promise<rev|null>, onChange(objects), status(el)}
+ * opts: {save(objects, rev) -> Promise<rev|null>, onChange(objects, selId, over), status(el), sel: 고를 개체 id}
  */
 export function mount(frame, it, opts) {
   const stage = frame.querySelector('.v-stage');
   if (!stage) return null;
   let list = objects(it);
-  let selId = list[0]?.id || '';
+  // 서버 동작(갈래 고르기·연결 다루기) 뒤에 다시 붙을 때도 고른 개체를 놓치지 않는다
+  let selId = (opts.sel && list.some((o) => o.id === opts.sel)) ? opts.sel : (list[0]?.id || '');
   let rev = it.free?.rev ?? 0;
   const past = [], future = [];
   let timer = null, saving = false;
@@ -167,8 +168,9 @@ export function mount(frame, it, opts) {
     add() {
       change(() => {
         const id = 'o' + (Date.now() % 100000);
+        // scope '미정' — 더한 개체는 갈래를 매번 고른다(결정 ⑦ 15-4). 서버도 새 id 를 같은 값으로 표시한다.
         list.push({id, type: 'text', x: 200, y: 200, w: 600, h: 120, text: '새 글', label: '', link: null,
-          style: {size: 30, bold: false, align: 'left', tone: 'fg'}});
+          scope: '미정', style: {size: 30, bold: false, align: 'left', tone: 'fg'}});
         selId = id;
       });
     },
@@ -178,7 +180,8 @@ export function mount(frame, it, opts) {
       const o = find(selId); if (!o) return;
       change(() => {
         const id = 'o' + (Date.now() % 100000);
-        list.push({...o, id, link: null, x: Math.min(o.x + 40, 1920 - o.w), y: Math.min(o.y + 40, 1080 - o.h), style: {...o.style}});
+        list.push({...o, id, link: null, scope: '미정', scope_field: '',
+          x: Math.min(o.x + 40, 1920 - o.w), y: Math.min(o.y + 40, 1080 - o.h), style: {...o.style}});
         selId = id;
       });
     },

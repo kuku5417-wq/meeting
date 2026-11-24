@@ -37,6 +37,11 @@ FIELDS = ("title", "line", "body", "cause", "act", "dec", "status", "dept")   # 
 FACT_BY_FIELD = {"title": "title", "body": "body", "cause": "cause_text", "act": "action_text",
                  "dec": "decision_needed", "status": "status"}
 CHOICE_FIELDS = ("status",)      # 고르는 칸 — 캔버스 글로 덮지 않는다(이슈 화면에서 고른다)
+# 개체 추가 칩(15-4) — **매번 고른다. 기본값 없음**(결정 ⑦). 안 고른 개체는 「미정」으로 남고 제출 전에 수로 알린다.
+SCOPES = ("", "미정", "자료만", "진행", "사실", "새이슈")
+SCOPE_LABEL = {"미정": "안 고름", "자료만": "이 자료만", "진행": "이번 주 진행",
+               "사실": "이슈 사실", "새이슈": "새 이슈로"}
+PICK_FIELDS = ("body", "cause", "act", "dec")      # 「이슈 사실」로 덧붙일 수 있는 칸
 FIELD_LABEL = {"title": "제목", "line": "회의용 한 줄", "body": "현상", "cause": "원인",
                "act": "조치 · 계획", "dec": "결정 필요", "status": "상태", "dept": "담당"}
 
@@ -85,6 +90,9 @@ def clean_object(raw: Any, n: int) -> dict:
     kind = str(raw.get("type") or "text")
     if kind not in TYPES:
         kind = "text"
+    scope = str(raw.get("scope") or "")
+    if scope not in SCOPES:
+        scope = ""
     w = _i(raw.get("w"), MIN_W, W, 600)
     h = _i(raw.get("h"), MIN_H, H, 80)
     x = _i(raw.get("x"), 0, W - MIN_W, 96)
@@ -98,6 +106,9 @@ def clean_object(raw: Any, n: int) -> dict:
         "label": str(raw.get("label") or "")[:40],
         "link": _clean_link(raw.get("link")),
         "style": _clean_style(raw.get("style")),
+        "scope": scope,
+        "scope_field": str(raw.get("scope_field") or "") if scope == "사실" else "",
+        "scope_block": str(raw.get("scope_block") or "")[:24] if scope == "새이슈" else "",
     }
     if kind == "photo":
         out["photo"] = str(raw.get("photo") or "")[:64]
@@ -214,12 +225,21 @@ def set_on(it, item_json: dict, on: bool) -> list[dict]:
 
 
 def save(it, objects: Any, base_rev: int | None = None) -> int:
-    """개체 저장(자동 저장). 판 번호가 다르면 거절 — 다른 창에서 고친 것을 덮지 않는다."""
+    """개체 저장(자동 저장). 판 번호가 다르면 거절 — 다른 창에서 고친 것을 덮지 않는다.
+
+    **새로 더한 개체는 서버가 「미정」으로 표시한다**(15-4) — 화면이 칩을 안 보내도 갈래 고르기를 건너뛸 수 없다.
+    초안·「장에 없는 칸」으로 들어온 개체는 이슈에서 온 것이라(연결이 있다) 고를 것이 없다.
+    """
     if not it.free_on:
         raise FreeError("이 장은 자유 편집이 꺼져 있습니다. 먼저 「자유 편집」을 켜주세요.")
     if base_rev is not None and int(base_rev) != int(it.free_rev or 0):
         raise FreeError("다른 곳에서 먼저 고쳤습니다. 화면을 새로 고친 뒤 다시 해주세요.")
-    it.objects_json = dump(clean(objects))
+    had = {o.get("id") for o in load(it)}
+    objs = clean(objects)
+    for o in objs:
+        if o["id"] not in had and not o["link"] and not o["scope"]:
+            o["scope"] = "미정"
+    it.objects_json = dump(objs)
     it.free_rev = (it.free_rev or 0) + 1
     return it.free_rev
 
@@ -420,6 +440,93 @@ def changed_links(before: list[dict], after: list[dict]) -> list[dict]:
     return out
 
 
+# ── 개체 추가 칩(15-4) ──────────────────────────────────
+def unchosen(objects: list[dict]) -> list[dict]:
+    """갈래를 아직 안 고른 개체 — 막지 않고 제출 전에 수로 알린다(결정 ⑦)."""
+    return [o for o in objects if (o.get("scope") or "") == "미정"]
+
+
+def _issue_of(item: dict):
+    return (item.get("blocks") or [{}])[0]
+
+
+def pick(s, it, item: dict, oid: str, scope: str, field: str, mt) -> str:
+    """더한 개체를 **어디에 남길지** 고른다 — 이 자료만 / 이번 주 진행 / 이슈 사실 / 새 이슈로.
+
+    기본값이 없다(결정 ⑦ — 「이 자료만」을 기본으로 두면 진행이 기록에 남지 않는다).
+    한 번 고르면 다시 고르지 않는다 — 두 번 누르면 같은 글이 두 번 덧붙는다.
+
+    돌려주는 값: 새로 뗀 이슈 ID(「새 이슈로」일 때), 그 밖에는 빈 문자열.
+    """
+    from app import models as m
+    from app.services import carry_over as co
+    from app.services import events
+    from app.services import issues as iss
+    from app.services import writing as wsvc
+
+    if scope not in ("자료만", "진행", "사실", "새이슈"):
+        raise FreeError("어디에 남길지 골라 주세요 — 이 자료만 / 이번 주 진행 / 이슈 사실 / 새 이슈로.")
+    objs = load(it)
+    o = _find(objs, oid)
+    now = o.get("scope") or ""
+    if now not in ("", "미정"):
+        raise FreeError(f"이 개체는 이미 「{SCOPE_LABEL.get(now, now)}」으로 보냈습니다 — "
+                        "다시 보내려면 개체를 새로 더해 주세요.")
+    text = str(o.get("text") or "").strip()
+    if not text and scope != "자료만":
+        raise FreeError("개체에 글을 적은 뒤 골라 주세요.")
+
+    bid = str(_issue_of(item).get("id") or "")
+    b = s.get(m.Block, bid) if bid else None
+    if scope != "자료만" and b is None:
+        raise FreeError("이 장에는 이슈가 없습니다 — 「이 자료만」으로 두세요.")
+    week_id = getattr(mt, "week_id", "") or ""
+    new_id = ""
+
+    if scope == "자료만":
+        if b is not None:
+            events.record(s, b.id, "개체추가", after=f"자료에 개체 추가 — {text[:300]}", meeting_id=mt.id)
+    elif scope == "진행":
+        row = co.week_row(s, b.id, week_id)
+        cur = ((row.note if row else "") or "").strip()
+        co.update_line(s, b, week_id, f"{cur} / {text}" if cur else text)
+        events.record(s, b.id, "개체추가", after=f"이번 주 진행에 덧붙임 — {text[:300]}", meeting_id=mt.id)
+    elif scope == "사실":
+        if field not in PICK_FIELDS:
+            raise FreeError("어느 사실 칸에 더할지 골라 주세요 — 현상 · 원인 · 조치 · 계획 · 결정 필요.")
+        key = FACT_BY_FIELD[field]
+        cur = str(getattr(b, key, "") or "").strip()
+        # 덧붙인다 — 줄여 쓴 글로 **덮지 않는다**(케이스 A2·A4). 사실변경 기록은 save_field 가 남긴다.
+        iss.save_field(s, b, key, "\n".join([cur, text]) if cur else text, meeting_id=mt.id)
+        o["scope_field"] = field
+    else:                                   # 새 이슈로 떼기 — 새 ID · 태그 물려받기 · 「파생」 링크(15-5 가 합치기를 더한다)
+        title = text.splitlines()[0][:80]
+        nb = m.Block(id=wsvc.new_block_id(s, "issue", int((week_id or "2026")[:4])), block_type="issue",
+                     title=title, body=text, status="신규", owner_department_id=b.owner_department_id,
+                     created_week_id=week_id, origin="manual")
+        s.add(nb)
+        s.flush()
+        for t in wsvc.block_tags(s, b.id):          # 기준정보 태그 물려받기(원칙 5) — 사람이 뺀 태그는 빼고
+            if t.dismissed:
+                continue
+            s.add(m.BlockTag(block_id=nb.id, kind=t.kind, target_id=t.target_id, raw_text=t.raw_text,
+                             confidence=t.confidence, confirmed=t.confirmed))
+        s.add(m.BlockLink(from_block_id=b.id, to_block_id=nb.id, relation="파생"))
+        co.add_history(s, nb, week_id, note=f"{b.id} 에서 떼어냄")
+        events.record(s, b.id, "파생", after=f"{nb.id} 로 떼어냄 — {title}", meeting_id=mt.id)
+        events.record(s, nb.id, "파생", before=b.id, after=f"{b.id} 에서 떼어냄", meeting_id=mt.id)
+        # 개체는 **연결하지 않고** 새 이슈 ID 만 들고 있는다 — 연결 칩(15-3)은 이 장의 이슈를 기준으로
+        # 같음·다름을 재므로, 다른 이슈에 건 연결은 「다시 가져오기」가 엉뚱한 값을 덮는다.
+        # 두 이슈를 잇는 양쪽 칩은 15-5(합치기와 함께)에서 제대로 붙인다.
+        o["scope_block"] = nb.id
+        new_id = nb.id
+
+    o["scope"] = scope
+    it.objects_json = dump(clean(objs))
+    it.free_rev = (it.free_rev or 0) + 1
+    return new_id
+
+
 def json_for(it) -> dict:
     """장 JSON 에 붙이는 자유 편집 정보."""
     return {"on": bool(it.free_on), "rev": int(it.free_rev or 0),
@@ -431,4 +538,6 @@ def json_with(it, item: dict) -> dict:
     objs = annotate(load(it), item)
     return {"on": bool(it.free_on), "rev": int(it.free_rev or 0), "objects": objs,
             "can_undo": can_undo(it), "max": MAX_OBJECTS, "missing": missing_fields(item, objs),
-            "fields": [{"field": f, "label": FIELD_LABEL[f]} for f in FACT_BY_FIELD]}
+            "fields": [{"field": f, "label": FIELD_LABEL[f]} for f in FACT_BY_FIELD],
+            "unchosen": len(unchosen(objs)),                                   # 15-4 갈래 안 고른 개체 수
+            "pick_fields": [{"field": f, "label": FIELD_LABEL[f]} for f in PICK_FIELDS]}

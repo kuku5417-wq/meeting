@@ -736,7 +736,9 @@ def state(s: Session, mt: m.Meeting) -> dict:
     meta = {**d["meeting"], "editable": mt.kind in EDITABLE and mt.status != "종료",
             "started": bool(flat) or mt.start_mode is not None or mt.kind != "dept",
             "suggest": suggested_start(s, mt) if mt.kind == "dept" else "", "publishes": mt.kind in PUBLISHES,
-            "published_at": v.published_at.strftime("%m/%d %H:%M") if v else "", "changes": len(changes(s, mt)) if v else 0}
+            "published_at": v.published_at.strftime("%m/%d %H:%M") if v else "", "changes": len(changes(s, mt)) if v else 0,
+            # 15-4 — 더했지만 갈래를 안 고른 개체 수. 막지 않고 제출·발행 전에 알린다(결정 ⑦).
+            "unchosen": sum(int((it.get("free") or {}).get("unchosen") or 0) for it in flat if not it["ro"])}
     secs = [{k: sec[k] for k in ("dept_id", "dept", "state", "ref")} | {"n": len(sec["items"])} for sec in d["sections"]]
     used = {it.table_id for it in items(s, mt) if it.kind == "table"}
     ptables = [{"id": t.id, "name": t.name, "period": f"{t.start_date:%m/%d}–{t.end_date:%m/%d}"}

@@ -70,7 +70,7 @@ function renderCanvas() {
 }
 
 // ── 자유 편집(결정 ⑦ 15-2) ──────────────────────────
-let FE = null;
+let FE = null, FEsel = '';            // FEsel — 다시 붙일 때 고른 개체를 그대로 둔다
 async function saveObjects(objs, rev) {
   const it = S.items[sel];
   if (!it) return null;
@@ -80,6 +80,7 @@ async function saveObjects(objs, rev) {
   if (!j.ok) { toast(j.err); return null; }
   if (j.state) S = j.state;                 // 캔버스는 다시 그리지 않는다 — 편집 중이다
   renderFreeProps();                        // 연결 상태(이슈와 다름·이슈가 바뀜)는 바로 갱신한다
+  renderBar();                              // 「갈래 안 고른 개체 n」(15-4)도 더하자마자 보여 준다
   return j.free?.rev ?? null;
 }
 function attachFree() {
@@ -88,7 +89,8 @@ function attachFree() {
   if (!it || !it.free?.on || it.ro) return;
   const frame = document.querySelector(`[data-row="${sel}"] .st-frame`);
   if (!frame) return;
-  FE = mountFree(frame, it, {save: saveObjects, onChange: () => renderFreeProps()});
+  FE = mountFree(frame, it, {sel: FEsel, save: saveObjects,
+    onChange: (_l, id) => { FEsel = id; renderFreeProps(); }});
   renderFreeProps();
 }
 const SIZES = [20, 24, 28, 30, 34, 40, 48, 56];
@@ -113,16 +115,41 @@ function linkBox(o, it) {
     ${o.choice ? '<span class="small muted">「상태」는 고르는 칸입니다 — 이슈 화면에서 고릅니다. 여기 글은 이 자료의 표현으로 남습니다.</span>'
       : o.fact ? '' : '<span class="small muted">이 칸은 자료의 표현입니다 — 이슈 사실은 바뀌지 않습니다.</span>'}`;
 }
+const SCOPE_LABEL = {미정: '안 고름', 자료만: '이 자료만', 진행: '이번 주 진행', 사실: '이슈 사실', 새이슈: '새 이슈로'};
+const SCOPE_DONE = {자료만: '이 자료에만 남습니다 — 이슈 기록에는 「개체 추가」 한 줄만 남았습니다.',
+  진행: '이슈의 이번 주 진행 한 줄에 덧붙였습니다.',
+  사실: '이슈 사실 칸에 덧붙였습니다 — 이슈 변경 기록에 남았습니다.',
+  새이슈: '새 이슈로 떼어냈습니다 — 원래 이슈와 「파생」으로 이어져 있습니다.'};
+function scopeBox(o, it) {
+  // 개체 추가 칩(결정 ⑦ 15-4) — 더한 개체는 **매번** 갈래를 고른다. 기본값 없음.
+  const sc = o.scope || '';
+  if (!sc) return '';
+  if (sc !== '미정') {
+    const where = sc === '새이슈' && o.scope_block ? `<a href="/issues?id=${esc(o.scope_block)}">${esc(o.scope_block)}</a> 로 떼어냈습니다 — 원래 이슈와 「파생」으로 이어져 있습니다.`
+      : sc === '사실' && o.scope_field ? `이슈 ${esc((it.free?.pick_fields || []).find((f) => f.field === o.scope_field)?.label || o.scope_field)} 칸에 덧붙였습니다 — 이슈 변경 기록에 남았습니다.`
+        : esc(SCOPE_DONE[sc] || '');
+    return `<p class="v-sec">갈래 — ${esc(SCOPE_LABEL[sc] || sc)}</p><span class="small muted">${where}</span>`;
+  }
+  const fields = it.free?.pick_fields || [];
+  return `<p class="v-sec">더한 개체 — 어디에 남길까요? <b class="v-late">안 고름</b></p>
+    <div class="row">${[['자료만', '이 자료만'], ['진행', '이번 주 진행'], ['새이슈', '새 이슈로']]
+      .map(([k, v]) => `<button class="btn sm" type="button" data-scope="${k}">${v}</button>`).join('')}</div>
+    <div class="row"><select id="foFactField" aria-label="이슈 사실에 더할 칸"><option value="">칸 고르기</option>${fields.map((f) => `<option value="${f.field}">${esc(f.label)}</option>`).join('')}</select>
+      <button class="btn sm" type="button" data-scope="사실">이슈 사실에 더하기</button></div>
+    <span class="small muted">고르지 않으면 이 자료에만 남습니다 — 제출 전에 수로 알려 드립니다.</span>`;
+}
 function renderFreeProps() {
   const box = document.querySelector('#freeProps');
   if (!box || !FE) return;
   const it = S.items[sel] || {};
   const live = (it.free?.objects || []).find((x) => x.id === FE.sel?.id);   // 연결 상태는 서버가 판정한 값
-  const o = FE.sel ? {...FE.sel, ...(live ? {state: live.state, issue_text: live.issue_text, field_label: live.field_label, fact: live.fact} : {})} : null;
+  const o = FE.sel ? {...FE.sel, ...(live ? {state: live.state, issue_text: live.issue_text, field_label: live.field_label,
+    fact: live.fact, scope: live.scope, scope_field: live.scope_field, scope_block: live.scope_block} : {})} : null;
   const miss = (it.free?.missing || []);
   const missHtml = miss.length ? `<p class="v-sec">장에 없는 칸 ${miss.length}</p><div class="row">${miss.map((f) => `<button class="btn sm" type="button" data-addfield="${f.field}">＋ ${esc(f.label)}</button>`).join('')}</div>` : '';
   if (!o) { box.innerHTML = '<span class="small muted">개체를 고르면 여기서 글자·색·소제목·연결을 고칩니다. 두 번 누르면 글을 바로 고칠 수 있습니다.</span>' + missHtml; return; }
-  box.innerHTML = linkBox(o, it) + missHtml + `<p class="v-sec">고른 개체 — ${esc(o.label || (o.type === 'photo' ? '사진' : '글'))}</p>
+  // 갈래를 아직 안 고른 개체는 **갈래부터** 묻는다 — 「다시 연결」 칸 고르기와 나란히 두면 어느 쪽인지 헷갈린다
+  box.innerHTML = scopeBox(o, it) + (o.scope === '미정' ? '' : linkBox(o, it)) + missHtml + `<p class="v-sec">고른 개체 — ${esc(o.label || (o.type === 'photo' ? '사진' : '글'))}</p>
     <label class="f">소제목<input type="text" id="foLabel" value="${esc(o.label || '')}" placeholder="예: 원인"></label>
     ${o.type === 'photo' ? '' : `<label class="f">글<textarea id="foText" rows="3">${esc(o.text)}</textarea></label>
     <div class="row"><select id="foSize" aria-label="글자 크기">${SIZES.map((s) => `<option value="${s}"${s === (o.style?.size || 30) ? ' selected' : ''}>${s}px</option>`).join('')}</select>
@@ -216,9 +243,12 @@ function renderBar() {
   if (m.publishes) btn.textContent = m.status === '발행' && !m.changes ? `발행함 ✓ ${m.version}판` : m.version ? `다시 발행(${m.version + 1}판)` : '발행';
   else btn.textContent = m.status === '제출' ? '제출함 ✓' : m.status === '수정됨' ? '다시 제출' : '제출';
   const note = $('#stNote');
-  note.hidden = !(m.version && (m.status === '수정됨' || m.changes));
+  const un = m.unchosen || 0;
+  note.hidden = !(un || (m.version && (m.status === '수정됨' || m.changes)));
   if (note.hidden) { note.innerHTML = ''; return; }
-  note.innerHTML = `${m.version}판(${esc(m.published_at)}) 뒤에 ${m.changes ? `이슈 사실이 바뀐 장 <b>${m.changes}</b>` : ''}${m.changes && m.status === '수정됨' ? ' · ' : ''}${m.status === '수정됨' ? '자료를 고쳤습니다' : ''} — 이미 나간 판은 그대로이고, ${m.publishes ? '다시 발행' : '다시 제출'}하면 ${m.version + 1}판이 됩니다.`;
+  const unNote = un ? `갈래를 안 고른 개체 <b>${un}</b> — 개체를 고르면 「이 자료만 · 이번 주 진행 · 이슈 사실 · 새 이슈로」에서 고릅니다.` : '';
+  if (!(m.version && (m.status === '수정됨' || m.changes))) { note.innerHTML = unNote; return; }
+  note.innerHTML = (un ? unNote + '<br>' : '') + `${m.version}판(${esc(m.published_at)}) 뒤에 ${m.changes ? `이슈 사실이 바뀐 장 <b>${m.changes}</b>` : ''}${m.changes && m.status === '수정됨' ? ' · ' : ''}${m.status === '수정됨' ? '자료를 고쳤습니다' : ''} — 이미 나간 판은 그대로이고, ${m.publishes ? '다시 발행' : '다시 제출'}하면 ${m.version + 1}판이 됩니다.`;
 }
 function all() {
   if (sel >= S.items.length) sel = Math.max(0, S.items.length - 1);
@@ -248,6 +278,9 @@ async function drop() {
 }
 async function finish() {
   const m = S.meeting;
+  const un = m.unchosen || 0;              // 15-4 — 막지 않고 수로 알린다(결정 ⑦)
+  if (un && !window.confirm(`갈래를 안 고른 개체가 ${un}개 있습니다. 그대로 두면 이 자료에만 남고 이슈에는 남지 않습니다. `
+      + `${m.publishes ? '발행' : '제출'}할까요?`)) return;
   if (m.publishes) {
     const j = await api(`/api/studio/${mid}/publish`);
     if (j) { all(); toast(`발행했습니다(${j.version}판) — 판이 고정돼 회의에서 본 그대로 남습니다`); }
@@ -302,6 +335,21 @@ document.addEventListener('click', async (e) => {
       : op === 'pull' ? '이슈의 지금 값을 가져왔습니다'
       : op === 'unlink' ? '연결을 끊었습니다 — 글은 그대로입니다'
       : op === 'add' ? '칸을 개체로 넣었습니다' : '다시 연결했습니다');
+    return;
+  }
+  if (e.target.closest('[data-scope]')) {               // 개체 추가 칩(15-4)
+    const it = S.items[sel], oid = FE?.sel?.id;
+    const scope = e.target.closest('[data-scope]').dataset.scope;
+    const field = scope === '사실' ? (document.querySelector('#foFactField')?.value || '') : '';
+    if (scope === '사실' && !field) { toast('어느 사실 칸에 더할지 먼저 골라주세요'); return; }
+    await FE?.flush();                                   // 편집 중이던 글을 먼저 저장하고
+    const j = await api(`/api/studio/items/${it.id}/link`, {op: 'pick', oid, scope, field});
+    if (!j) return;
+    all();
+    toast(scope === '자료만' ? '이 자료에만 남깁니다 — 이슈 기록에 「개체 추가」 한 줄이 남습니다'
+      : scope === '진행' ? '이슈의 이번 주 진행에 덧붙였습니다'
+      : scope === '사실' ? '이슈 사실 칸에 덧붙였습니다 — 이슈 변경 기록에 남습니다'
+      : `새 이슈 ${j.new_block} 로 떼어냈습니다 — 원래 이슈와 「파생」으로 이어집니다`);
     return;
   }
   if (e.target.id === 'foDel') { FE?.remove(); return; }

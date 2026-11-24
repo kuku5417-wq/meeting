@@ -464,6 +464,114 @@ def t_free_link(c) -> None:
         check("15-3 — 장에 없는 칸을 알려 준다(케이스 C4)", True, "빠진 칸 없음")
 
 
+def t_free_scope(c) -> None:
+    """결정 ⑦ 15-4 개체 추가 칩 — 매번 고름(기본값 없음)·네 갈래가 어디에 남나·안 고른 수 안내·두 번 금지."""
+    from sqlalchemy import select
+
+    from app import models as m
+    from app.db import SessionLocal
+    from app.services import carry_over as co
+
+    wk = "2026-W43"
+    with SessionLocal() as s:
+        dmt = s.scalars(select(m.Meeting).where(m.Meeting.week_id == wk, m.Meeting.kind == "dept")).first()
+        mid = dmt.id if dmt else 0
+    st0 = c.get(f"/api/studio/{mid}").json().get("state", {}) if mid else {}
+    items = [it for it in st0.get("items", []) if it["kind"] == "single" and not it["ro"]]
+    if not items:
+        check("15-4 — 시험할 장이 있다", False, "이슈 장이 없다")
+        return
+    iid, bid = items[0]["id"], items[0]["blocks"][0]["id"]
+    c.post(f"/api/studio/items/{iid}/free", json={"on": True})
+
+    def add_one(text: str, oid: str) -> dict:
+        """캔버스에서 개체를 하나 더해 저장하고, 그 개체를 돌려준다(화면은 scope 를 보내지 않는다)."""
+        stt = c.get(f"/api/studio/{mid}").json()["state"]
+        it = next(x for x in stt["items"] if x["id"] == iid)
+        objs = [dict(o) for o in it["free"]["objects"]]
+        objs.append({"id": oid, "type": "text", "x": 96, "y": 940, "w": 1700, "h": 100, "text": text,
+                     "label": "", "link": None, "style": {"size": 28}})
+        j = c.post(f"/api/studio/items/{iid}/objects", json={"objects": objs, "rev": it["free"]["rev"]}).json()
+        return next(x for x in j["free"]["objects"] if x["id"] == oid)
+
+    o = add_one("냉각수 라인 보온 미施工 구간 확인", "s1")
+    check("15-4 — 더한 개체는 갈래가 「미정」으로 남는다(기본값 없음 — 화면이 안 보내도 서버가 표시)",
+          o.get("scope") == "미정", repr(o.get("scope")))
+    stt = c.get(f"/api/studio/{mid}").json()["state"]
+    check("15-4 — 안 고른 개체 수를 제출 전에 알린다(막지 않는다)",
+          stt["meeting"]["unchosen"] >= 1 and c.post(f"/api/studio/{mid}/submit").json().get("ok"),
+          repr(stt["meeting"]["unchosen"]))
+
+    r = c.post(f"/api/studio/items/{iid}/link", json={"op": "pick", "oid": "s1", "scope": "아무거나"})
+    check("15-4 — 모르는 갈래는 거절하고 네 갈래를 알려 준다",
+          r.status_code == 400 and "새 이슈로" in r.json()["err"], r.text[:140])
+
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "pick", "oid": "s1", "scope": "자료만"}).json()
+    o1 = next(x for x in j["free"]["objects"] if x["id"] == "s1")
+    with SessionLocal() as s:
+        ev = s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == bid).order_by(m.BlockEvent.id.desc())).first()
+    check("15-4 — 「이 자료만」: 이슈 기록에 「개체추가」 한 줄만(사실은 안 바뀐다)",
+          o1["scope"] == "자료만" and ev.kind == "개체추가" and "자료에 개체 추가" in ev.after,
+          f'{o1["scope"]} / {ev.kind} / {ev.after[:20]}')
+    check("15-4 — 갈래를 고르면 안 고른 수에서 빠진다",
+          j["free"]["unchosen"] == 0, repr(j["free"]["unchosen"]))
+    r = c.post(f"/api/studio/items/{iid}/link", json={"op": "pick", "oid": "s1", "scope": "진행"})
+    check("15-4 — 한 번 고른 개체를 다시 보내지 않는다(같은 글이 두 번 덧붙는 것을 막는다)",
+          r.status_code == 400 and "이미" in r.json()["err"], r.text[:140])
+
+    add_one("보온 시공 요청 공문 발송", "s2")
+    with SessionLocal() as s:
+        row = co.week_row(s, bid, wk)
+        before = ((row.note if row else "") or "")
+    c.post(f"/api/studio/items/{iid}/link", json={"op": "pick", "oid": "s2", "scope": "진행"})
+    with SessionLocal() as s:
+        note = (co.week_row(s, bid, wk).note or "")
+    check("15-4 — 「이번 주 진행」: 이슈의 이번 주 한 줄에 덧붙인다(앞 글을 지우지 않는다)",
+          "보온 시공 요청 공문 발송" in note and (not before.strip() or before.strip() in note), repr(note[:60]))
+
+    add_one("노즐 고착도 함께 의심됨", "s3")
+    r = c.post(f"/api/studio/items/{iid}/link", json={"op": "pick", "oid": "s3", "scope": "사실"})
+    check("15-4 — 「이슈 사실」은 어느 칸인지 골라야 한다", r.status_code == 400 and "사실 칸" in r.json()["err"], r.text[:140])
+    with SessionLocal() as s:
+        cause_before = (s.get(m.Block, bid).cause_text or "")
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "pick", "oid": "s3", "scope": "사실", "field": "cause"}).json()
+    with SessionLocal() as s:
+        b = s.get(m.Block, bid)
+        ev = s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == bid).order_by(m.BlockEvent.id.desc())).first()
+    check("15-4 — 「이슈 사실」: 그 칸에 **덧붙이고**(덮지 않는다) 「사실변경」으로 남는다(케이스 A4)",
+          cause_before in b.cause_text and b.cause_text.endswith("노즐 고착도 함께 의심됨") and ev.kind == "사실변경",
+          f'{b.cause_text[-30:]} / {ev.kind}')
+
+    add_one("배전반 접지 저항 초과 — 다른 문제", "s4")
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "pick", "oid": "s4", "scope": "새이슈"}).json()
+    nid = j.get("new_block") or ""
+    o4 = next(x for x in j["free"]["objects"] if x["id"] == "s4")
+    with SessionLocal() as s:
+        nb = s.get(m.Block, nid) if nid else None
+        parent = s.get(m.Block, bid)
+        link = s.get(m.BlockLink, {"from_block_id": bid, "to_block_id": nid, "relation": "파생"}) if nid else None
+        tags_p = {(t.kind, t.target_id) for t in s.scalars(select(m.BlockTag).where(m.BlockTag.block_id == bid)) if not t.dismissed}
+        tags_n = {(t.kind, t.target_id) for t in s.scalars(select(m.BlockTag).where(m.BlockTag.block_id == nid))} if nid else set()
+    check("15-4 — 「새 이슈로」: 새 ID 로 떼어내고 원래 이슈는 그대로 열려 있다",
+          nb is not None and nb.title.startswith("배전반") and nb.status == "신규"
+          and parent.status != "종결" and bid not in (nid,), repr(nid))
+    check("15-4 — 「새 이슈로」: 「파생」으로 이어 두고 기준정보 태그를 물려받는다(원칙 5)",
+          link is not None and tags_p <= tags_n, f'{link is not None} / {sorted(tags_p)} ⊄ {sorted(tags_n)}')
+    check("15-4 — 「새 이슈로」: 개체는 새 이슈 ID 를 들고 있고, 이 장의 이슈에는 연결하지 않는다",
+          o4.get("scope_block") == nid and o4["scope"] == "새이슈" and not o4.get("link"),
+          f'{o4.get("scope_block")} / {o4.get("link")}')
+    with SessionLocal() as s:
+        evp = [e.kind for e in s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == bid).order_by(m.BlockEvent.id.desc()).limit(1))]
+        evn = [e.kind for e in s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == nid).order_by(m.BlockEvent.id))] if nid else []
+    check("15-4 — 「새 이슈로」: 양쪽 이슈 기록에 「파생」이 남는다", evp[:1] == ["파생"] and "파생" in evn, f'{evp[:1]} / {evn}')
+
+    stt = c.get(f"/api/studio/{mid}").json()["state"]
+    check("15-4 — 초안 개체(이슈에서 온 것)는 고를 것이 없다 — 갈래를 묻지 않는다",
+          all(not x.get("scope") for it2 in stt["items"] if not it2["ro"]
+              for x in it2["free"]["objects"] if (x.get("link") or {}).get("field") in ("title", "line")),
+          "초안 개체에 scope 가 붙었다")
+
+
 def _cause_oid(c, mid, iid) -> str:
     st = c.get(f"/api/studio/{mid}").json()["state"]
     it = next(x for x in st["items"] if x["id"] == iid)
@@ -2828,7 +2936,7 @@ def t_llm_c(c) -> None:
 # 묶음 순서 = 실행 순서. 앞 묶음이 만든 데이터를 뒤 묶음이 쓴다. tests/test_NN_*.py 도 이 순서를 따른다
 GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
           t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link)
+          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link, t_free_scope)
 
 
 def main() -> int:
