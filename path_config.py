@@ -15,7 +15,6 @@ from config.paths import (  # noqa: F401 — 옛 이름 재노출
     DATA_LOCAL,
     DATA_SUBDIR,
     DB_NAME,
-    SECRET_ENV,
     central_parquet,
     data_dir_choice,
     db_path,
@@ -29,5 +28,4 @@ from config.paths import (  # noqa: F401 — 옛 이름 재노출
     invalidate_cache,
     is_internal,
     is_network_path,
-    read_secret,
 )

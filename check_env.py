@@ -88,7 +88,7 @@ def main() -> int:
     # ── 2. 패키지 ───────────────────────────────────────
     _head("2. 패키지")
     for mod, why in (("fastapi", ""), ("uvicorn", "서버 실행"), ("sqlalchemy", "DB"),
-                     ("jinja2", "화면 템플릿"), ("dotenv", "app_config 의 .env 로드"),
+                     ("jinja2", "화면 템플릿"),
                      ("httpx", "_smoke.py TestClient")):
         try:
             __import__(mod)
@@ -99,15 +99,19 @@ def main() -> int:
     # ── 3. 시크릿 / 경로 ────────────────────────────────
     _head("3. 시크릿 / 경로")
     try:
-        import path_config as pc
+        from config import paths as pc
+        from config import settings as cfg
     except Exception as e:  # noqa: BLE001
-        fail(f"path_config 를 불러오지 못했습니다 ({e})")
+        fail(f"config.paths 를 불러오지 못했습니다 ({e})")
         return 1
-    info(f"secret/.env: {pc.SECRET_ENV} -> {_mask('x' if pc.SECRET_ENV.exists() else '')}")
-    info(f"환경: {pc.get_env_label()}")
-    info(f"NAS_BASE_PATH: {_mask(pc.read_secret('NAS_BASE_PATH'))}"
-         f" · DATA_PATH: {_mask(pc.read_secret('DATA_PATH'))}"
-         f" · MEETING_DATA_PATH: {_mask(pc.read_secret('MEETING_DATA_PATH'))}")
+    info(f"secret/.env: {cfg.SECRET_ENV} -> {_mask('x' if cfg.SECRET_ENV.exists() else '')}")
+    _net, _src = cfg.net_source()
+    info(f"망: {cfg.env_label()} ({_net}) — 읽은 곳: {_src}")      # 결정 ⑤: 자동 감지 없음
+    if _net == "external" and "기본값" in _src:
+        info("사내망 PC 라면 .claude/shi.json 에 net=internal 을 넣으세요 (/shi:init internal)")
+    info(f"NAS_BASE_PATH: {_mask(cfg.secret('NAS_BASE_PATH'))}"
+         f" · DATA_PATH: {_mask(cfg.secret('DATA_PATH'))}"
+         f" · MEETING_DATA_PATH: {_mask(cfg.secret('MEETING_DATA_PATH'))}")
     d = pc.get_data_dir()
     _, source = pc.data_dir_choice()
     if d.exists():
@@ -115,7 +119,7 @@ def main() -> int:
     else:
         fail(f"데이터 폴더를 만들지 못했습니다: {d}  ({source})",
              "드라이브·폴더 이름과 쓰기 권한을 확인하세요. 위치는 secret/.env 의 MEETING_DATA_PATH 로 정합니다.")
-    if pc.read_secret("MEETING_DATA_PATH") and pc.is_network_path(d):
+    if cfg.secret("MEETING_DATA_PATH") and pc.is_network_path(d):
         warn("MEETING_DATA_PATH 가 네트워크 경로입니다 — SQLite 는 로컬 디스크에 두는 것이 안전합니다",
              "예: MEETING_DATA_PATH=D:\\meeting_data (운영 PC 로컬). 다른 PC 는 브라우저로 접속합니다.")
 
@@ -150,13 +154,17 @@ def main() -> int:
     else:
         _head("6. 프록시 / 네트워크")
         try:
-            import app_config as ac
-            info(f"환경: {ac.ENV_LABEL} · VDI: {ac.IS_VDI}")
-            info(f"HTTP_PROXY: {_mask(os.getenv('HTTP_PROXY') or ac.HTTP_PROXY or '')}"
-                 f" · 프록시 사용: {ac.USE_PROXY} · SSL 검증: {ac.SSL_VERIFY}")
-            ok("app_config 로드 성공 (LLM 은 아직 mock — 외부 호출 없음)")
+            from config import settings as cfg
+            from modules import nas
+            _net, _src = cfg.net_source()
+            info(f"망: {cfg.env_label()} ({_net}) — 읽은 곳: {_src} · VDI: {cfg.is_vdi()}")
+            info(f"HTTP_PROXY: {_mask(cfg.value('HTTP_PROXY'))}"
+                 f" · 프록시 사용: {cfg.use_proxy()} · SSL 검증: {cfg.ssl_verify()}")
+            _ok_nas, _msg_nas = nas.ensure_connected()
+            (ok if _ok_nas else warn)(f"NAS: {_msg_nas}")
+            ok("전환 지점 로드 성공 (LLM 은 부르지 않음 — 외부 호출 없음)")
         except Exception as e:  # noqa: BLE001
-            warn(f"app_config 를 불러오지 못했습니다 ({e})")
+            warn(f"전환 지점(config.settings·modules.nas)을 불러오지 못했습니다 ({e})")
 
     print("\n" + "-" * 64)
     if _fail:

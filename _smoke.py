@@ -90,6 +90,19 @@ def t_switch() -> None:
     check("옛 이름 래퍼 path_config = config.paths 와 같은 값",
           pc.db_path() == paths.db_path() and pc.get_data_dir() == paths.get_data_dir())
 
+    # ── 단계 2-c: 망·비밀이 전환 지점에만 있다 ──
+    root = Path(__file__).resolve().parent
+    check("단계 2-c — app_config.py 가 없다(망·비밀·프록시는 config/settings.py)",
+          not (root / "app_config.py").exists())
+    srcs = [f for d in ("app", "config", "modules", "scripts") for f in (root / d).rglob("*.py")]
+    srcs += [root / "check_env.py", root / "path_config.py", root / "sn_util.py"]
+    # 실제 호출·import 만 본다(문서·주석의 「load_dotenv 금지」 문구는 세지 않는다)
+    dotenv_users = [f.relative_to(root).as_posix() for f in srcs if f.exists()
+                    and any(k in f.read_text(encoding="utf-8")
+                            for k in ("load_dotenv(", "from dotenv", "import dotenv"))]
+    check("앱 코드가 load_dotenv 를 부르지 않는다(.env 가 환경변수로 새지 않는다)",
+          not dotenv_users, repr(dotenv_users))
+
     # ── 단계 2-b: LLM·NAS 전환 지점 ──
     from app.llm import client as llm_old
 

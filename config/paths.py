@@ -27,11 +27,6 @@ DATA_LOCAL = CODE_DIR / "data"                  # code_N/data (폴백 base)
 DATA_SUBDIR = "meeting"
 DB_NAME = "meeting.db"
 
-# 옛 이름 호환 — 비밀 읽기는 config.settings 가 정본이다(check_env 정리는 단계 2-c).
-SECRET_ENV = cfg.SECRET_ENV
-read_secret = cfg.secret
-
-
 _ensured: set[Path] = set()
 
 
@@ -110,16 +105,14 @@ def get_data_dir() -> Path:
 def _expand(raw: str) -> Path:
     """`%LOCALAPPDATA%/meeting`·`~/meeting` 같은 표기를 풀어 준다. 상대경로는 secret 폴더 기준."""
     p = Path(os.path.expanduser(os.path.expandvars(raw.strip())))
-    return p if p.is_absolute() else (SECRET_ENV.parent / p)
+    return p if p.is_absolute() else (cfg.SECRET_ENV.parent / p)
 
 
 def data_dir_choice() -> tuple[Path, str]:
     """(데이터 폴더, 어느 규칙으로 정해졌는지) — check_env·서버 시작 로그가 함께 쓴다."""
     env = os.getenv("MEETING_DATA_PATH", "")
     sec = cfg.secret("MEETING_DATA_PATH")
-    # app_config 가 .env 를 환경변수로 올리므로, 값이 .env 와 같으면 .env 에서 온 것으로 표시한다
-    # (단계 2-c 에서 app_config 를 빼면 이 비교 절도 함께 지운다)
-    if env and env.strip() != sec:
+    if env:                                   # .env 를 환경변수로 올리지 않으므로 이건 진짜 환경변수다(단계 2-c)
         return _expand(env), "환경변수 MEETING_DATA_PATH"
     if sec:
         return _expand(sec), ".env MEETING_DATA_PATH"

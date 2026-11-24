@@ -8,7 +8,6 @@ dependencies = [
     "uvicorn>=0.30",
     "sqlalchemy>=2.0,<3.0",
     "jinja2>=3.1",
-    "python-dotenv>=1.0",   # app_config(.env 로드) 필수
     "httpx>=0.27",          # _smoke.py 의 TestClient
     "requests>=2.31",       # LLM 호출 — 사내 MITM 프록시에서 httpx 행 문제(형제 앱 costplan 실측) 회피
     "jsonschema>=4.21",     # LLM 출력 검증 (schema/extraction.schema.json)
@@ -39,6 +38,8 @@ constraint-dependencies = [
     "greenlet==3.5.3",
     "jinja2==3.1.6",
     "markupsafe==3.0.3",
+    # python-dotenv 는 단계 2-c(2026-11-24)에서 뺐다 — config/settings.py 가 .env 를 직접 읽는다.
+    # 제약만 남겨 둔다(형제 앱 lock 과 같은 값을 쓰기 위해 — 이 앱 의존 그래프에는 없다).
     "python-dotenv==1.2.2",
     "anyio==4.14.1",
     "h11==0.16.0",

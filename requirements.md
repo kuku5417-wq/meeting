@@ -150,12 +150,22 @@
 16. **민감정보** — 보고 내용은 사내 LLM으로(결정 ④의 테스트 단계 예외 참고).
 
 ## 4. 전환 지점
-| 지점 | 사외망 | 사내망 |
-|---|---|---|
-| `config/paths.py` | 형제 폴더 `<base>\meeting` | NAS `<NAS_BASE_PATH>\meeting` |
-| `config/settings.py` | `.env`(상위 `secret/.env`), `net=external` | 같은 키, `net=internal` (망은 `.claude/shi.json` 하나, 자동 감지 없음 — 결정 ⑤) |
-| `modules/llm_client.py` | 체인 `sola,openai`(테스트 단계) | 같은 체인. 실제 메모 전 `sola`만으로 다시 정함(결정 ④) |
-| `modules/nas.py` | 쓰지 않음(로컬) | 도메인 로그인 → 실패 시 아이디·비번 입력(`WNetAddConnection2`, 3회) |
+**네 파일로 모았다 (2026-11-24, 계획 단계 2-a·2-b·2-c).** 경로 문자열·비밀 읽기·LLM 호출·NAS 접속은 이 밖에 쓰지 않는다.
+
+| 지점 | 사외망 | 사내망 | 지금 상태 |
+|---|---|---|---|
+| `config/paths.py` | 형제 폴더 `<base>\meeting` | NAS `<NAS_BASE_PATH>\meeting` | 됨. 옛 이름 `path_config.py` 는 래퍼(단계 11 에서 제거) |
+| `config/settings.py` | `.env`(상위 `secret/.env`), `net=external` | 같은 키, `net=internal` (망은 `.claude/shi.json` 하나, 자동 감지 없음 — 결정 ⑤) | 됨. `net`·`secret`·`value`·`proxies`·`ssl_verify`·`llm_keys`·`env_label`·`is_vdi` |
+| `modules/llm_client.py` | 체인 `sola,openai`(테스트 단계) | 같은 체인. 실제 메모 전 `sola`만으로 다시 정함(결정 ④) | 됨. 옛 이름 `app/llm/client.py` 는 래퍼 |
+| `modules/nas.py` | 쓰지 않음(무동작 통과) | 도메인 로그인 → 실패 시 아이디·비번 입력(`WNetAddConnection2`, 3회) | **뼈대만** — 실제 접속·접속 실패 시 쓰기 차단은 단계 5 |
+
+- 망·비밀·프록시 읽기: `.env` 를 환경변수로 **올리지 않는다**(`load_dotenv` 금지 — 사내 프록시가 사외망 프로세스에 주입된 사고).
+  값은 `config.settings.value()`(환경변수 → `.env`) 로만 꺼낸다. `python-dotenv` 의존도 뺐다.
+- 프록시는 사내망일 때만. 단 `.env` 의 `VDI=true` 면 사외망에서도 쓴다(공통지침).
+- 화면 오른쪽 위 표시(`ENV_LABEL`)는 설정값 `net` 그대로. NAS 접속 상태는 설정 화면·`check_env.py` 가 따로 보여 준다(2026-11-24).
+- 아직 남은 망 의존: `_netcheck.py`(설치 스크립트 전용 — `setup_env.bat` 이 프록시를 켤 때 쓴다)와
+  `setup_env.bat`·`run.bat` 의 `0.0.0.0`·8600 → 단계 11 에서 함께 정리한다.
+
 실행: `127.0.0.1` + 빈 포트, 실행 파일(PyInstaller) — 남이 접속하는 서버 금지.
 
 ## 5. 결정 기록
@@ -164,10 +174,10 @@
 | 2026-10-22 | 사실 수정 바로 반영 + 알림 (F8) | `docs/07` §4-1 — **2026-11-13 결정 ⑦로 바뀜** |
 | 2026-10-22 | 부서 자료 시작은 이어받기/빈 자료 선택, 마감 뒤 원장으로 채우기, 담당은 부서까지 | `docs/07` §4-1 |
 | 2026-11-13 | ① 저장: NAS SQLite 하나 + 잠금 파일(A안 보강) — **4-a·4-b 적용**: DELETE 저널·busy_timeout·매일 백업(14개)+무결성 점검(`db_guard`), NAS 잠금 파일(쓰기 트랜잭션, `nas_lock`, 오래된 잠금 정리, 503 안내), 무결성 실패 시 읽기 전용, 판 번호 충돌 알림(`block.row_version`, 409 「다른 사람이 먼저 고쳤습니다」) — **결정 ① 보강 6가지 모두 적용** | 정수 번호 24표·최대+1 번호 → 다른 안은 번호 체계 재설계 |
-| 2026-11-13 | ② 테스트: `_smoke.py` 검사 → pytest, 개수 일치가 완료 기준 — **1차 완료**: tests/ 영역별 12파일 29개, 검사 432개 같음(검사 함수 정본은 _smoke.py) | shi 규칙 |
+| 2026-11-13 | ② 테스트: `_smoke.py` 검사 → pytest, 개수 일치가 완료 기준 — **1차 완료**: tests/ 영역별 13파일 31개, 검사 467개 같음(검사 함수 정본은 _smoke.py, 개수는 `tests/test_99_count.py`) | shi 규칙 |
 | 2026-11-13 | ③ 메일·DRM 가져오기 1차에서 끔(코드 유지) — **적용**: `MEETING_COM_IMPORTS`(기본 off), 화면 안내, 검사 3개 | 서버 PC 한 대 전제였음 |
 | 2026-11-13 | ④ LLM: SOLA·GPT 두 개, Mock은 테스트 전용 — **적용**: 기본 체인 `sola,openai`(settings.LLM_CHAIN_DEFAULT), 둘 다 실패 시 사유·메모 보존 검사 | 원칙 9 테스트 단계 예외 유지, 실제 메모 전 재결정 |
-| 2026-11-13 | ⑤ 공용본 `app_config.py`·`_netcheck.py` 대신 shi 전환 지점 | 다른 앱도 shi로 옮김 |
+| 2026-11-13 | ⑤ 공용본 `app_config.py`·`_netcheck.py` 대신 shi 전환 지점 — **2026-11-24 적용**: `app_config.py` 삭제(망 감지·프록시·.env 로드·LLM 키를 `config/settings.py` 로), 망은 `.claude/shi.json` 의 `net` 하나(`SHI_NET` 이 덮음), `python-dotenv` 의존 제거, VDI 예외 유지. `_netcheck.py` 는 설치 스크립트 전용으로 남겼다 — 지우면 사내망에서 프록시가 꺼져 `uv sync` 가 타임아웃난다(단계 11) | 다른 앱도 shi로 옮김 |
 | 2026-11-13 | ⑥ 흰 사이드바, 주 색 `#0963c4` | 교육장 meeting_v에서 고른 안 |
 | 2026-11-13 | ⑦ 자유형식: 1차부터 장마다 켜기, 기록 + 새 이슈 분리, 칩 매번 고르기, 채택 3역할, 제출 전 표시만, 한 명씩 편집, 형태 바꾸면 새로 그림 | 케이스 28개 사전 검토(A2 줄이기가 이슈 원문을 덮는 문제) |
 | 2026-11-13 | ⑧ 상태 3색(회색·파랑·빨강) + 분류 5색(밝은 파스텔, 선종·유종·장비 계통) | 색을 아낀 화면이 깔끔, 분류는 값이 여러 개 |

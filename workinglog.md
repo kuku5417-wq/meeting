@@ -250,8 +250,26 @@
   VDI 아니면 사외망에서 미사용 / NAS 사외망 무동작 / NAS 사내망 미연결 안내
 - 결과: `pytest -q tests` **31 passed** · `_smoke` **467/467** · `check_env --quick` PASS(`MEETING_DATA_PATH` 를 임시 폴더로 주고 돌렸다 — 운영 DB 안 건드림)
 
-### 다음 세션 시작점 (2026-11-24, 2-b 끝)
+### 다음 세션 시작점 (2026-11-24, 2-b 끝 — 아래 2-c 절이 더 최신)
 1. 단계 2-c — `app_config.py` 삭제(`app/settings.py` 의 import 부수효과를 `config.settings` 로, `check_env.py` 6절에
    읽은 `net` 과 출처 한 줄) · `python-dotenv` 제거 + `uv lock` 같이 커밋 · `requirements.md` 4·5장 갱신
 2. `/shi:init` 은 플러그인 로드된 새 세션에서 — `stack=fastapi`, `original=code_N\meeting`, `net=external`
 3. 그 뒤 단계 5(NAS 접속) → 6~10 M15 자유 편집 → 11 실행 파일(래퍼 2개·`_netcheck.py`·bat 정리) → 12 사내망
+
+## 2026-11-24 (trans) 단계 2-c — app_config 제거, 단계 2 끝
+- [x] `app/settings.py` 를 `config.settings`·`config.paths` 로 — 값은 `cfg.value()`(환경변수 → .env)로 읽는다. `import os` 도 필요 없어졌다
+- [x] `check_env.py` 3절·6절 정리 — `secret/.env` 위치·**읽은 `net` 과 출처**·NAS 상태(`modules.nas.ensure_connected`)·프록시·SSL 표시.
+      사외망 기본값이면 「사내망 PC 라면 shi.json 에 net=internal」 안내 한 줄. 값은 전부 `_mask`(설정됨/미설정)
+- [x] `app_config.py` **삭제** · `config/paths.py` 의 옛 별칭(`SECRET_ENV`·`read_secret`) 제거 · `data_dir_choice` 의 app_config 비교 절 제거
+- [x] `python-dotenv` 의존 제거 + `uv lock`(패키지 43개, dotenv 1개 줄어듦) → `uv sync --locked` 확인. 제약 목록의 `python-dotenv==1.2.2` 는 형제 앱 정렬용으로 주석과 함께 남김
+- [x] `requirements.md` 4장(전환 지점 4파일·지금 상태·VDI·ENV_LABEL·남은 망 의존)·5장(결정 ⑤ 적용, ② 숫자 갱신) · `CLAUDE.md`(환경 규칙·폴더 구조·머리 상자)
+- [x] 검사 2개 추가(467 → **469**): app_config.py 가 없다 / 앱 코드가 `load_dotenv` 를 부르지 않는다(실제 호출·import 만 센다)
+- 확인: `requirements.md` 5장에 ⑦·⑧·정본·글자·토큰 **중복 줄 없음**(각 1회. 「토큰 정본」 2회는 3장 규칙과 5장 결정으로 서로 다른 문장)
+- 결과: `pytest -q tests` **31 passed** · `_smoke` **469/469** · `check_env.py` 전체 PASS(WARN 0) · `_netcheck.py` 단독 동작(사외망 판정) · 운영 DB 안 건드림
+
+### 다음 세션 시작점 (2026-11-24, 단계 2 끝)
+1. `/shi:init` — 플러그인 로드된 새 세션에서. `stack=fastapi`, `original=code_N\meeting`, `net=external`.
+   `.claude/shi.json` 은 `.gitignore` 에 있다(PC 마다 만든다). ROADMAP·guard.json·공통 규칙 절이 들어온다
+2. 단계 5 — `modules/nas.py` 채우기: 도메인 로그인 → 아이디·비번 → `WNetAddConnection2` 3회,
+   접속 실패 시 **쓰기 차단**(`config/paths.py` 가 사내망에서 NAS 가 안 보일 때 로컬로 폴백하는 것도 그때 함께 고친다)
+3. 단계 6~10 M15 자유 편집(결정 ⑦) → 11 실행 파일(래퍼 2개·`_netcheck.py`·`setup_env.bat` 의 박힌 프록시 IP·`0.0.0.0` 정리) → 12 사내망 반입

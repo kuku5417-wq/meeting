@@ -4,8 +4,8 @@
 작업 전에 이 파일과 `docs/05_개발로드맵.md`의 현재 마일스톤을 확인하고 시작한다.
 
 > **`trans` 브랜치 = 사내망 전환 작업본(2026-11-13~).** `main`은 원본 그대로 두고 여기서만 고친다.
-> - `requirements.md` 5장 **결정 ①~⑨가 아래 옛 규칙보다 우선**한다(⑨ 지식 그래프 = 6장). 특히 ② 테스트는 pytest로 옮긴다, ③ 메일·DRM은 1차에서 끈다, ④ LLM은 `sola,openai`(Mock은 테스트 전용), ⑤ `app_config.py`·`_netcheck.py`는 shi 전환 지점으로 대신한다, ⑦ 캔버스 편집은 자료에만·사실은 사실 칸/「사실로 채택」.
-> - **이어서 할 일: `workinglog.md` 맨 아래 「남은 일 전체 계획」 표**(단계 0~13). 옮기기 전까지 아래 옛 규칙(`_smoke.py`, `app_config.py` 등)은 지금 코드 기준이다.
+> - `requirements.md` 5장 **결정 ①~⑨가 아래 옛 규칙보다 우선**한다(⑨ 지식 그래프 = 6장). 특히 ② 테스트는 pytest로 옮긴다, ③ 메일·DRM은 1차에서 끈다, ④ LLM은 `sola,openai`(Mock은 테스트 전용), ⑤ `app_config.py` 는 지웠고 망·비밀·프록시는 `config/settings.py`(2026-11-24 적용), ⑦ 캔버스 편집은 자료에만·사실은 사실 칸/「사실로 채택」.
+> - **이어서 할 일: `workinglog.md` 맨 아래 「남은 일 전체 계획」 표**(단계 0~13). 단계 1·2·3·4 는 끝났다 — 검사 정본은 아직 `_smoke.py` 이고, 전환 지점은 `config/`·`modules/` 네 파일이다.
 > - 결정 근거·검토 문서: GitHub `kuku5417-wq/agent_trans`의 `사례/meeting*.md`.
 > - 다른 PC에서 받아 이어가는 방법: `이어서_하기.md`.
 
@@ -56,7 +56,7 @@
 - 차트: 직접 SVG (시안과 동일 방식). 필요 시 Chart.js vendor
 - PPT 출력: **python-pptx**, 템플릿 `.pptx`는 `app/export/templates/`
 - LLM: 사내 LLM/챗봇 API (OpenAI 호환 가정), 어댑터 뒤에 숨긴다 (`app/llm/`)
-- 테스트: **`uv run pytest -q tests`**(영역별 파일 test_00~test_10 + 검사 수 확인 test_99, 세션 하나로 순서대로 — 2026-11-13) · `uv run python _smoke.py`(같은 검사). 검사 함수 정본은 아직 `_smoke.py`, 새 검사는 그 묶음에 더하고 `tests/test_99_count.py` 의 개수를 올린다
+- 테스트: **`uv run pytest -q tests`**(영역별 파일 test_00~test_11 + 검사 수 확인 test_99, 세션 하나로 순서대로 — 2026-11-13) · `uv run python _smoke.py`(같은 검사). 검사 함수 정본은 아직 `_smoke.py`, 새 검사는 그 묶음에 더하고 `tests/test_99_count.py` 의 개수를 올린다
 
 ## 4. 환경 규칙
 
@@ -71,7 +71,9 @@
   (환경변수 `UV_PROJECT_ENVIRONMENT=%LOCALAPPDATA%\venvs\meeting` 를 두면 `uv run` 이 같은 venv 를 쓴다)
 - 비밀값은 상위 폴더의 **`secret/.env` 하나**(위로 올라가며 첫 파일, `SHI_ENV_FILE` 로 강제 가능). 키 이름은 `.env.template`.
   앱 전용 키는 `MEETING_` 접두어(`MEETING_DATA_PATH`·`MEETING_LLM_CHAIN`·`MEETING_LONG_OPEN_WEEKS` 등).
-- 망 감지·프록시는 루트 **`app_config.py`(전 repo 동일본, 수정 금지)**, 경로는 **`path_config.py`** 만 경유한다.
+- 망·비밀·프록시는 **`config/settings.py`**, 경로는 **`config/paths.py`** 만 경유한다(전환 지점, 2026-11-24 단계 2).
+  망은 `.claude/shi.json` 의 `net` 한 줄(자동 감지 없음 — 결정 ⑤). 옛 이름 `path_config.py`·`app/llm/client.py` 는 래퍼다.
+  `.env` 값은 `config.settings.value()`(환경변수 → `.env`)로 읽는다 — `load_dotenv` 금지, `app_config.py` 는 삭제됐다.
 - 중앙 parquet 은 **`pjtlist`·`milestone` 두 개만 읽는다**(2026-10-21, `app/services/central.py`, pyarrow — pandas 없음). 쓰지 않는다(공통 규칙 2).
   - 호선은 **pjtlist 가 정본** — 서버 시작·설정 화면 「지금 다시 읽기」·`seed_masters.py` 끝에서 `hull` 을 만들거나 고치고, 지우지 않는다.
   - 마일스톤 날짜는 **행(호선)마다** 실적(PERF) → 전망(PROS) → 계획(PLAN). 열 이름은 접두가 앞(`PLANDL`). `GT` = 가스시운전.
@@ -85,10 +87,13 @@
 ## 5. 폴더 구조 (만들어 갈 모양)
 
 ```
-app_config.py        전 repo 동일본 (.env 로드·망 감지·프록시) — 고치지 않는다
-path_config.py       경로 계층 (<base>/meeting, DB·사진·내보내기)
+config/settings.py   전환 지점 — 망(shi.json 의 net)·비밀(.env 직접 읽기)·프록시·LLM 키
+config/paths.py      전환 지점 — 경로 계층 (<base>/meeting, DB·사진·내보내기)
+modules/llm_client.py 전환 지점 — LLM 어댑터·폴백 체인
+modules/nas.py       전환 지점 — NAS 접속 (뼈대, 단계 5 에서 채움)
+path_config.py       옛 이름 래퍼 → config/paths.py (단계 11 에서 제거)
 sn_util.py           ensure_sn — 호선 SN2511 정규화 (dcost 동일본 스냅샷, pandas 제거)
-_netcheck.py         설치 시점 망 감지 (setup_env.bat 이 호출, 전 repo 동일본)
+_netcheck.py         설치 시점 망 감지 — **설치 스크립트 전용**(setup_env.bat 이 프록시를 켤 때. 앱 코드는 쓰지 않는다)
 check_env.py         가동 전 점검      _smoke.py   회귀 확인
 setup_env.bat / run.bat   (ASCII + CRLF)
 app/
@@ -99,7 +104,7 @@ app/
   schemas/           Pydantic 입출력
   routers/           write(메모·블록·지표 동작), photos, issues, studio, run(회의 진행·지시·종결), importer(가져오기), masters, export
   services/          extract.py, alias.py, carry_over.py, closure.py, promotion.py, search.py
-  llm/               client.py(어댑터·폴백), prompts/*.md
+  llm/               client.py(= modules/llm_client.py 래퍼), prompts/*.md
   export/            pptx_builder.py, templates/
   templates/         Jinja2 (base · home · issues · meetings · studio · meeting_view · run · import · metrics · knowledge · hub …)
   static/            css/, js/, vendor/
