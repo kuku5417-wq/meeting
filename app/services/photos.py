@@ -31,7 +31,7 @@ from sqlalchemy.orm import Session
 from app import models as m
 from app import settings
 from app.services import writing as w
-import path_config as pc
+from config import paths as pc
 
 MAX_BYTES = 20 * 1024 * 1024
 FORMATS = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}

@@ -18,7 +18,7 @@ from datetime import date, datetime
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-import path_config as pc
+from config import paths as pc
 from app import models as m
 from app.services import weeks
 from sn_util import ensure_sn

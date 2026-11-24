@@ -9,26 +9,32 @@ python-dotenv 를 import 할 수 없다. app_config 를 그대로 부르면 dote
 .env 가 안 읽히고 NAS_BASE_PATH 가 빈 값이 돼 **항상 사외망으로 오판**한다.
 그래서 .env 를 여기서 직접 한 줄 파싱한다.
 
-판정 (둘 중 하나라도 참이면 사내망):
-  (a) .env 의 NAS_BASE_PATH 가 실제로 접근 가능      ← app_config.IS_INTERNAL 과 동일 규칙
-  (b) .env 의 HTTP_PROXY 호스트:포트에 TCP 연결 성공  ← 프록시를 쓸 수 있는가(설치의 실제 관심사)
+판정 순서 (2026-11-24 단계 11, 결정 ⑤에 맞춤):
+  1. 환경변수 `SHI_NET` (corporate/internal · external)
+  2. `.claude/shi.json` 의 `net`            ← 앱과 같은 출처
+  3. 그래도 모르면 **자동 감지**(아래 a·b) ← shi.json 은 커밋하지 않아 새 PC 에는 없을 수 있다.
+     여기서 사외망으로 오판하면 사내망 설치가 프록시 없이 돌아 통째로 타임아웃난다.
+     (a) .env 의 NAS_BASE_PATH 가 실제로 접근 가능
+     (b) .env 의 HTTP_PROXY 호스트:포트에 TCP 연결 성공  ← 프록시를 쓸 수 있는가(설치의 실제 관심사)
 
-(a) 는 앱 런타임 규칙과 일치시키기 위한 것이고, (b) 는 NAS 가 마운트되지 않은
-사내망 PC 에서도 설치가 되도록 하는 보완이다.
+프록시 주소는 **`.env` 에서만** 온다(공통지침 — 스크립트에 박지 않는다).
 
 사용:
     python _netcheck.py            # 종료코드 0=사내망 / 1=사외망 (조용)
     python _netcheck.py --verbose  # 판정 사유를 사람이 읽게 출력
+    python _netcheck.py --proxy    # 사내망일 때 쓸 프록시 URL 을 한 줄로 출력(없으면 빈 줄)
 """
 from __future__ import annotations
 
+import json
 import os
 import socket
 import sys
 from pathlib import Path
 
-DEFAULT_PROXY = "http://60.200.254.1:9090"
 TCP_TIMEOUT = 1.5
+INTERNAL_WORDS = ("internal", "corporate")
+EXTERNAL_WORDS = ("external",)
 
 
 def find_env_file() -> Path | None:
@@ -80,8 +86,36 @@ def proxy_reachable(proxy_url: str) -> bool:
         return False
 
 
+def net_from_setting() -> tuple[bool, str] | None:
+    """`SHI_NET` → `.claude/shi.json` 의 net. 둘 다 없으면 None(자동 감지로 넘어간다)."""
+    ov = (os.getenv("SHI_NET") or "").strip().lower()
+    if ov in INTERNAL_WORDS:
+        return True, "환경변수 SHI_NET"
+    if ov in EXTERNAL_WORDS:
+        return False, "환경변수 SHI_NET"
+    shi = Path(__file__).resolve().parent / ".claude" / "shi.json"
+    try:
+        raw = str(json.loads(shi.read_text(encoding="utf-8")).get("net", "")).strip().lower()
+    except Exception:  # noqa: BLE001 — 파일 없음/깨짐 → 자동 감지로
+        return None
+    if raw in INTERNAL_WORDS:
+        return True, ".claude/shi.json"
+    if raw in EXTERNAL_WORDS:
+        return False, ".claude/shi.json"
+    return None
+
+
+def proxy_url() -> str:
+    """설치에 쓸 프록시 URL — `.env` 에서만 읽는다(스크립트에 박지 않는다)."""
+    env = read_env(find_env_file())
+    return (env.get("HTTP_PROXY") or env.get("HTTPS_PROXY") or "").strip()
+
+
 def detect() -> tuple[bool, str]:
-    """(사내망 여부, 사유) 반환."""
+    """(사내망 여부, 사유) 반환. 설정이 있으면 그것이 먼저다."""
+    fixed = net_from_setting()
+    if fixed is not None:
+        return fixed
     env_path = find_env_file()
     env = read_env(env_path)
     if not env_path:
@@ -95,16 +129,20 @@ def detect() -> tuple[bool, str]:
         except Exception:  # noqa: BLE001 — UNC 접근이 예외로 끊기는 경우 → 다음 판정으로
             pass
 
-    proxy = (env.get("HTTP_PROXY") or env.get("HTTPS_PROXY") or "").strip() or DEFAULT_PROXY
-    if proxy_reachable(proxy):
+    proxy = (env.get("HTTP_PROXY") or env.get("HTTPS_PROXY") or "").strip()
+    if proxy and proxy_reachable(proxy):
         return True, "프록시 TCP 도달 가능"
 
-    return False, "NAS 미접근 + 프록시 미도달"
+    return False, "NAS 미접근 + 프록시 미도달(또는 .env 에 프록시 없음)"
 
 
 def main() -> int:
     internal, why = detect()
-    if "--verbose" in sys.argv[1:]:
+    args = sys.argv[1:]
+    if "--proxy" in args:
+        print(proxy_url() if internal else "")
+        return 0 if internal else 1
+    if "--verbose" in args:
         print(f"{'corporate' if internal else 'external'} ({why})")
     return 0 if internal else 1
 

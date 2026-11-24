@@ -12,7 +12,7 @@ from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-import path_config as pc
+from config import paths as pc
 from app import models as m
 from app import settings
 from app.db import get_session

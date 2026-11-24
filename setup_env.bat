@@ -53,32 +53,34 @@ if errorlevel 1 (
 )
 
 REM --- network: pypi needs the proxy on the corporate net, and must NOT use it outside.
-REM     _netcheck.py decides: NAS_BASE_PATH reachable OR proxy port reachable = corporate.
-REM     It is stdlib-only on purpose - deps are not installed yet, so app_config cannot be
-REM     used here (it needs python-dotenv and would silently report "external").
+REM     _netcheck.py decides, in this order (2026-11-24, step 11):
+REM       1) SHI_NET   2) .claude\shi.json "net"   3) auto-detect (NAS reachable / proxy port open)
+REM     shi.json is NOT committed, so a fresh PC may not have it - the detect fallback stays.
+REM     It is stdlib-only on purpose - deps are not installed yet.
 REM     Do NOT ask the user: an unanswered prompt silently picked the wrong network before.
-REM     Override when detection is wrong:
-REM       set SHI_NET=corporate     (or  set SHI_NET=external)  before running this file.
-set "NETMODE="
-if defined SHI_NET set "NETMODE=%SHI_NET%"
-if defined NETMODE goto :netdone
-if not exist "%~dp0_netcheck.py" goto :netext
+REM     The proxy URL comes from secret\.env (HTTP_PROXY) - never hardcoded here.
+set "NETMODE=external"
+set "PROXYURL="
+if not exist "%~dp0_netcheck.py" goto :netdone
 set "SYSPY="
 for /f "delims=" %%P in ('uv python find cpython-3.12-windows-x86_64 2^>nul') do set "SYSPY=%%P"
-if not defined SYSPY goto :netext
+if not defined SYSPY goto :netdone
+for /f "delims=" %%U in ('"%SYSPY%" "%~dp0_netcheck.py" --proxy 2^>nul') do set "PROXYURL=%%U"
 "%SYSPY%" "%~dp0_netcheck.py" >nul 2>nul
-if errorlevel 1 goto :netext
+if errorlevel 1 goto :netdone
 set "NETMODE=corporate"
-goto :netdone
-:netext
-set "NETMODE=external"
 :netdone
 if /I "%NETMODE%"=="corporate" (
-  set "HTTP_PROXY=http://60.200.254.1:9090"
-  set "HTTPS_PROXY=http://60.200.254.1:9090"
-  echo   [net] corporate ^(NAS or proxy reachable^) : proxy ON
+  if defined PROXYURL (
+    set "HTTP_PROXY=%PROXYURL%"
+    set "HTTPS_PROXY=%PROXYURL%"
+    echo   [net] corporate : proxy ON ^(from secret\.env^)
+  ) else (
+    echo   [WARN] corporate net but no HTTP_PROXY in secret\.env - pypi downloads will time out.
+    echo          Put HTTP_PROXY=http://host:port in secret\.env and rerun.
+  )
 ) else (
-  echo   [net] external ^(NAS and proxy not reachable^) : proxy OFF   [override: set SHI_NET=corporate]
+  echo   [net] external : proxy OFF   [override: set SHI_NET=corporate]
 )
 
 REM --- --locked: honor uv.lock as-is. Without it uv silently re-resolves to the newest
@@ -117,27 +119,15 @@ if errorlevel 2 goto :end
 
 echo.
 echo [3/3] run app   (stop: Ctrl+C in this window)
-call :show_urls
-"%VENV%\Scripts\python.exe" -m uvicorn app.main:app --host 0.0.0.0 --port %PORT%
+set "RUNPORT="
+for /f "delims=" %%P in ('"%VENV%\Scripts\python.exe" "%~dp0_freeport.py" 2^>nul') do set "RUNPORT=%%P"
+if not defined RUNPORT set "RUNPORT=%PORT%"
+echo     Open:   http://127.0.0.1:%RUNPORT%
+echo     This server is local only - other PCs cannot reach it.
+"%VENV%\Scripts\python.exe" -m uvicorn app.main:app --host 127.0.0.1 --port %RUNPORT%
 
 :end
 endlocal
 pause
 exit /b
 
-REM ---- print Local / Network URLs (uvicorn only shows 0.0.0.0 = "all addresses") ----
-REM lists every IPv4 of this PC except loopback 127.x and APIPA 169.254.x
-:show_urls
-echo     Local:   http://localhost:%PORT%
-set "LAN_FOUND="
-for /f "tokens=2 delims=:" %%a in ('ipconfig ^| findstr /C:"IPv4"') do call :show_ip %%a
-if not defined LAN_FOUND echo     Network: run ipconfig, use IPv4 -^> http://[IP]:%PORT%
-exit /b
-:show_ip
-set "IP=%~1"
-if "%IP%"=="" exit /b
-if "%IP:~0,4%"=="127." exit /b
-if "%IP:~0,8%"=="169.254." exit /b
-echo     Network: http://%IP%:%PORT%   ^(other PC^)
-set "LAN_FOUND=1"
-exit /b

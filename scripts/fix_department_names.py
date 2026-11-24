@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from sqlalchemy import select  # noqa: E402
 
-import path_config as pc  # noqa: E402
+from config import paths as pc  # noqa: E402
 from app import models as m  # noqa: E402
 from app.db import SessionLocal, init_db  # noqa: E402
 

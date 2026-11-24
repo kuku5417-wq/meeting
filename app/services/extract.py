@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session
 
 from app import models as m
 from app import settings
-from app.llm import client as llm
+from modules import llm_client as llm
 from app.services import alias as alias_svc
 from app.services import carry_over as co
 from app.services import metrics as metrics_svc

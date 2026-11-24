@@ -16,7 +16,7 @@ except Exception:  # noqa: BLE001 — 리다이렉트 환경
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import path_config  # noqa: E402
+from config import paths as path_config  # noqa: E402
 from app.db import SessionLocal, init_db  # noqa: E402
 from app.services.central import sync_hulls  # noqa: E402
 from app.services.masters import relink_unregistered  # noqa: E402

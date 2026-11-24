@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 
 from app import models as m
 from app.db import get_session
-from app.llm import client as llm
+from modules import llm_client as llm
 from app.services import meeting as mts
 from app.services import promotion
 from app.services import run as rn

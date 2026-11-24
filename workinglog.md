@@ -294,9 +294,34 @@
 - 확인: `pytest -q tests` **32 passed** · `_smoke` **480/480** · 브라우저로 `/issues` → `/nas` 리다이렉트와 연결 화면 실측(8601, 임시 데이터 폴더)
 - **사내망에서 할 것**: 실제 도메인 로그인·아이디 입력으로 붙는지, 붙은 뒤 NAS 의 DB 로 저장되는지, 두 PC 동시 사용(단계 12)
 
-### 다음 세션 시작점 (2026-11-24, 단계 5 끝)
+### 다음 세션 시작점 (2026-11-24, 단계 5 끝 — 아래 단계 11 절이 더 최신)
 1. `/shi:init` — 플러그인 로드된 새 세션에서(`stack=fastapi`, `original=code_N\meeting`, `net=external`)
 2. 단계 6~10 — M15 자유 편집(결정 ⑦) 15-2부터, 케이스 28개 시나리오
 3. 단계 11 — `127.0.0.1`·빈 포트·PyInstaller + 래퍼 2개(`path_config.py`·`app/llm/client.py`)·`_netcheck.py`·
    `setup_env.bat` 의 박힌 프록시 IP 정리
 4. 단계 12 — 사내망 반입: 계약 대조, NAS 실제 연결 확인, 두 PC 동시 사용
+
+## 2026-11-24 (trans) 단계 11 — 127.0.0.1 · 빈 포트 · 실행 파일 · 정리
+- [x] `run.bat` 다시 씀: **127.0.0.1 전용 + 빈 포트(8600~8610, `_freeport.py`)**, LAN 주소 출력(`show_urls`) 제거.
+      각자 PC 가 자기 사본을 돌리므로 남이 접속할 서버가 없다(shi 규약·사내 정책)
+- [x] `setup_env.bat`: 망 판정을 `SHI_NET` → `.claude/shi.json` → 자동 감지 순으로, **박힌 프록시 IP 삭제**
+      (프록시 URL 은 `_netcheck.py --proxy` 가 `secret/.env` 에서 읽어 넘긴다). 실행도 127.0.0.1 + 빈 포트
+- [x] `_netcheck.py`: `net_from_setting()`(SHI_NET·shi.json) + `--proxy`, `DEFAULT_PROXY` 상수 제거.
+      shi.json 은 커밋하지 않아 새 PC 엔 없을 수 있어 **자동 감지는 폴백으로 남겼다**(사용자 결정 2026-11-24)
+- [x] **래퍼 2개 제거**: `path_config.py` · `app/llm/client.py` 삭제, 부르는 곳 18군데를 `config.paths`·`modules.llm_client` 로
+      (app 11 · scripts 3 · `_smoke` · check_env 는 이미 전환). 검사는 「옛 이름이 없다」로 바뀜
+- [x] 실행 파일: `_launcher.py`(빈 포트 → 127.0.0.1 → 브라우저) · `meeting.spec`(폴더형, onefile 아님) · `build_exe.bat`
+      (`uv run --with "pyinstaller>=6.10"` — **의존성·uv.lock 은 건드리지 않는다**). `.gitignore` 에 `build/`·`dist/`
+- [x] 실제 빌드·실행 확인: `dist/meeting/meeting.exe` 24MB, 띄워서 `/healthz` `{"ok":true}` · `/home` 200 · 글꼴·정적파일 정상.
+      첫 빌드는 `uvicorn.run("app.main:app")` 문자열 때문에 실행 파일 안에서 import 실패 → `from app.main import app` 으로 고침
+- [x] 문서: `docs/단계2_범위안.md` 삭제(제 몫을 다함 — 결정은 `requirements.md` 4·5장에), CLAUDE.md 폴더 구조·환경 규칙,
+      requirements 4장 실행 줄. CLAUDE.md 에 「작업본에서 돌릴 때 `MEETING_DATA_PATH` 를 먼저 준다」 경고를 옮겨 적음
+- 검사 7개 추가(480 → **487**): .bat 은 ASCII / 0.0.0.0 없음 / 박힌 IP 없음 / run.bat 이 빈 포트를 쓴다 /
+  빈 포트를 찾아 준다 / 설치 판정도 SHI_NET·shi.json 우선 / 설치 스크립트에 프록시 주소 없음
+- 결과: `pytest -q tests` **32 passed** · `_smoke` **487/487** · `check_env --quick` PASS · 운영 DB 그대로(13:22)
+
+### 다음 세션 시작점 (2026-11-24, 단계 11 끝 — 남은 것은 6~10, 12, 13)
+1. `/shi:init` — 플러그인 로드된 새 세션에서(`stack=fastapi`, `original=code_N\meeting`, `net=external`)
+2. 단계 6~10 — M15 자유 편집(결정 ⑦) 15-2부터 → 15-8, 케이스 28개 시나리오
+3. 단계 12 — 사내망 반입: `/shi:datamap` 계약 대조, **NAS 실제 연결**, 두 PC 동시 사용(store-reviewer)
+4. 단계 13 — 부서 시범 1~2곳

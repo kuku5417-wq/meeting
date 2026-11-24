@@ -12,7 +12,7 @@ from app import models as m
 from app.db import get_session
 from app.export import pptx_builder as pb
 from app.services import weeks
-import path_config as pc
+from config import paths as pc
 
 router = APIRouter()
 PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"

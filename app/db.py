@@ -41,7 +41,7 @@ SessionLocal = sessionmaker(bind=engine, autoflush=False, expire_on_commit=False
 
 
 def lock_path():
-    import path_config as pc
+    from config import paths as pc
     return pc.get_data_dir() / "meeting.lock"
 
 

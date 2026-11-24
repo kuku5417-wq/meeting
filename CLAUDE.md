@@ -63,16 +63,18 @@
 - **uv + 64비트 Python 3.12**, venv 는 **`%LOCALAPPDATA%\venvs\meeting`** (로컬 C:). 의존성은 `pyproject.toml` + `uv.lock`.
   ```
   setup_env.bat                  # 설치(망 자동감지·uv sync --locked) → check_env → 실행
-  run.bat                        # 운영 PC 에서 서버만 실행 (포트 8600, 0.0.0.0)
+  run.bat                        # 서버 실행 — 127.0.0.1 + 빈 포트(8600~8610). 남이 접속하는 서버 금지(단계 11)
   uv run python _smoke.py        # 회귀 확인 — 통과해야 끝난 것
   uv run python check_env.py --quick
   ```
-  개발 중 직접 실행: `uv run uvicorn app.main:app --port 8600 --reload`
+  개발 중 직접 실행: `uv run uvicorn app.main:app --host 127.0.0.1 --port 8601 --reload`
+  ⚠ **작업본에서 `check_env.py`·앱을 돌릴 때는 `MEETING_DATA_PATH` 를 먼저 준다.** 기본값은 운영 데이터 폴더이고,
+  그대로 돌리면 `init_db` 가 운영 DB 에 표·칸을 만든다(2026-11-24 실제로 37표 → 48표가 됐다. 행은 보존). `_smoke`·pytest 는 임시폴더를 주입해 안전하다.
   (환경변수 `UV_PROJECT_ENVIRONMENT=%LOCALAPPDATA%\venvs\meeting` 를 두면 `uv run` 이 같은 venv 를 쓴다)
 - 비밀값은 상위 폴더의 **`secret/.env` 하나**(위로 올라가며 첫 파일, `SHI_ENV_FILE` 로 강제 가능). 키 이름은 `.env.template`.
   앱 전용 키는 `MEETING_` 접두어(`MEETING_DATA_PATH`·`MEETING_LLM_CHAIN`·`MEETING_LONG_OPEN_WEEKS` 등).
 - 망·비밀·프록시는 **`config/settings.py`**, 경로는 **`config/paths.py`** 만 경유한다(전환 지점, 2026-11-24 단계 2).
-  망은 `.claude/shi.json` 의 `net` 한 줄(자동 감지 없음 — 결정 ⑤). 옛 이름 `path_config.py`·`app/llm/client.py` 는 래퍼다.
+  망은 `.claude/shi.json` 의 `net` 한 줄(자동 감지 없음 — 결정 ⑤). 옛 이름 `path_config.py`·`app/llm/client.py` 는 단계 11 에서 지웠다.
   `.env` 값은 `config.settings.value()`(환경변수 → `.env`)로 읽는다 — `load_dotenv` 금지, `app_config.py` 는 삭제됐다.
 - 중앙 parquet 은 **`pjtlist`·`milestone` 두 개만 읽는다**(2026-10-21, `app/services/central.py`, pyarrow — pandas 없음). 쓰지 않는다(공통 규칙 2).
   - 호선은 **pjtlist 가 정본** — 서버 시작·설정 화면 「지금 다시 읽기」·`seed_masters.py` 끝에서 `hull` 을 만들거나 고치고, 지우지 않는다.
@@ -91,9 +93,10 @@ config/settings.py   전환 지점 — 망(shi.json 의 net)·비밀(.env 직접
 config/paths.py      전환 지점 — 경로 계층 (<base>/meeting, DB·사진·내보내기)
 modules/llm_client.py 전환 지점 — LLM 어댑터·폴백 체인
 modules/nas.py       전환 지점 — NAS 접속 (도메인 로그인 → 아이디·비번 3회, 못 붙으면 쓰기 차단)
-path_config.py       옛 이름 래퍼 → config/paths.py (단계 11 에서 제거)
 sn_util.py           ensure_sn — 호선 SN2511 정규화 (dcost 동일본 스냅샷, pandas 제거)
-_netcheck.py         설치 시점 망 감지 — **설치 스크립트 전용**(setup_env.bat 이 프록시를 켤 때. 앱 코드는 쓰지 않는다)
+_netcheck.py         설치 때 망 판정 — SHI_NET → .claude/shi.json → 자동 감지. 프록시 주소는 secret/.env 에서만
+_freeport.py         빈 포트 찾기 (run.bat·실행 파일이 쓴다, 127.0.0.1)
+_launcher.py         실행 파일 진입점 (PyInstaller) — meeting.spec · build_exe.bat
 check_env.py         가동 전 점검      _smoke.py   회귀 확인
 setup_env.bat / run.bat   (ASCII + CRLF)
 app/
@@ -104,7 +107,7 @@ app/
   schemas/           Pydantic 입출력
   routers/           write(메모·블록·지표 동작), photos, issues, studio, run(회의 진행·지시·종결), importer(가져오기), masters, export
   services/          extract.py, alias.py, carry_over.py, closure.py, promotion.py, search.py
-  llm/               client.py(= modules/llm_client.py 래퍼), prompts/*.md
+  llm/               prompts/*.md (호출은 modules/llm_client.py)
   export/            pptx_builder.py, templates/
   templates/         Jinja2 (base · base_bare(사이드바 없는 최소 화면) · home · issues · meetings · studio · meeting_view · run · import · metrics · knowledge · hub · nas …)
   static/            css/, js/, vendor/

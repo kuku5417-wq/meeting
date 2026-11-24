@@ -26,7 +26,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-import path_config as pc
+from config import paths as pc
 from app import models as m
 from app import settings
 from app.services import alias as alias_svc

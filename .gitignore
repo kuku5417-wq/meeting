@@ -25,6 +25,10 @@ _bundle.tgz
 # 각 PC 에서 /shi:init (사내망은 /shi:init internal) 로 만든다.
 .claude/shi.json
 
+# ── 실행 파일 빌드 산출물 (단계 11) ────────────────────
+build/
+dist/
+
 # ── 파이썬 ─────────────────────────────────────────────
 __pycache__/
 *.py[cod]

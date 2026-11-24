@@ -16,7 +16,7 @@ from sqlalchemy.orm import Session
 from app import models as m
 from app import settings
 from app.db import get_session
-from app.llm import client as llm
+from modules import llm_client as llm
 from app.services import carry_over as co
 from app.services import closure as cl
 from app.services import extract as ex

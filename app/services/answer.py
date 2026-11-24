@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from sqlalchemy.orm import Session
 
 from app import settings
-from app.llm import client as llm
+from modules import llm_client as llm
 from app.services import knowledge as kn
 
 PROMPT = settings.ROOT / "app" / "llm" / "prompts" / "answer_knowledge.md"

@@ -49,14 +49,14 @@ EXPECTED_TABLES = {
 
 
 def t_paths() -> None:
-    import path_config as pc
+    from config import paths as pc
     check("데이터 폴더 = 주입한 임시 폴더", pc.get_data_dir() == Path(_TMP), str(pc.get_data_dir()))
     check("DB 파일이 데이터 폴더 안", pc.db_path().parent == Path(_TMP))
 
 
 def t_switch() -> None:
     """전환 지점(단계 2-a) — 망은 `.claude/shi.json` 하나, 사외망에서 프록시가 새지 않는다, 옛 이름 래퍼가 산다."""
-    import path_config as pc
+    from config import paths as pc
 
     import config.paths as paths
     from config import settings as cfg
@@ -87,8 +87,8 @@ def t_switch() -> None:
             os.environ["LLM_SOLAR_API_KEY"] = had_key
     check("비밀 읽기 — 빈 환경변수를 존중한다(시험이 키를 비워 네트워크를 막는 방식)", empty_ok)
 
-    check("옛 이름 래퍼 path_config = config.paths 와 같은 값",
-          pc.db_path() == paths.db_path() and pc.get_data_dir() == paths.get_data_dir())
+    check("단계11 — 옛 이름 래퍼(path_config.py)가 없다(부르는 곳은 config.paths 로)",
+          not (Path(__file__).resolve().parent / "path_config.py").exists())
 
     # ── 단계 2-c: 망·비밀이 전환 지점에만 있다 ──
     root = Path(__file__).resolve().parent
@@ -104,12 +104,11 @@ def t_switch() -> None:
           not dotenv_users, repr(dotenv_users))
 
     # ── 단계 2-b: LLM·NAS 전환 지점 ──
-    from app.llm import client as llm_old
-
     from modules import llm_client as llm_new
     from modules import nas
-    check("옛 이름 래퍼 app.llm.client = modules.llm_client 와 같은 함수·같은 PROVIDERS",
-          llm_old.complete_json is llm_new.complete_json and llm_old.PROVIDERS is llm_new.PROVIDERS)
+    check("단계11 — 옛 이름 래퍼(app/llm/client.py)가 없다(부르는 곳은 modules.llm_client 로)",
+          not (Path(__file__).resolve().parent / "app" / "llm" / "client.py").exists()
+          and callable(llm_new.complete_json))
 
     had = os.environ.pop("SHI_NET", None)
     had_proxy = os.environ.pop("HTTP_PROXY", None)
@@ -228,7 +227,42 @@ def t_nas(c) -> None:
         nas.reset_tries()
         paths.invalidate_cache()
 
-    # ⑦ 콘솔(CP949)에서 서버가 죽지 않는다 — 실측 2026-11-24
+    # ⑦ 단계 11 — 실행·설치 스크립트가 127.0.0.1 만 열고, 프록시·포트를 박아 두지 않는다
+    root11 = Path(__file__).resolve().parent
+    bats = {p.name: p.read_bytes() for p in root11.glob("*.bat")}
+    nonascii = [n for n, b in bats.items() if any(x > 127 for x in b)]
+    check("단계11 — .bat 은 ASCII 전용(CP949 충돌 방지)", not nonascii, repr(nonascii))
+    texts = {n: b.decode("ascii", "replace") for n, b in bats.items()}
+    check("단계11 — .bat 에 0.0.0.0 이 없다(127.0.0.1 만 연다)",
+          not [n for n, x in texts.items() if "0.0.0.0" in x],
+          repr([n for n, x in texts.items() if "0.0.0.0" in x]))
+    import re as _re
+    ip_bats = [n for n, x in texts.items() if _re.search(r"\d{1,3}(?:\.\d{1,3}){3}",
+                                                        x.replace("127.0.0.1", ""))]
+    check("단계11 — .bat 에 박힌 IP 가 없다(프록시는 secret/.env 에서)", not ip_bats, repr(ip_bats))
+    check("단계11 — run.bat 이 빈 포트를 찾아 쓴다", "_freeport.py" in texts.get("run.bat", ""))
+
+    from _freeport import find, is_free
+    port11 = find()
+    check("단계11 — 빈 포트를 찾아 준다(8600~8610)", 8600 <= port11 <= 8610 and is_free(port11), str(port11))
+
+    import _netcheck
+    had_net = os.environ.pop("SHI_NET", None)
+    try:
+        os.environ["SHI_NET"] = "corporate"
+        a = _netcheck.net_from_setting()
+        os.environ["SHI_NET"] = "external"
+        b = _netcheck.net_from_setting()
+        check("단계11 — 설치 판정도 SHI_NET/shi.json 을 먼저 본다",
+              a == (True, "환경변수 SHI_NET") and b == (False, "환경변수 SHI_NET"), f"{a} / {b}")
+    finally:
+        os.environ.pop("SHI_NET", None)
+        if had_net is not None:
+            os.environ["SHI_NET"] = had_net
+    check("단계11 — 설치 스크립트에 프록시 주소를 박지 않는다",
+          "DEFAULT_PROXY" not in (root11 / "_netcheck.py").read_text(encoding="utf-8"))
+
+    # ⑧ 콘솔(CP949)에서 서버가 죽지 않는다 — 실측 2026-11-24
     from app.main import _safe_console
     line = "[meeting] NAS: 사외망 — NAS 를 쓰지 않습니다 「연결」"
     safe = _safe_console(line, "cp949")
@@ -240,7 +274,7 @@ def t_nas(c) -> None:
     check("단계5 — 콘솔 안내가 CP949 에서도 깨지지 않는다(줄표·「」 치환)",
           enc_ok and "—" not in safe and "사외망" in safe, safe)
 
-    # ⑧ 못 붙은 동안은 쓰기 차단, 화면은 연결 화면으로
+    # ⑨ 못 붙은 동안은 쓰기 차단, 화면은 연결 화면으로
     c.app.state.nas_blocked = "NAS 에 연결되지 않았습니다 — 설정 화면의 「NAS 연결」"
     try:
         r = c.post("/settings/alerts", data={}, follow_redirects=False)
@@ -461,7 +495,7 @@ def _offline_llm():
     단계 2-b: 전환 지점(`modules/llm_client`)은 호출할 때마다 `config.settings.llm_keys()` 를 읽으므로
     환경변수를 비우면 된다 — 빈 환경변수는 「일부러 비운 것」으로 존중된다(`config.settings.value`).
     """
-    from app.llm import client as llm
+    from modules import llm_client as llm
     for k in ("LLM_SOLAR_API_URL", "LLM_SOLAR_API_KEY", "LLM_UPSTAGE_API_KEY", "LLM_OPENAI_API_KEY"):
         os.environ[k] = ""
     return llm
@@ -1000,7 +1034,7 @@ def t_photos(c) -> None:
     from PIL import Image
     from sqlalchemy import func, select
 
-    import path_config as pc
+    from config import paths as pc
     from app import models as m
     from app.db import SessionLocal
     from app.services import writing as w
@@ -1353,7 +1387,7 @@ def t_export(c) -> None:
     from pptx import Presentation
     from sqlalchemy import select
 
-    import path_config as pc
+    from config import paths as pc
     from app import models as m
     from app.db import SessionLocal
 
@@ -1977,7 +2011,7 @@ def t_m13(c) -> None:
     from pptx.util import Inches
     from sqlalchemy import func, select
 
-    import path_config as pc
+    from config import paths as pc
     from app import models as m
     from app.db import SessionLocal
     from app.services import carry_over as co
@@ -2495,7 +2529,7 @@ def t_storage(c) -> None:
     """결정 ① 4-a — NAS 위 SQLite 하나: DELETE 저널·busy_timeout(WAL 금지), 매일 첫 실행 백업 + 무결성 점검."""
     from datetime import date as _date
     from sqlalchemy import text
-    import path_config as pc
+    from config import paths as pc
     from app import settings as _settings
     from app.db import engine
     from app.services import db_guard
@@ -2553,7 +2587,7 @@ def t_storage(c) -> None:
     nas_lock.release(lp)
     check("결정① 4-b — 같은 잠금을 두 번 잡을 수 없음(기다림 한도 뒤 LockBusy)", ok and not lp.exists())
     # 4-b AI 응답 대기 동안 잠금을 쥐지 않음 — 앞 단계 저장은 먼저 확정, 호출 로그는 끝에 한 번
-    from app.llm import client as _llm
+    from modules import llm_client as _llm
     seen: list[bool] = []
 
     def _probe(task, system, user, timeout):
