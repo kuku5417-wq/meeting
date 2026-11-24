@@ -43,6 +43,7 @@ DB_BACKUP_KEEP = _int("MEETING_DB_BACKUP_KEEP", 14)             # 매일 백업 
 DB_LOCK = (cfg.value("MEETING_DB_LOCK") or "on").strip().lower() not in ("off", "0", "false", "no")   # NAS 잠금 파일(4-b)
 DB_LOCK_WAIT_SEC = _int("MEETING_DB_LOCK_WAIT_SEC", 30)         # 다른 PC 가 저장 중일 때 기다리는 최대 초
 DB_LOCK_STALE_SEC = _int("MEETING_DB_LOCK_STALE_SEC", 120)      # 이보다 오래된 잠금은 주인 없는 것으로 보고 정리
+EDIT_LOCK_MIN = _int("MEETING_EDIT_LOCK_MIN", 10)               # 자료 하나 = 한 명씩(15-7). 이 분 동안 입력이 없으면 풀린다
 
 # ── LLM ─────────────────────────────────────────────────
 # 앞에서부터 시도하는 공급자 목록 — 결정 ④(2026-11-13): SOLA·GPT 두 개. Upstage 뺌, Mock 은 테스트 전용(사용자 체인에 넣지 않음).

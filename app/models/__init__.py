@@ -4,7 +4,7 @@ from app.models.masters import (  # noqa: F401
     Owner, Person, ShipType, SisterGroup, SymptomCode, System, TestItem,
 )
 from app.models.others import (  # noqa: F401
-    Annotation, BlockLink, CaseCard, LlmCallLog, Marker, Meeting, AppSetting, Directive, ImportJob, ImportPiece, MeetingCandidate, MeetingVersion, ReportItem, ReportItemBlock,
+    Annotation, BlockLink, CaseCard, EditLock, LlmCallLog, Marker, Meeting, AppSetting, Directive, ImportJob, ImportPiece, MeetingCandidate, MeetingVersion, ReportItem, ReportItemBlock,
     MeetingComment, MetricCell, MetricDef, MetricTable, MetricValue, Photo, PhotoLink,
 )
 from app.models.writing import (  # noqa: F401

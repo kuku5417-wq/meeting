@@ -106,7 +106,9 @@ app/
   models/            SQLAlchemy 모델 (docs/03 기준) — masters / writing / others
   schemas/           Pydantic 입출력
   routers/           write(메모·블록·지표 동작), photos, issues, studio, run(회의 진행·지시·종결), importer(가져오기), masters, export
-  services/          extract.py, alias.py, carry_over.py, closure.py, promotion.py, search.py
+  services/          extract.py, alias.py, carry_over.py, closure.py, promotion.py, search.py,
+                     freeform.py(자유 편집 개체·갈래 칩) · derive.py(파생·합치기) · events.py(변경 기록·흐름·사실로 채택) ·
+                     locks.py(자료 하나 = 한 명씩 편집)
   llm/               prompts/*.md (호출은 modules/llm_client.py)
   export/            pptx_builder.py, templates/
   templates/         Jinja2 (base · base_bare(사이드바 없는 최소 화면) · home · issues · meetings · studio · meeting_view · run · import · metrics · knowledge · hub · nas …)

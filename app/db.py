@@ -54,6 +54,7 @@ def init_db() -> None:
     """모든 모델 테이블 생성(없는 것만)."""
     from app import models  # noqa: F401  — 모델 등록 부수효과
 
+    _drop_changed_tables()          # 모양이 바뀐 임시 표는 먼저 버리고(아래) — create_all 이 새 모양으로 만든다
     Base.metadata.create_all(engine)
     _add_missing_columns()
 
@@ -100,6 +101,26 @@ _LATER_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("metric_value", "human", "BOOLEAN NOT NULL DEFAULT 0"),           # F16 사람 값(블록 없이 넣어도 AI 가 덮지 않게)
     ("report_item", "table_id", "INTEGER REFERENCES metric_table(id)"),  # 2026-10-29 기간 표 단독 장
 )
+
+
+# 칸을 **뺀** 표 — SQLite 는 ALTER TABLE DROP COLUMN 이 없고, 옛 칸이 NOT NULL 이면 새 코드의 INSERT 가 깨진다.
+# 담고 있는 것이 금방 다시 생기는 값일 때만 통째로 버리고 다시 만든다(`create_all` 이 새 모양으로 만든다).
+_REBUILD_IF_HAS: tuple[tuple[str, str], ...] = (
+    ("edit_lock", "label"),      # 2026-11-24 15-7 — 편집 잠금에서 「어디서」를 빼기로 했다(최소수집). 잠금은 사라져도 10분이면 어차피 풀린다
+)
+
+
+def _drop_changed_tables(eng: Engine | None = None) -> None:
+    """모양이 바뀐 **임시** 표를 버린다 — 바로 뒤의 `create_all` 이 새 모양으로 다시 만든다."""
+    eng = eng or engine
+    if eng.dialect.name != "sqlite":
+        return
+    from sqlalchemy import text
+    with eng.begin() as conn:
+        for table, col in _REBUILD_IF_HAS:
+            have = {r[1] for r in conn.execute(text(f"PRAGMA table_info({table})"))}
+            if col in have:
+                conn.execute(text(f"DROP TABLE {table}"))
 
 
 def _add_missing_columns(eng: Engine | None = None) -> None:

@@ -13,14 +13,51 @@ const mid = S.meeting.id;
 const share = () => S.meeting.kind === 'share';
 const ctx = () => ({title: S.meeting.title, forms: S.forms});
 
+// ── 편집 표(결정 ⑦ 15-7) ────────────────────────────
+// 로그인이 없어 **브라우저마다 난수 하나**를 사람으로 본다. 같은 브라우저의 여러 탭은 한 사람이다.
+// 서버는 이 표로 「자료 하나 = 한 명씩」을 지키고, 입력이 10분 없으면 저절로 풀어 준다.
+const EDITOR = (() => {
+  try {
+    let v = localStorage.getItem('meeting-editor');
+    if (!v) { v = 'e' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36); localStorage.setItem('meeting-editor', v); }
+    return v;
+  } catch (e) { return 'e' + Math.random().toString(36).slice(2, 10); }   // 저장소가 막혀 있으면 이 창에서만 쓰는 표
+})();
+const HEAD = () => ({'Content-Type': 'application/json', 'X-Editor': EDITOR});
+let LOCK = {held: false, mine: true, min_: 10};
+const readonly = () => LOCK.held && !LOCK.mine;
+
+function renderLock() {
+  const el = $('#stLock');
+  if (!el) return;
+  el.hidden = !readonly();
+  if (el.hidden) { el.innerHTML = ''; return; }
+  el.innerHTML = `이 자료는 <b>다른 곳에서 편집 중</b>입니다 — 마지막 입력 ${LOCK.since || 0}분 전. `
+    + `${LOCK.left || LOCK.min_}분 안에 입력이 없으면 풀립니다. 지금은 읽기만 됩니다. `
+    + '<button class="btn sm" type="button" id="lockRetry">내가 편집</button>';
+}
+
 // ── 서버 호출 ────────────────────────────────────────
 async function api(url, body) {
-  const r = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(body || {})});
+  if (readonly()) { toast('다른 곳에서 편집 중입니다 — 읽기만 됩니다'); return null; }
+  const r = await fetch(url, {method: 'POST', headers: HEAD(), body: JSON.stringify(body || {})});
   const j = await r.json();
+  if (j.lock) { LOCK = j.lock; renderLock(); }
   if (!j.ok) { toast(j.err); return null; }
   if (j.state) { S = j.state; }
   return j;
 }
+
+async function claim(say) {
+  const r = await fetch(`/api/studio/${mid}/claim`, {method: 'POST', headers: HEAD()});
+  const j = await r.json();
+  if (j.lock) { LOCK = j.lock; renderLock(); }
+  if (say) toast(readonly() ? '아직 다른 곳에서 편집 중입니다 — 조금 뒤 다시 눌러주세요' : '이제 내가 편집합니다');
+  return !readonly();
+}
+addEventListener('pagehide', () => {            // 창을 닫으면 바로 놓는다(못 받아도 10분 뒤 풀린다)
+  try { fetch(`/api/studio/${mid}/release`, {method: 'POST', headers: HEAD(), keepalive: true}); } catch (e) { /* 닫는 중 — 무시 */ }
+});
 let tt;
 function toast(msg, undo) {
   const t = $('#toast');
@@ -74,9 +111,11 @@ let FE = null, FEsel = '';            // FEsel — 다시 붙일 때 고른 개�
 async function saveObjects(objs, rev) {
   const it = S.items[sel];
   if (!it) return null;
-  const r = await fetch(`/api/studio/items/${it.id}/objects`, {method: 'POST', headers: {'Content-Type': 'application/json'},
+  if (readonly()) { toast('다른 곳에서 편집 중입니다 — 읽기만 됩니다'); return null; }
+  const r = await fetch(`/api/studio/items/${it.id}/objects`, {method: 'POST', headers: HEAD(),
     body: JSON.stringify({objects: objs, rev})});
   const j = await r.json();
+  if (j.lock) { LOCK = j.lock; renderLock(); }
   if (!j.ok) { toast(j.err); return null; }
   if (j.state) S = j.state;                 // 캔버스는 다시 그리지 않는다 — 편집 중이다
   renderFreeProps();                        // 연결 상태(이슈와 다름·이슈가 바뀜)는 바로 갱신한다
@@ -385,6 +424,7 @@ document.addEventListener('click', async (e) => {
   if (e.target.id === 'foBold') { FE?.style('bold', !FE.sel?.style?.bold); return; }
   if (e.target.closest('[data-align]')) { FE?.style('align', e.target.closest('[data-align]').dataset.align); return; }
   if (e.target.closest('[data-tone]')) { FE?.style('tone', e.target.closest('[data-tone]').dataset.tone); return; }
+  if (e.target.id === 'lockRetry') { await claim(true); if (!readonly()) { const s2 = await (await fetch(`/api/studio/${mid}`, {headers: HEAD()})).json(); if (s2.ok) { S = s2.state; all(); } } return; }
   if (e.target.id === 'clrM') { multi.clear(); all(); return; }
   if (e.target.id === 'sumBtn') { const ids = [...multi].map((i) => S.items[i].id); const j = await api(`/api/studio/${mid}/summary`, {ids}); if (j) { multi.clear(); pick(S.items.findIndex((x) => x.id === j.item_id)); toast(`${ids.length}장을 한 장으로 묶었습니다 — 각 이슈는 그대로입니다`); } return; }
   if (e.target.id === 'unsum') { if (await api(`/api/studio/items/${S.items[sel].id}/unsummary`)) all(); return; }
@@ -401,6 +441,7 @@ document.addEventListener('input', (e) => {
   if (e.target.id === 'foLabel') { FE?.label(e.target.value); return; }
   if (e.target.id === 'ln') { const it = S.items[sel], v = e.target.value; it.line = v; renderCanvas(); clearTimeout(lt); lt = setTimeout(async () => { await api(`/api/studio/items/${it.id}`, {field: 'line', value: v}); renderBar(); renderLeft(); }, 500); }
   if (e.target.dataset.fact) {
+    if (readonly()) { toast('다른 곳에서 편집 중입니다 — 읽기만 됩니다'); return; }
     const el = e.target, b = S.items[sel].blocks[0], key = {cause_text: 'cause', action_text: 'act', decision_needed: 'dec'}[el.dataset.fact];
     b[key] = el.value; renderCanvas();
     clearTimeout(el._t); el._t = setTimeout(() => { factChain = factChain.then(async () => {   // 한 번에 하나씩 — 판 번호(결정 ①)
@@ -427,6 +468,7 @@ document.addEventListener('drop', async (e) => {
   const ids = S.items.map((x) => x.id), to = +l.dataset.l, [x] = ids.splice(dragI, 1); ids.splice(to, 0, x); dragI = null;
   if (await api(`/api/studio/${mid}/reorder`, {ids})) pick(to);
 });
+claim(false);                                   // 편집 화면을 열면 잡는다(남이 쥐고 있으면 읽기 전용)
 const setZ = (z) => { zoom = Math.max(0.5, Math.min(1.6, z)); $('#zv').textContent = Math.round(zoom * 100) + '%'; renderCanvas(); };
 $('#zIn').onclick = () => setZ(zoom + 0.2); $('#zOut').onclick = () => setZ(zoom - 0.2);
 all();

@@ -788,6 +788,86 @@ def t_free_adopt(c) -> None:
     check("15-6 — 기획 홈에 묶음이 보인다", "이번 주 바뀐 이슈" in home and bid in home)
 
 
+def t_edit_lock(c) -> None:
+    """결정 ⑦ 15-7 — 자료 하나는 한 명씩 편집(브라우저 표·10분 무입력 해제·놓기)."""
+    from datetime import datetime, timedelta
+
+    from sqlalchemy import select
+
+    from app import models as m
+    from app.db import SessionLocal
+
+    wk = "2026-W43"
+    with SessionLocal() as s:
+        dmt = s.scalars(select(m.Meeting).where(m.Meeting.week_id == wk, m.Meeting.kind == "dept")).first()
+        mid = dmt.id if dmt else 0
+    if not mid:
+        check("15-7 — 시험할 자료가 있다", False, "부서 회의자료가 없다")
+        return
+    A, B = {"X-Editor": "pc-a"}, {"X-Editor": "pc-b"}
+
+    j = c.post(f"/api/studio/{mid}/claim", headers=A).json()
+    check("15-7 — 편집 화면을 열면 내가 잡는다", j["ok"] and j["lock"]["held"] and j["lock"]["mine"], repr(j.get("lock")))
+    j2 = c.get(f"/api/studio/{mid}", headers=B).json()
+    check("15-7 — 다른 사람에게는 「남이 편집 중」으로 보인다(표는 알려 주지 않는다)",
+          j2["lock"]["held"] and not j2["lock"]["mine"] and "token" not in j2["lock"], repr(j2.get("lock")))
+
+    r = c.post(f"/api/studio/{mid}/reorder", headers=B, json={"ids": []})
+    check("15-7 — 남이 편집 중이면 쓰기를 거절한다(409, 무엇을 기다리면 되는지 알려 준다)",
+          r.status_code == 409 and "다른 곳에서 편집 중" in r.json()["err"] and "분" in r.json()["err"], r.text[:160])
+    r = c.post(f"/api/studio/{mid}/claim", headers=B)
+    check("15-7 — 남의 편집을 빼앗지 않는다", not r.json()["lock"]["mine"], repr(r.json()["lock"]))
+
+    ids = [x["id"] for x in c.get(f"/api/studio/{mid}").json()["state"]["items"] if x["id"]]
+    r = c.post(f"/api/studio/{mid}/reorder", headers=A, json={"ids": ids})     # 그대로 둔 순서 — 언제나 되는 쓰기
+    check("15-7 — 잡은 사람은 그대로 쓴다", r.status_code == 200 and r.json()["ok"], r.text[:120])
+
+    r = c.post(f"/api/studio/{mid}/reorder", json={"ids": ids})
+    check("15-7 — 표가 없는 요청은 막지 않는다(옛 화면·점검 도구)", r.status_code == 200 and r.json()["ok"], r.text[:120])
+
+    with SessionLocal() as s:                      # 10분 무입력 — 시간을 돌려 흉내 낸다
+        row = s.get(m.EditLock, mid)
+        row.touched_at = datetime.now() - timedelta(minutes=11)
+        s.commit()
+    j = c.post(f"/api/studio/{mid}/claim", headers=B).json()
+    check("15-7 — 10분 동안 입력이 없으면 다음 사람이 가져간다(창을 그냥 닫아도 잠기지 않는다)",
+          j["lock"]["held"] and j["lock"]["mine"], repr(j["lock"]))
+    r = c.post(f"/api/studio/{mid}/reorder", headers=A, json={"ids": ids})
+    check("15-7 — 이제는 먼저 쓰던 사람이 기다린다", r.status_code == 409, r.text[:120])
+
+    c.post(f"/api/studio/{mid}/release", headers=B)
+    with SessionLocal() as s:
+        gone = s.get(m.EditLock, mid) is None
+    j = c.post(f"/api/studio/{mid}/claim", headers=A).json()
+    check("15-7 — 창을 닫으면 바로 놓는다", gone and j["lock"]["mine"], f"{gone} / {j['lock']}")
+    c.post(f"/api/studio/{mid}/release", headers=B)
+    with SessionLocal() as s:
+        still = s.get(m.EditLock, mid)
+    check("15-7 — 남의 편집을 대신 놓지는 못한다", still is not None and still.token == "pc-a",
+          repr(still and still.token))
+    c.post(f"/api/studio/{mid}/release", headers=A)
+
+    # 옛 모양(「어디서」 칸이 있던 판)으로 만들어진 DB 도 혼자 고쳐진다 — 그 칸이 NOT NULL 이라 새 코드가 못 넣는다
+    import tempfile
+    from pathlib import Path as _P
+
+    from sqlalchemy import create_engine, text
+
+    from app.db import Base, _drop_changed_tables
+    tmp = _P(tempfile.mkdtemp()) / "old.db"
+    eng = create_engine(f"sqlite:///{tmp}")
+    with eng.begin() as conn:
+        conn.execute(text("CREATE TABLE edit_lock (meeting_id INTEGER PRIMARY KEY, token VARCHAR(40) NOT NULL, "
+                          "label VARCHAR(64) NOT NULL, touched_at DATETIME NOT NULL)"))
+    _drop_changed_tables(eng)
+    Base.metadata.tables["edit_lock"].create(eng)
+    with eng.begin() as conn:
+        cols = {r[1] for r in conn.execute(text("PRAGMA table_info(edit_lock)"))}
+    eng.dispose()
+    check("15-7 — 옛 모양으로 만들어진 잠금 표는 혼자 새 모양이 된다(SQLite 는 칸을 못 뺀다)",
+          cols == {"meeting_id", "token", "touched_at"}, repr(sorted(cols)))
+
+
 def _field_oid(c, mid, iid, field) -> str:
     st = c.get(f"/api/studio/{mid}").json()["state"]
     it = next(x for x in st["items"] if x["id"] == iid)
@@ -3159,7 +3239,7 @@ def t_llm_c(c) -> None:
 # 묶음 순서 = 실행 순서. 앞 묶음이 만든 데이터를 뒤 묶음이 쓴다. tests/test_NN_*.py 도 이 순서를 따른다
 GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
           t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link, t_free_scope, t_free_merge, t_free_adopt)
+          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link, t_free_scope, t_free_merge, t_free_adopt, t_edit_lock)
 
 
 def main() -> int:

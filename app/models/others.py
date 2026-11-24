@@ -115,6 +115,19 @@ class MeetingVersion(Base):
     snapshot_json: Mapped[str] = mapped_column(Text)
 
 
+class EditLock(Base):
+    """자료 하나 = 한 명씩 편집 (결정 ⑦ 15-7, 2026-11-24).
+
+    로그인이 없어 **브라우저 표(token)**로 사람을 가른다(브라우저마다 하나, 같은 브라우저의 여러 탭은 한 사람).
+    `touched_at` 이 10분(EDIT_LOCK_MIN) 넘게 그대로면 주인 없는 것으로 보고 다음 사람이 가져간다 —
+    창을 그냥 닫아도 자료가 잠긴 채 남지 않는다.
+    """
+    __tablename__ = "edit_lock"
+    meeting_id: Mapped[int] = mapped_column(ForeignKey("meeting.id"), primary_key=True)
+    token: Mapped[str] = mapped_column(String(40))          # 구분용 난수. 누구인지·어디인지는 담지 않는다
+    touched_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+
+
 class ReportItem(Base):
     """회의자료의 한 장(M10). 이슈 원장(block)과 따로 — 회의용 한 줄·형태·순서는 여기에만(표현), 사실은 이슈에."""
     __tablename__ = "report_item"
