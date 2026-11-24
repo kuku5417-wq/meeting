@@ -267,9 +267,36 @@
 - 확인: `requirements.md` 5장에 ⑦·⑧·정본·글자·토큰 **중복 줄 없음**(각 1회. 「토큰 정본」 2회는 3장 규칙과 5장 결정으로 서로 다른 문장)
 - 결과: `pytest -q tests` **31 passed** · `_smoke` **469/469** · `check_env.py` 전체 PASS(WARN 0) · `_netcheck.py` 단독 동작(사외망 판정) · 운영 DB 안 건드림
 
-### 다음 세션 시작점 (2026-11-24, 단계 2 끝)
+### 다음 세션 시작점 (2026-11-24, 단계 2 끝 — 아래 단계 5 절이 더 최신)
 1. `/shi:init` — 플러그인 로드된 새 세션에서. `stack=fastapi`, `original=code_N\meeting`, `net=external`.
    `.claude/shi.json` 은 `.gitignore` 에 있다(PC 마다 만든다). ROADMAP·guard.json·공통 규칙 절이 들어온다
 2. 단계 5 — `modules/nas.py` 채우기: 도메인 로그인 → 아이디·비번 → `WNetAddConnection2` 3회,
    접속 실패 시 **쓰기 차단**(`config/paths.py` 가 사내망에서 NAS 가 안 보일 때 로컬로 폴백하는 것도 그때 함께 고친다)
 3. 단계 6~10 M15 자유 편집(결정 ⑦) → 11 실행 파일(래퍼 2개·`_netcheck.py`·`setup_env.bat` 의 박힌 프록시 IP·`0.0.0.0` 정리) → 12 사내망 반입
+
+## 2026-11-24 (trans) 단계 5 — NAS 접속
+- [x] `modules/nas.py` 채움: `ensure_connected`(사외망 무동작 통과 / 사내망은 **도메인 로그인 먼저**) ·
+      `connect(user, pw)`(`WNetAddConnection2`, 드라이브 문자 없이 공유만, **3회 한도**) · `share_root`(UNC 파싱) ·
+      `status()`(값 없이 요약) · `reset_tries()`. 오류 코드 10가지를 한국어 한 줄로(1326 아이디·비번, 1219 다른 계정 연결 등).
+      **비밀번호는 인자로만 오가고 상태·로그·반환값에 남기지 않는다.** `net use` 를 쓰지 않는 이유도 같다
+- [x] 못 붙으면 **DB 를 열지 않는다**: lifespan 이 NAS 확인 → 실패면 `app.state.nas_blocked` 만 세우고 끝.
+      `_start_db()` 를 따로 빼서 연결 성공 뒤에 부른다(init_db·오늘 백업·무결성·호선 동기화)
+- [x] `_nas_gate` 미들웨어 — 막힌 동안 쓰기·API 는 503, 화면은 `/nas` 로. `/nas`·`/static`·`/healthz` 만 통과.
+      `/healthz` 는 DB 를 열지 않고 `{"ok": false, "nas": 사유}` 로 답한다
+- [x] 화면: `app/templates/nas.html`(+ 사이드바 없는 `base_bare.html`) 과 설정 화면 「NAS 연결」 패널.
+      새 CSS 를 더하지 않고 app.css 의 기존 클래스만 썼다. 입력은 아이디·비번(autocomplete off), 제출 뒤 값은 버린다
+- [x] `config/paths.py` — 사내망에서 NAS 가 안 보여도 **로컬로 폴백하지 않는다**(`_nas_base` 가 설정값을 그대로 돌려준다).
+      `MEETING_DATA_PATH` 는 빈 환경변수를 「일부러 비움」으로 본다(.env 값도 쓰지 않음)
+- ⚠ 실측 버그 하나를 브라우저 확인에서 잡았다: 안내 문구의 **줄표(—)를 `print` 하면 CP949 콘솔에서 UnicodeEncodeError 로 서버가 죽는다.**
+      `app/main._safe_console`/`_say` 로 줄표·「」 를 바꿔 내보낸다. 검사 1개로 고정
+- 검사 11개 추가(469 → **480**, `tests/test_12_nas.py`): 공유 뿌리 파싱 / 연결 화면 / 사내망 폴백 금지 / 3회 한도와 남은 시도 /
+  붙었다는 응답이라도 폴더가 안 보이면 실패 / 비번 미보관 / 쓰기 503 / 화면은 연결 화면으로 / healthz / CP949 콘솔
+- 확인: `pytest -q tests` **32 passed** · `_smoke` **480/480** · 브라우저로 `/issues` → `/nas` 리다이렉트와 연결 화면 실측(8601, 임시 데이터 폴더)
+- **사내망에서 할 것**: 실제 도메인 로그인·아이디 입력으로 붙는지, 붙은 뒤 NAS 의 DB 로 저장되는지, 두 PC 동시 사용(단계 12)
+
+### 다음 세션 시작점 (2026-11-24, 단계 5 끝)
+1. `/shi:init` — 플러그인 로드된 새 세션에서(`stack=fastapi`, `original=code_N\meeting`, `net=external`)
+2. 단계 6~10 — M15 자유 편집(결정 ⑦) 15-2부터, 케이스 28개 시나리오
+3. 단계 11 — `127.0.0.1`·빈 포트·PyInstaller + 래퍼 2개(`path_config.py`·`app/llm/client.py`)·`_netcheck.py`·
+   `setup_env.bat` 의 박힌 프록시 IP 정리
+4. 단계 12 — 사내망 반입: 계약 대조, NAS 실제 연결 확인, 두 PC 동시 사용

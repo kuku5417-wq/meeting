@@ -157,12 +157,14 @@
 | `config/paths.py` | 형제 폴더 `<base>\meeting` | NAS `<NAS_BASE_PATH>\meeting` | 됨. 옛 이름 `path_config.py` 는 래퍼(단계 11 에서 제거) |
 | `config/settings.py` | `.env`(상위 `secret/.env`), `net=external` | 같은 키, `net=internal` (망은 `.claude/shi.json` 하나, 자동 감지 없음 — 결정 ⑤) | 됨. `net`·`secret`·`value`·`proxies`·`ssl_verify`·`llm_keys`·`env_label`·`is_vdi` |
 | `modules/llm_client.py` | 체인 `sola,openai`(테스트 단계) | 같은 체인. 실제 메모 전 `sola`만으로 다시 정함(결정 ④) | 됨. 옛 이름 `app/llm/client.py` 는 래퍼 |
-| `modules/nas.py` | 쓰지 않음(무동작 통과) | 도메인 로그인 → 실패 시 아이디·비번 입력(`WNetAddConnection2`, 3회) | **뼈대만** — 실제 접속·접속 실패 시 쓰기 차단은 단계 5 |
+| `modules/nas.py` | 쓰지 않음(무동작 통과) | 도메인 로그인 → 실패 시 아이디·비번 입력(`WNetAddConnection2`, 3회) | 됨(단계 5). 못 붙으면 **DB 를 열지 않고** 「NAS 연결」 화면만 띄우고 쓰기는 503. 비밀번호는 저장하지 않는다. 사내망 실제 확인은 사내망 PC 에서 |
 
 - 망·비밀·프록시 읽기: `.env` 를 환경변수로 **올리지 않는다**(`load_dotenv` 금지 — 사내 프록시가 사외망 프로세스에 주입된 사고).
   값은 `config.settings.value()`(환경변수 → `.env`) 로만 꺼낸다. `python-dotenv` 의존도 뺐다.
 - 프록시는 사내망일 때만. 단 `.env` 의 `VDI=true` 면 사외망에서도 쓴다(공통지침).
 - 화면 오른쪽 위 표시(`ENV_LABEL`)는 설정값 `net` 그대로. NAS 접속 상태는 설정 화면·`check_env.py` 가 따로 보여 준다(2026-11-24).
+- 사내망에서 NAS 가 안 보이면 **로컬로 폴백하지 않는다**(`config/paths.py`) — 각자 PC 에 자료가 조용히 쌓이는 것을 막는다.
+- 서버 창(CP949) 안내는 `app/main._say` 로 내보낸다 — 줄표·「」 가 섞이면 `print` 가 터져 서버가 죽는다(2026-11-24 실측).
 - 아직 남은 망 의존: `_netcheck.py`(설치 스크립트 전용 — `setup_env.bat` 이 프록시를 켤 때 쓴다)와
   `setup_env.bat`·`run.bat` 의 `0.0.0.0`·8600 → 단계 11 에서 함께 정리한다.
 

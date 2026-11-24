@@ -79,19 +79,66 @@ def _sync_hulls_on_start() -> None:
         print(f"[meeting] 호선 동기화 건너뜀: {type(e).__name__}", flush=True)
 
 
-@asynccontextmanager
-async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
-    import path_config as pc
-    d, source = pc.data_dir_choice()
-    print(f"[meeting] 데이터 폴더: {d}  ({source})", flush=True)   # 어느 DB·사진 폴더를 쓰는지 서버 창에서 바로 확인
+def _safe_console(msg: str, enc: str | None) -> str:
+    """콘솔(run.bat)은 CP949 다 — 담지 못하는 글자(줄표 —, 「」 등)를 바꿔서 내보낸다.
+
+    실측(2026-11-24): 줄표가 섞인 안내를 그냥 print 하면 UnicodeEncodeError 로 **서버가 죽는다**.
+    화면 문구는 그대로 두고 콘솔 출력만 손본다.
+    """
+    enc = enc or "utf-8"
+    out = msg.replace("—", "-").replace("「", "[").replace("」", "]")
+    try:
+        out.encode(enc)
+    except UnicodeEncodeError:
+        out = out.encode(enc, "replace").decode(enc, "replace")
+    return out
+
+
+def _say(msg: str) -> None:
+    import sys
+    print(_safe_console(msg, getattr(sys.stdout, "encoding", None)), flush=True)
+
+
+def _start_db() -> None:
+    """DB 준비 + 오늘 백업·무결성(결정 ①) + 호선 동기화. NAS 에 붙은 뒤에 부른다."""
+    from config import paths as pc
     init_db()
     from app.services import db_guard
     if settings.database_url().startswith("sqlite"):
         g = db_guard.daily(pc.db_path(), pc.get_backup_dir())
         if g["made"]:
-            print(f"[meeting] 오늘 백업: {g['backup']}  · 무결성: {g['integrity']}", flush=True)
+            _say(f"[meeting] 오늘 백업: {g['backup']}  · 무결성: {g['integrity']}")
         if g["integrity"] != "ok":
-            print(f"[meeting] 주의: DB 무결성 점검 실패: {g['integrity']} — 어제 백업({pc.get_backup_dir()})으로 되돌릴지 확인하세요", flush=True)
+            _say(f"[meeting] 주의: DB 무결성 점검 실패: {g['integrity']} — 어제 백업({pc.get_backup_dir()})으로 되돌릴지 확인하세요")
+        app.state.db_guard = g
+    _sync_hulls_on_start()
+    app.state.nas_blocked = ""
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    from config import paths as pc
+
+    from modules import nas
+    d, source = pc.data_dir_choice()
+    _say(f"[meeting] 데이터 폴더: {d}  ({source})")   # 어느 DB·사진 폴더를 쓰는지 서버 창에서 바로 확인
+    # 단계 5: 사내망이면 NAS 에 붙은 뒤에 DB 를 연다. 못 붙으면 **DB 를 건드리지 않고** 연결 화면만 띄운다
+    #         (로컬로 폴백해 각자 PC 에 자료가 쌓이는 일을 막는다)
+    ok_nas, msg_nas = nas.ensure_connected()
+    _app.state.nas_blocked = "" if ok_nas else msg_nas
+    if not ok_nas:
+        _say(f"[meeting] NAS: {msg_nas} — 브라우저에서 「NAS 연결」 화면이 먼저 열립니다")
+        yield
+        return
+    _say(f"[meeting] NAS: {msg_nas}")
+    init_db()
+    from app.services import db_guard
+    if settings.database_url().startswith("sqlite"):
+        g = db_guard.daily(pc.db_path(), pc.get_backup_dir())
+        if g["made"]:
+            _say(f"[meeting] 오늘 백업: {g['backup']}  · 무결성: {g['integrity']}")
+        if g["integrity"] != "ok":
+            _say(f"[meeting] 주의: DB 무결성 점검 실패: {g['integrity']} — 어제 백업({pc.get_backup_dir()})으로 되돌릴지 확인하세요")
         _app.state.db_guard = g
     _sync_hulls_on_start()
     yield
@@ -110,6 +157,25 @@ async def _lock_busy(request: Request, exc: LockBusy):
     if request.url.path.startswith("/api/"):
         return JSONResponse({"ok": False, "err": str(exc)}, status_code=503)
     return PlainTextResponse(str(exc), status_code=503)
+
+
+_NAS_FREE = ("/nas", "/static", "/healthz", "/favicon.ico")
+
+
+@app.middleware("http")
+async def _nas_gate(request: Request, call_next):
+    """단계 5 — 사내망에서 NAS 에 붙기 전에는 아무것도 쓰지 않는다.
+
+    쓰기 요청은 503, 화면 요청은 「NAS 연결」 화면으로 보낸다. DB 를 열지 않은 상태이므로
+    다른 화면은 열 수 없다(열면 SQLite 가 없는 경로를 만들려 든다).
+    """
+    msg = getattr(request.app.state, "nas_blocked", "")
+    if msg and not request.url.path.startswith(_NAS_FREE):
+        from fastapi.responses import JSONResponse
+        if request.url.path.startswith("/api/") or request.method not in ("GET", "HEAD"):
+            return JSONResponse({"ok": False, "err": msg}, status_code=503)
+        return RedirectResponse("/nas", status_code=303)
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -161,8 +227,14 @@ def _page(request: Request, tpl: str, tab: str, week: weeks.IsoWeek | None = Non
 
 
 @app.get("/healthz")
-def healthz(s: Session = Depends(get_session)) -> dict:
-    s.execute(text("SELECT 1"))
+def healthz(request: Request) -> dict:
+    """살아 있나 — NAS 에 못 붙은 상태(DB 미개방)에서도 답한다(단계 5)."""
+    blocked = getattr(request.app.state, "nas_blocked", "")
+    if blocked:
+        return {"ok": False, "env": settings.ENV_LABEL, "nas": blocked}
+    from app.db import SessionLocal
+    with SessionLocal() as s:
+        s.execute(text("SELECT 1"))
     return {"ok": True, "env": settings.ENV_LABEL, "week": weeks.current().id}
 
 
@@ -412,6 +484,50 @@ def hub_relink(s: Session = Depends(get_session)):
     return RedirectResponse(f"/hub?msg={quote(msg)}#unreg", status_code=303)
 
 
+@app.get("/nas", response_class=HTMLResponse)
+def nas_page(request: Request):
+    """NAS 연결 화면 — DB 를 건드리지 않는다(아직 못 열었을 수 있다)."""
+    from modules import nas
+    return templates.TemplateResponse(request, "nas.html", {
+        "app_title": settings.APP_TITLE, "env_label": settings.ENV_LABEL,
+        "st": nas.status(), "blocked": getattr(request.app.state, "nas_blocked", ""),
+        "msg": request.query_params.get("msg", ""),
+    })
+
+
+@app.post("/nas/connect")
+async def nas_connect(request: Request):
+    """아이디·비번으로 NAS 에 연결한다. **비번은 저장하지 않는다**(쓰고 버린다)."""
+    from modules import nas
+    form = await request.form()
+    user = str(form.get("user", "")).strip()
+    ok_nas, msg = nas.connect(user, str(form.get("password", "")))     # 비번은 여기서만
+    if not ok_nas:
+        return RedirectResponse(f"/nas?msg={quote(msg)}", status_code=303)
+    try:
+        _start_db()                       # 이제야 DB 를 연다(백업·무결성·호선 동기화 포함)
+    except Exception as e:  # noqa: BLE001 — 붙었는데 DB 를 못 열면 사유를 보여 준다
+        return RedirectResponse(f"/nas?msg={quote(f'연결은 됐지만 DB 를 열지 못했습니다: {e}')}", status_code=303)
+    return RedirectResponse(f"/home?msg={quote(msg)}", status_code=303)
+
+
+@app.post("/settings/nas")
+async def settings_nas(request: Request):
+    """설정 화면의 「NAS 연결」 — 같은 처리, 돌아가는 곳만 다르다."""
+    from modules import nas
+    form = await request.form()
+    if str(form.get("retry", "")) == "1":
+        nas.reset_tries()
+        return RedirectResponse("/settings?msg=" + quote("시도 횟수를 초기화했습니다") + "#nas", status_code=303)
+    ok_nas, msg = nas.connect(str(form.get("user", "")).strip(), str(form.get("password", "")))
+    if ok_nas and getattr(request.app.state, "nas_blocked", ""):
+        try:
+            _start_db()
+        except Exception as e:  # noqa: BLE001
+            msg = f"연결은 됐지만 DB 를 열지 못했습니다: {e}"
+    return RedirectResponse(f"/settings?msg={quote(msg)}#nas", status_code=303)
+
+
 @app.get("/settings", response_class=HTMLResponse)
 def settings_page(request: Request, s: Session = Depends(get_session)):
     """설정 — 부서 이름·순서, 호선(pjtlist)·마일스톤 연계 상태."""
@@ -421,7 +537,8 @@ def settings_page(request: Request, s: Session = Depends(get_session)):
 def _settings(request: Request, s: Session, **over) -> HTMLResponse:
     last = central.LAST_SYNC
     from app.services import alerts as _al
-    ctx = dict(depts=settings_svc.departments(s), usage=settings_svc.usage(s), errs=[], msg="", alert_defaults=_al.defaults(s),
+    from modules import nas
+    ctx = dict(depts=settings_svc.departments(s), usage=settings_svc.usage(s), errs=[], msg="", nas=nas.status(), alert_defaults=_al.defaults(s),
                range_weeks=metrics_range(s),
                central=central.status(), last=last,
                not_in=last["report"].not_in_pjtlist if last.get("report") else [],

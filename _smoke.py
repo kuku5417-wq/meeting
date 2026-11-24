@@ -170,6 +170,92 @@ def t_app() -> None:
                 check(f"{getattr(fn, '__name__', 'llm')} 실행", False, repr(e))
 
 
+def t_nas(c) -> None:
+    """단계 5 — NAS 접속 전환 지점: 연결 화면·쓰기 차단·3회 한도·비번 미보관·사내망 폴백 금지."""
+    import config.paths as paths
+    from config import settings as cfg
+
+    from modules import nas
+
+    # ① 공유 뿌리 파싱 (UNC 만)
+    unc = "\\\\nas01\\공유"
+    check("NAS — 공유 뿌리 파싱 (UNC 만)",
+          nas.share_root(Path(unc + "\\meeting\\data")) == unc
+          and nas.share_root(Path("C:\\data")) == "", nas.share_root(Path(unc + "\\meeting")))
+
+    # ② 연결 화면은 DB 없이도 뜬다
+    r = c.get("/nas")
+    check("NAS — 「NAS 연결」 화면이 열린다", r.status_code == 200 and "NAS 연결" in r.text, str(r.status_code))
+
+    had = {k: os.environ.get(k) for k in ("SHI_NET", "NAS_BASE_PATH", "MEETING_DATA_PATH")}
+    try:
+        os.environ["SHI_NET"] = "corporate"
+        os.environ["NAS_BASE_PATH"] = str(Path(_TMP) / "nas_없음")     # 로컬 경로 → 네트워크를 타지 않는다
+        os.environ["MEETING_DATA_PATH"] = ""       # 일부러 비움 → .env 값도 쓰지 않는다(사내망 기본 경로를 보려고)
+        paths.invalidate_cache()
+
+        # ③ 사내망에서 NAS 가 안 보여도 로컬로 폴백하지 않는다
+        d, src = paths.data_dir_choice()
+        check("단계5 — 사내망이면 NAS 가 안 보여도 로컬로 폴백하지 않는다",
+              "사내망" in src and str(d).startswith(os.environ["NAS_BASE_PATH"]), f"{d} / {src}")
+
+        # ④ 아이디·비번 3회 한도 (가짜 커넥터 — Windows API 를 부르지 않는다)
+        os.environ["NAS_BASE_PATH"] = unc
+        paths.invalidate_cache()
+        nas.reset_tries()
+        bad = lambda remote, user, pw: 1326                      # noqa: E731 — 로그온 실패
+        msgs = [nas.connect("sabun", "x", _connector=bad)[1] for _ in range(4)]
+        check("단계5 — 아이디·비번이 틀리면 사유와 남은 시도를 알려 준다",
+              "아이디 또는 비밀번호" in msgs[0] and "남은 시도 2번" in msgs[0], msgs[0])
+        check(f"단계5 — {nas.MAX_RETRY}번 넘으면 더 시도하지 않고 다시 켜라고 안내",
+              "번 연결에 실패" in msgs[3] and "다시 켜고" in msgs[3], msgs[3])
+
+        # ⑤ 붙었다고 해도 폴더가 안 보이면 성공으로 보지 않는다
+        nas.reset_tries()
+        ok_fake, msg_fake = nas.connect("sabun", "x", _connector=lambda *a: 0)
+        check("단계5 — 연결됐다는 응답이라도 폴더가 안 보이면 실패로 본다",
+              (not ok_fake) and "폴더가 보이지 않습니다" in msg_fake, msg_fake)
+
+        # ⑥ 비밀번호는 어디에도 남지 않는다
+        st = nas.status()
+        check("단계5 — 비밀번호를 상태에 담지 않는다",
+              not any("x" == str(v) for v in st.values()) and "password" not in st, repr(sorted(st)))
+    finally:
+        for k, v in had.items():
+            os.environ.pop(k, None)
+            if v is not None:
+                os.environ[k] = v
+        nas.reset_tries()
+        paths.invalidate_cache()
+
+    # ⑦ 콘솔(CP949)에서 서버가 죽지 않는다 — 실측 2026-11-24
+    from app.main import _safe_console
+    line = "[meeting] NAS: 사외망 — NAS 를 쓰지 않습니다 「연결」"
+    safe = _safe_console(line, "cp949")
+    try:
+        safe.encode("cp949")
+        enc_ok = True
+    except UnicodeEncodeError:
+        enc_ok = False
+    check("단계5 — 콘솔 안내가 CP949 에서도 깨지지 않는다(줄표·「」 치환)",
+          enc_ok and "—" not in safe and "사외망" in safe, safe)
+
+    # ⑧ 못 붙은 동안은 쓰기 차단, 화면은 연결 화면으로
+    c.app.state.nas_blocked = "NAS 에 연결되지 않았습니다 — 설정 화면의 「NAS 연결」"
+    try:
+        r = c.post("/settings/alerts", data={}, follow_redirects=False)
+        check("단계5 — NAS 미연결 중 쓰기 요청은 503 + 안내",
+              r.status_code == 503 and "NAS" in r.text, f"{r.status_code} {r.text[:80]}")
+        r = c.get("/issues", follow_redirects=False)
+        check("단계5 — NAS 미연결 중 화면 요청은 「NAS 연결」 화면으로",
+              r.status_code == 303 and r.headers.get("location") == "/nas", str(r.status_code))
+        r = c.get("/healthz")
+        check("단계5 — NAS 미연결에도 /healthz 는 답한다(DB 를 열지 않는다)",
+              r.status_code == 200 and r.json().get("ok") is False and "nas" in r.json(), r.text[:80])
+    finally:
+        c.app.state.nas_blocked = ""
+
+
 def t_base(c) -> None:
     """앱 공통 — 표 생성·화면 탭·기준정보 시드·글꼴. 뒤 묶음들이 이 데이터를 쓴다(tests/test_01_base.py)."""
     from sqlalchemy import inspect
@@ -2521,7 +2607,7 @@ def t_llm_c(c) -> None:
 # 묶음 순서 = 실행 순서. 앞 묶음이 만든 데이터를 뒤 묶음이 쓴다. tests/test_NN_*.py 도 이 순서를 따른다
 GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
           t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage)
+          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas)
 
 
 def main() -> int:

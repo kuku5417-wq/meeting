@@ -43,23 +43,16 @@ def _ensure(d: Path) -> Path:
 
 @lru_cache(maxsize=1)
 def _nas_base() -> Path | None:
-    """NAS base 경로 — **사내망일 때만**(결정 ⑤: 경로 존재로 망을 추론하지 않는다).
+    """NAS base 경로 — **사내망이고 설정이 있을 때**. 경로가 보이는지는 보지 않는다.
 
-    사내망인데 아직 접속이 안 돼 경로가 보이지 않으면 None 을 돌려준다. 그때 쓰기를 막는 일은
-    `modules/nas.py`(계획 단계 5)가 맡는다 — 지금은 로컬로 폴백한다.
+    결정 ⑤: 경로 존재로 망을 추론하지 않는다. 단계 5: 사내망에서 NAS 가 아직 안 보여도
+    **로컬로 폴백하지 않는다** — 폴백하면 사내망 자료가 조용히 각자 PC 에 쌓인다.
+    연결은 `modules/nas.py` 가 하고, 연결 전에는 `app/main.py` 가 쓰기를 막는다.
     """
     if not cfg.is_internal():
         return None
-    nas = cfg.secret("NAS_BASE_PATH")
-    if not nas:
-        return None
-    p = Path(nas)
-    try:
-        if p.exists():
-            return p
-    except Exception:  # noqa: BLE001 — UNC 접근 불가 → 아직 연결되지 않은 것으로 본다
-        pass
-    return None
+    nas = cfg.value("NAS_BASE_PATH")
+    return Path(nas) if nas else None
 
 
 def is_internal() -> bool:
@@ -68,7 +61,7 @@ def is_internal() -> bool:
 
 
 def _local_base() -> Path:
-    base = cfg.secret("DATA_PATH")
+    base = cfg.value("DATA_PATH")
     return Path(base) if base else DATA_LOCAL
 
 
@@ -78,12 +71,12 @@ def get_central_parquet_dir() -> Path:
     우선순위(pjtcost 와 같은 규칙): 환경변수 MEETING_CENTRAL_PARQUET(개발·시험용) → .env 같은 키
     → NAS(`NAS_PARQUET_PATH` 또는 `NAS_BASE_PATH/parquet`) → `<DATA_PATH 또는 code_N/data>/parquet`.
     """
-    ov = os.getenv("MEETING_CENTRAL_PARQUET", "") or cfg.secret("MEETING_CENTRAL_PARQUET")
+    ov = cfg.value("MEETING_CENTRAL_PARQUET")
     if ov:
         return Path(ov)
     nas = _nas_base()
     if nas:
-        p = cfg.secret("NAS_PARQUET_PATH")
+        p = cfg.value("NAS_PARQUET_PATH")
         return Path(p) if p else (nas / "parquet")
     return _local_base() / "parquet"
 
@@ -110,16 +103,16 @@ def _expand(raw: str) -> Path:
 
 def data_dir_choice() -> tuple[Path, str]:
     """(데이터 폴더, 어느 규칙으로 정해졌는지) — check_env·서버 시작 로그가 함께 쓴다."""
-    env = os.getenv("MEETING_DATA_PATH", "")
+    env = os.environ.get("MEETING_DATA_PATH")   # None = 미설정 · "" = 일부러 비움(.env 값도 쓰지 않는다)
     sec = cfg.secret("MEETING_DATA_PATH")
-    if env:                                   # .env 를 환경변수로 올리지 않으므로 이건 진짜 환경변수다(단계 2-c)
+    if env:                                     # .env 를 환경변수로 올리지 않으므로 이건 진짜 환경변수다(단계 2-c)
         return _expand(env), "환경변수 MEETING_DATA_PATH"
-    if sec:
+    if env is None and sec:
         return _expand(sec), ".env MEETING_DATA_PATH"
     nas = _nas_base()
     if nas:
         return nas / DATA_SUBDIR, "NAS_BASE_PATH/meeting (사내망 기본)"
-    if cfg.secret("DATA_PATH"):
+    if cfg.value("DATA_PATH"):
         return _local_base() / DATA_SUBDIR, "DATA_PATH/meeting"
     return DATA_LOCAL / DATA_SUBDIR, "기본값 code_N/data/meeting"
 

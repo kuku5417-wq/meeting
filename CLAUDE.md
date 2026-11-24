@@ -90,7 +90,7 @@
 config/settings.py   전환 지점 — 망(shi.json 의 net)·비밀(.env 직접 읽기)·프록시·LLM 키
 config/paths.py      전환 지점 — 경로 계층 (<base>/meeting, DB·사진·내보내기)
 modules/llm_client.py 전환 지점 — LLM 어댑터·폴백 체인
-modules/nas.py       전환 지점 — NAS 접속 (뼈대, 단계 5 에서 채움)
+modules/nas.py       전환 지점 — NAS 접속 (도메인 로그인 → 아이디·비번 3회, 못 붙으면 쓰기 차단)
 path_config.py       옛 이름 래퍼 → config/paths.py (단계 11 에서 제거)
 sn_util.py           ensure_sn — 호선 SN2511 정규화 (dcost 동일본 스냅샷, pandas 제거)
 _netcheck.py         설치 시점 망 감지 — **설치 스크립트 전용**(setup_env.bat 이 프록시를 켤 때. 앱 코드는 쓰지 않는다)
@@ -106,7 +106,7 @@ app/
   services/          extract.py, alias.py, carry_over.py, closure.py, promotion.py, search.py
   llm/               client.py(= modules/llm_client.py 래퍼), prompts/*.md
   export/            pptx_builder.py, templates/
-  templates/         Jinja2 (base · home · issues · meetings · studio · meeting_view · run · import · metrics · knowledge · hub …)
+  templates/         Jinja2 (base · base_bare(사이드바 없는 최소 화면) · home · issues · meetings · studio · meeting_view · run · import · metrics · knowledge · hub · nas …)
   static/            css/, js/, vendor/
 scripts/             seed_masters.py (CSV → DB, 다시 실행해도 중복 없음), seed_demo.py (시연용 가상 사례 — 운영 DB 금지),
                      migrate_sections.py (옛 섹션 → 회의자료 판, --dry-run 먼저, 다시 실행해도 중복 없음),

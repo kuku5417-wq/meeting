@@ -75,6 +75,33 @@
     <p class="muted small">중앙 parquet 폴더는 사내망이면 NAS, 아니면 <span class="mono">DATA_PATH\parquet</span> 를 씁니다.
       다른 곳을 읽게 하려면 <span class="mono">secret\.env</span> 에 <span class="mono">MEETING_CENTRAL_PARQUET=폴더</span> 를 넣어주세요.</p>
   </section>
+  <section class="panel" id="nas" aria-labelledby="nasH">
+    <div class="panel-h"><h2 id="nasH">NAS 연결</h2>
+      <span class="small muted">사내망에서 자료(DB·사진·내보내기)를 두는 공유 폴더입니다. 사외망에서는 쓰지 않습니다.</span></div>
+    <div class="row"><span class="small muted">망</span><strong>{{ "사내망" if nas.internal else "사외망" }}</strong>
+      <span class="small muted">공유 폴더</span><strong>{{ nas.share or ("공유 경로가 아님" if nas.configured else "설정 안 됨") }}</strong>
+      <span class="small muted">연결</span>
+      <strong>{{ "연결됨" if nas.available else ("쓰지 않음" if not nas.internal else "연결 안 됨") }}</strong>
+      {% if nas.connected_as %}<span class="small muted">{{ nas.connected_as }}</span>{% endif %}</div>
+    {% if nas.last_error %}<p class="small muted">마지막 사유: {{ nas.last_error }}</p>{% endif %}
+    {% if nas.internal and not nas.available %}
+    <form method="post" action="/settings/nas" autocomplete="off">
+      <div class="row"><label for="nas-user" class="small muted">아이디</label>
+        <input id="nas-user" name="user" type="text" autocomplete="username" placeholder="사번 또는 도메인\사번" required></div>
+      <div class="row"><label for="nas-pw" class="small muted">비밀번호</label>
+        <input id="nas-pw" name="password" type="password" autocomplete="current-password" required></div>
+      <div class="actions"><button class="btn primary sm" type="submit">연결</button>
+        <span class="small muted">비밀번호는 저장하지 않고 연결에만 씁니다. 남은 시도 {{ nas.max_retry - nas.tries }}번.</span></div>
+    </form>
+    {% if nas.tries >= nas.max_retry %}
+    <form method="post" action="/settings/nas" class="actions">
+      <input type="hidden" name="retry" value="1">
+      <button class="btn sm" type="submit">시도 횟수 초기화</button>
+    </form>
+    {% endif %}
+    {% endif %}
+  </section>
+
   <section class="panel" id="alerts" aria-labelledby="alH">
     <div class="panel-h"><h2 id="alH">일정 경보 — 이벤트별 기본 경보 일수</h2><span class="small muted">이슈의 「~전 해결」 목표가 D-n 이내면 「일정 임박」(이슈마다 따로 고칠 수 있음)</span></div>
     <form method="post" action="/settings/alerts" class="al-grid">

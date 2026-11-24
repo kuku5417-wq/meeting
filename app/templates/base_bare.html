@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{% block title %}{{ app_title }}{% endblock %}</title>
+<link rel="stylesheet" href="{{ url_for('static', path='css/fonts.css') }}?v={{ asset_v }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/tokens.css') }}?v={{ asset_v }}">
+<link rel="stylesheet" href="{{ url_for('static', path='css/app.css') }}?v={{ asset_v }}">
+</head>
+<body>
+{# 사이드바 없는 최소 화면 — DB 를 열지 못한 상태에서도 뜬다(NAS 연결 화면, 단계 5).
+   새 CSS 를 더하지 않고 app.css 에 있는 클래스만 쓴다(디자인 규칙: 토큰·기존 컴포넌트). #}
+<div class="wrap">
+  <main>
+  {% block body %}{% endblock %}
+  </main>
+</div>
+<p class="hint">{{ env_label }}</p>
+</body>
+</html>
