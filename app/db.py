@@ -84,6 +84,10 @@ _LATER_COLUMNS: tuple[tuple[str, str, str], ...] = (
     ("meeting", "hull_id", "VARCHAR(16)"),
     ("meeting", "order_json", "TEXT NOT NULL DEFAULT ''"),               # 2026-10-23 M11 공유회 부서 순서
     ("report_item", "dept_id", "VARCHAR(16)"),                           # M11 공유회 부서 칸
+    ("report_item", "free_on", "BOOLEAN NOT NULL DEFAULT 0"),            # 2026-11-24 결정 ⑦ 15-2 자유 편집
+    ("report_item", "objects_json", "TEXT NOT NULL DEFAULT ''"),
+    ("report_item", "prev_json", "TEXT NOT NULL DEFAULT ''"),
+    ("report_item", "free_rev", "INTEGER NOT NULL DEFAULT 0"),
     ("meeting_comment", "kind", "VARCHAR(8) NOT NULL DEFAULT 'comment'"), # 2026-10-23 M12 코멘트 / 결정
     ("meeting_comment", "created_at", "DATETIME"),
     ("block", "due_event", "VARCHAR(8) NOT NULL DEFAULT ''"),           # 2026-10-23 F21 일정 경보

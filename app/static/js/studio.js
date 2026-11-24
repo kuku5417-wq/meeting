@@ -2,6 +2,7 @@
 // 바꾸는 동작은 모두 /api/studio/… 로 보내고, 돌아온 상태로 다시 그린다. 사실(원인·조치·결정 필요)은 /api/issues/{id}/field.
 // 공유회는 부서 칸마다 부서 자료 제출판을 참조로 보여 준다 — 그 장은 읽기 전용(사실만 고칠 수 있다), 부서 순서·원장으로 채우기만 여기서.
 import {esc, KIND, slide as draw, cover, divider, directivesSlide, fit, pageTitle, isData} from './slides.js';
+import {freeStage, mount as mountFree} from './freeedit.js';
 
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => [...document.querySelectorAll(s)];
@@ -54,14 +55,58 @@ function renderCanvas() {
   let lastSec = -1;
   S.items.forEach((it, i) => {
     if (share() && it.sec !== lastSec) { for (let k = lastSec + 1; k <= it.sec; k++) h += secRow(k); lastSec = it.sec; }
-    const on = i === sel, n = P.at[i];
-    h += `<div class="st-row" data-row="${i}">${frame(draw(it, n, P.total, null, ctx()), `<b>${n} · ${esc(pageTitle(it).slice(0, 26))}</b><span>${it.ro ? '부서 제출판' : it.kind === 'metric' ? '지표' : it.kind === 'table' ? '기간 표' : esc(S.forms[it.form])}</span>`, on ? 'on' : multi.has(i) ? 'multi' : '', `data-f="${i}"`)}`;
-    if (on && !it.ro && multi.size < 2 && it.kind !== 'summary' && !isData(it)) h += '<span class="st-vh">다른 형태</span>' + Object.keys(S.forms).filter((k) => k !== it.form).map((k) => frame(draw(it, n, P.total, k, ctx()), `<b>${esc(S.forms[k])}</b> 로 바꾸기`, 'var', `data-var="${k}"`, Math.round(W() * 0.55))).join('');
+    const on = i === sel, n = P.at[i], free = it.free?.on;
+    const body = free ? freeStage(it) : draw(it, n, P.total, null, ctx());
+    const badge = free ? `<span>자유 편집<em class="fo-over" hidden></em><em class="fo-save">${on ? '' : '저장됨'}</em></span>`
+      : `<span>${it.ro ? '부서 제출판' : it.kind === 'metric' ? '지표' : it.kind === 'table' ? '기간 표' : esc(S.forms[it.form])}</span>`;
+    h += `<div class="st-row" data-row="${i}">${frame(body, `<b>${n} · ${esc(pageTitle(it).slice(0, 26))}</b>` + badge, on ? 'on' : multi.has(i) ? 'multi' : '', `data-f="${i}"`)}`;
+    if (on && !it.ro && !it.free?.on && multi.size < 2 && it.kind !== 'summary' && !isData(it)) h += '<span class="st-vh">다른 형태</span>' + Object.keys(S.forms).filter((k) => k !== it.form).map((k) => frame(draw(it, n, P.total, k, ctx()), `<b>${esc(S.forms[k])}</b> 로 바꾸기`, 'var', `data-var="${k}"`, Math.round(W() * 0.55))).join('');
     h += '</div>';
   });
   if (share()) for (let k = lastSec + 1; k < S.sections.length; k++) h += secRow(k);
   if (!S.items.length) h += `<div class="st-start"><b>장이 없습니다</b><span class="small muted">${share() ? '부서가 제출하면 여기 모입니다. 미제출 부서는 왼쪽에서 「원장으로 채우기」.' : '왼쪽 「후보」에서 ＋ 를 누르면 장이 생깁니다.'}</span></div>`;
   c.innerHTML = h; fit(c);
+  attachFree();
+}
+
+// ── 자유 편집(결정 ⑦ 15-2) ──────────────────────────
+let FE = null;
+async function saveObjects(objs, rev) {
+  const it = S.items[sel];
+  if (!it) return null;
+  const r = await fetch(`/api/studio/items/${it.id}/objects`, {method: 'POST', headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({objects: objs, rev})});
+  const j = await r.json();
+  if (!j.ok) { toast(j.err); return null; }
+  if (j.state) S = j.state;                 // 화면은 다시 그리지 않는다 — 편집 중이다
+  return j.free?.rev ?? null;
+}
+function attachFree() {
+  FE?.destroy(); FE = null;
+  const it = S.items[sel];
+  if (!it || !it.free?.on || it.ro) return;
+  const frame = document.querySelector(`[data-row="${sel}"] .st-frame`);
+  if (!frame) return;
+  FE = mountFree(frame, it, {save: saveObjects, onChange: () => renderFreeProps()});
+  renderFreeProps();
+}
+const SIZES = [20, 24, 28, 30, 34, 40, 48, 56];
+const TONES = {fg: '본문', muted: '흐리게', decide: '결정', problem: '문제', ok: '완료'};
+function renderFreeProps() {
+  const box = document.querySelector('#freeProps');
+  if (!box || !FE) return;
+  const o = FE.sel;
+  if (!o) { box.innerHTML = '<span class="small muted">개체를 고르면 여기서 글자·색·소제목을 고칩니다. 두 번 누르면 글을 바로 고칠 수 있습니다.</span>'; return; }
+  box.innerHTML = `<p class="v-sec">고른 개체 — ${esc(o.label || (o.type === 'photo' ? '사진' : '글'))}${o.link ? ` · 이슈 ${esc(o.link.field)} 연결` : ''}</p>
+    <label class="f">소제목<input type="text" id="foLabel" value="${esc(o.label || '')}" placeholder="예: 원인"></label>
+    ${o.type === 'photo' ? '' : `<label class="f">글<textarea id="foText" rows="3">${esc(o.text)}</textarea></label>
+    <div class="row"><select id="foSize" aria-label="글자 크기">${SIZES.map((s) => `<option value="${s}"${s === (o.style?.size || 30) ? ' selected' : ''}>${s}px</option>`).join('')}</select>
+      <button class="btn sm" type="button" id="foBold" aria-pressed="${!!o.style?.bold}">굵게</button>
+      ${['left', 'center', 'right'].map((a) => `<button class="btn sm" type="button" data-align="${a}" aria-pressed="${(o.style?.align || 'left') === a}">${a === 'left' ? '왼쪽' : a === 'center' ? '가운데' : '오른쪽'}</button>`).join('')}</div>
+    <div class="row">${Object.entries(TONES).map(([k, v]) => `<button class="btn sm" type="button" data-tone="${k}" aria-pressed="${(o.style?.tone || 'fg') === k}">${v}</button>`).join('')}</div>`}
+    <div class="row"><button class="btn sm" type="button" id="foAdd">＋ 글 상자</button><button class="btn sm" type="button" id="foDel">개체 지우기</button>
+      <button class="btn sm" type="button" id="foUndo">되돌리기</button></div>
+    <p class="small muted">바꾼 것은 모두 되돌릴 수 있습니다(Ctrl+Z). 저장은 자동입니다 — 틀 위 「저장됨」이 서버가 받은 표시입니다.</p>`;
 }
 
 function layerRow(it, i, n) {
@@ -132,6 +177,10 @@ function renderProps() {
   if (it.kind === 'summary') { p.innerHTML = `<span class="small muted">${n}장 · 요약</span><b>이슈 ${it.blocks.length}건 묶음</b><span class="small">${it.blocks.map((x) => `<a href="/issues?id=${esc(x.id)}">${esc(x.id)}</a>`).join(' ')}</span><p class="v-sec">요약 문장 — 이 자료에만</p><input type="text" id="ln" value="${esc(it.line)}"><div class="row"><button class="btn sm" type="button" id="unsum">요약 풀기</button><button class="btn sm" type="button" id="drop">이 장 빼기</button></div>` + KEYS; return; }
   p.innerHTML = `<span class="small muted">${n}장 · ${esc(b.id)}${it.src ? ' · ' + esc(it.src) : ''}</span><b>${esc(b.title)}</b><span class="small muted">${esc(b.dept)}${b.hull ? ' · ' + esc(b.hull) : ''}${b.draft !== 'ok' ? ' · <span class="v-late">초안 미완료</span>' : ''}</span>
     <p class="v-sec">형태 — 캔버스 옆 변형을 눌러도 됩니다</p><div class="st-vgrid">${Object.entries(S.forms).map(([k, v], i) => `<button type="button" data-form="${k}" aria-pressed="${k === it.form}"><span class="mini">${MINI[k]}</span>${i + 1}. ${esc(v)}</button>`).join('')}</div>
+    <p class="v-sec">자유 편집 — 이 장을 개체로 배치합니다(이 자료에만)</p>
+    <div class="row"><button class="btn sm${it.free?.on ? ' primary' : ''}" type="button" id="freeBtn" aria-pressed="${!!it.free?.on}">${it.free?.on ? '자유 편집 끄기' : '자유 편집 켜기'}</button>
+      ${it.free?.can_undo ? '<button class="btn sm" type="button" id="freeUndoForm">형태 바꾸기 되돌리기</button>' : ''}</div>
+    ${it.free?.on ? '<div id="freeProps"></div>' : '<span class="small muted">켜면 지금 형태대로 개체 초안을 만듭니다. 캔버스에서 끌어 옮기고 크기·글자를 고칠 수 있습니다. 이슈의 사실은 바뀌지 않습니다.</span>'}
     <p class="v-sec">○ 회의용 한 줄 — 이 자료에만</p>${b.ptag ? `<button class="st-ptag" type="button" id="tag" aria-pressed="${it.tag_on}">[${esc(b.ptag)}]</button>` : ''}<input type="text" id="ln" value="${esc(it.line)}">
     ${facts(b)}<div class="row"><a class="btn sm" href="/issues?id=${esc(b.id)}">이슈 열기</a><button class="btn sm" type="button" id="drop">이 장 빼기</button></div>` + KEYS;
 }
@@ -153,7 +202,13 @@ function pick(i, scroll = true) { multi.clear(); sel = Math.max(0, Math.min(S.it
 async function setForm(k) {
   const it = S.items[sel]; if (!it || it.ro || it.kind === 'summary' || isData(it) || it.form === k) return;
   const before = it.form, iid = it.id, n = pages().at[sel];
-  if (await api(`/api/studio/items/${iid}`, {field: 'form', value: k})) { all(); toast(`${n}장을 「${S.forms[k]}」로 바꿨습니다`, async () => { await api(`/api/studio/items/${iid}`, {field: 'form', value: before}); all(); }); }
+  const wasFree = it.free?.on;
+  if (await api(`/api/studio/items/${iid}`, {field: 'form', value: k})) {
+    all();
+    if (wasFree) toast(`${n}장을 「${S.forms[k]}」로 새로 그렸습니다 — 꾸민 것은 되돌리기로 돌아옵니다`,
+      async () => { if (await api(`/api/studio/items/${iid}/undo-form`)) all(); });
+    else toast(`${n}장을 「${S.forms[k]}」로 바꿨습니다`, async () => { await api(`/api/studio/items/${iid}`, {field: 'form', value: before}); all(); });
+  }
 }
 async function drop() {
   const it = S.items[sel]; if (!it) return;
@@ -194,6 +249,20 @@ document.addEventListener('click', async (e) => {
   if (tab) { $$('[data-tab]').forEach((b) => b.setAttribute('aria-pressed', b === tab)); $$('[data-p]').forEach((p) => (p.hidden = p.dataset.p !== tab.dataset.tab)); return; }
   if (e.target.id === 'tag') { const it = S.items[sel]; if (await api(`/api/studio/items/${it.id}`, {field: 'tag_on', value: !it.tag_on})) all(); return; }
   if (e.target.id === 'drop') return drop();
+  // ── 자유 편집(결정 ⑦ 15-2) ──
+  if (e.target.id === 'freeBtn') {
+    const it = S.items[sel];
+    const on = !it.free?.on;
+    if (await api(`/api/studio/items/${it.id}/free`, {on})) { all(); toast(on ? '자유 편집을 켰습니다 — 개체를 끌어 옮기고 두 번 눌러 글을 고칩니다' : '자유 편집을 껐습니다 — 꾸민 것은 그대로 남아 있습니다'); }
+    return;
+  }
+  if (e.target.id === 'freeUndoForm') { if (await api(`/api/studio/items/${S.items[sel].id}/undo-form`)) { all(); toast('형태 바꾸기를 되돌렸습니다'); } return; }
+  if (e.target.id === 'foAdd') { FE?.add(); return; }
+  if (e.target.id === 'foDel') { FE?.remove(); return; }
+  if (e.target.id === 'foUndo') { FE?.undo(); return; }
+  if (e.target.id === 'foBold') { FE?.style('bold', !FE.sel?.style?.bold); return; }
+  if (e.target.closest('[data-align]')) { FE?.style('align', e.target.closest('[data-align]').dataset.align); return; }
+  if (e.target.closest('[data-tone]')) { FE?.style('tone', e.target.closest('[data-tone]').dataset.tone); return; }
   if (e.target.id === 'clrM') { multi.clear(); all(); return; }
   if (e.target.id === 'sumBtn') { const ids = [...multi].map((i) => S.items[i].id); const j = await api(`/api/studio/${mid}/summary`, {ids}); if (j) { multi.clear(); pick(S.items.findIndex((x) => x.id === j.item_id)); toast(`${ids.length}장을 한 장으로 묶었습니다 — 각 이슈는 그대로입니다`); } return; }
   if (e.target.id === 'unsum') { if (await api(`/api/studio/items/${S.items[sel].id}/unsummary`)) all(); return; }
@@ -202,7 +271,12 @@ document.addEventListener('click', async (e) => {
   if (e.target.id === 'addMetric') { const j = await api(`/api/studio/${mid}/metric-item`); if (j) { pick(S.items.findIndex((x) => x.id === j.item_id)); toast('지표 요약 장을 넣었습니다 — 값은 지표 화면에서'); } return; }
 });
 let lt, factChain = Promise.resolve();
+document.addEventListener('change', (e) => {
+  if (e.target.id === 'foSize') FE?.style('size', Number(e.target.value));
+});
 document.addEventListener('input', (e) => {
+  if (e.target.id === 'foText') { FE?.text(e.target.value); return; }
+  if (e.target.id === 'foLabel') { FE?.label(e.target.value); return; }
   if (e.target.id === 'ln') { const it = S.items[sel], v = e.target.value; it.line = v; renderCanvas(); clearTimeout(lt); lt = setTimeout(async () => { await api(`/api/studio/items/${it.id}`, {field: 'line', value: v}); renderBar(); renderLeft(); }, 500); }
   if (e.target.dataset.fact) {
     const el = e.target, b = S.items[sel].blocks[0], key = {cause_text: 'cause', action_text: 'act', decision_needed: 'dec'}[el.dataset.fact];

@@ -290,6 +290,89 @@ def t_nas(c) -> None:
         c.app.state.nas_blocked = ""
 
 
+def t_free(c) -> None:
+    """결정 ⑦ 15-2 자유 편집 — 초안·자동 저장(판 번호)·검증·형태 바꾸기와 되돌리기·사실 불변."""
+    from sqlalchemy import select
+
+    from app import models as m
+    from app.db import SessionLocal
+    from app.services import studio as st
+
+    wk = "2026-W43"
+    with SessionLocal() as s:
+        dmt = s.scalars(select(m.Meeting).where(m.Meeting.week_id == wk, m.Meeting.kind == "dept")).first()
+        mid = dmt.id if dmt else 0
+    state = c.get(f"/api/studio/{mid}").json().get("state", {}) if mid else {}
+    items = [it for it in state.get("items", []) if it["kind"] == "single" and not it["ro"]]
+    if not items:
+        check("15-2 — 시험할 장이 있다", False, "부서 자료에 이슈 장이 없다")
+        return
+    iid = items[0]["id"]
+    bid = items[0]["blocks"][0]["id"]
+
+    r = c.post(f"/api/studio/items/{iid}", json={"field": "form", "value": "detail"})
+    check("15-2 — 형태 상세 한 장으로 맞춤", r.json().get("ok"), r.text[:120])
+
+    r = c.post(f"/api/studio/items/{iid}/free", json={"on": True})
+    j = r.json()
+    free = j.get("free", {})
+    labels = [o["label"] for o in free.get("objects", [])]
+    check("15-2 — 자유 편집을 켜면 지금 형태대로 개체 초안이 생긴다(상세: 제목·한 줄·현상·원인·조치)",
+          j.get("ok") and {"제목", "한 줄", "현상", "원인", "조치 · 계획"} <= set(labels), repr(labels))
+    check("15-2 — 개체가 이슈 칸과 연결된 채로 만들어진다(15-3 에서 쓴다)",
+          any((o.get("link") or {}).get("field") == "cause" for o in free["objects"]))
+
+    objs = [dict(o) for o in free["objects"]]
+    rev0 = free["rev"]
+    objs[1]["text"] = "노즐 마모 추정"            # 캔버스에서 줄여 쓴 표현(케이스 A2)
+    objs[1]["x"], objs[1]["y"] = 300, 400
+    r = c.post(f"/api/studio/items/{iid}/objects", json={"objects": objs, "rev": rev0})
+    j = r.json()
+    check("15-2 — 자동 저장: 서버가 받으면 판 번호가 오른다(가짜 「저장됨」 금지)",
+          j.get("ok") and j["free"]["rev"] == rev0 + 1 and j["free"]["objects"][1]["text"] == "노즐 마모 추정", r.text[:160])
+    r = c.post(f"/api/studio/items/{iid}/objects", json={"objects": objs, "rev": rev0})
+    check("15-2 — 옛 판 번호로 저장하면 거절(다른 창의 작업을 덮지 않는다)",
+          r.status_code == 400 and "다른 곳에서 먼저" in r.json()["err"], r.text[:160])
+
+    with SessionLocal() as s:
+        b = s.get(m.Block, bid)
+        check("15-2 — 캔버스에서 고친 글은 이 자료에만, 이슈 사실은 그대로(케이스 A2)",
+              (b.cause_text or "") != "노즐 마모 추정", repr(b.cause_text))
+
+    rev1 = c.get(f"/api/studio/{mid}").json()["state"]["items"][0]["free"]["rev"]
+    bad = [dict(objs[0], x=9999, y=-50, w=5, style={"size": 500, "tone": "무지개", "align": "가운데"})]
+    r = c.post(f"/api/studio/items/{iid}/objects", json={"objects": bad, "rev": rev1})
+    o = r.json()["free"]["objects"][0]
+    check("15-2 — 좌표·크기·글자 크기를 캔버스 안으로 자르고 모르는 값은 기본값으로",
+          0 <= o["x"] <= 1920 and o["y"] >= 0 and o["w"] >= 40 and 13 <= o["style"]["size"] <= 96
+          and o["style"]["tone"] == "fg" and o["style"]["align"] == "left", repr(o))
+    rev2 = r.json()["free"]["rev"]
+    r = c.post(f"/api/studio/items/{iid}/objects", json={"objects": [dict(objs[0], id=f"x{n}") for n in range(61)], "rev": rev2})
+    check("15-2 — 개체 수 한도를 넘으면 거절(조용히 자르지 않는다)",
+          r.status_code == 400 and "60개까지" in r.json()["err"], r.text[:140])
+
+    rev3 = c.get(f"/api/studio/{mid}").json()["state"]["items"][0]["free"]["rev"]
+    c.post(f"/api/studio/items/{iid}/objects", json={"objects": objs, "rev": rev3})   # 꾸민 판으로 되돌려 놓고
+    r = c.post(f"/api/studio/items/{iid}", json={"field": "form", "value": "card"})
+    j = r.json()
+    it_now = next(x for x in j["state"]["items"] if x["id"] == iid)
+    check("15-2 — 자유 편집 중 형태를 바꾸면 새로 그리고 되돌릴 수 있다(케이스 B1)",
+          it_now["form"] == "card" and it_now["free"]["can_undo"]
+          and {"담당", "상태"} <= {o["label"] for o in it_now["free"]["objects"]}, repr(it_now["free"]["can_undo"]))
+    r = c.post(f"/api/studio/items/{iid}/undo-form")
+    it_back = next(x for x in r.json()["state"]["items"] if x["id"] == iid)
+    check("15-2 — 되돌리기 — 형태와 꾸민 개체가 함께 돌아온다",
+          it_back["form"] == "detail" and any(o["text"] == "노즐 마모 추정" for o in it_back["free"]["objects"]),
+          repr(it_back["form"]))
+
+    r = c.post(f"/api/studio/items/{iid}/free", json={"on": False})
+    it_off = next(x for x in r.json()["state"]["items"] if x["id"] == iid)
+    check("15-2 — 자유 편집을 꺼도 꾸민 개체는 남는다(다시 켜면 그대로)",
+          (not it_off["free"]["on"]) and len(it_off["free"]["objects"]) >= 3, repr(it_off["free"]["on"]))
+    r = c.post(f"/api/studio/items/{iid}/objects", json={"objects": objs})
+    check("15-2 — 꺼진 장에는 저장하지 않는다", r.status_code == 400 and "꺼져" in r.json()["err"], r.text[:120])
+
+
 def t_base(c) -> None:
     """앱 공통 — 표 생성·화면 탭·기준정보 시드·글꼴. 뒤 묶음들이 이 데이터를 쓴다(tests/test_01_base.py)."""
     from sqlalchemy import inspect
@@ -2641,7 +2724,7 @@ def t_llm_c(c) -> None:
 # 묶음 순서 = 실행 순서. 앞 묶음이 만든 데이터를 뒤 묶음이 쓴다. tests/test_NN_*.py 도 이 순서를 따른다
 GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
           t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas)
+          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free)
 
 
 def main() -> int:

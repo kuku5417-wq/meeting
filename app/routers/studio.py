@@ -93,6 +93,39 @@ async def api_update(iid: int, request: Request, s: Session = Depends(get_sessio
     return _run(s, mt, lambda: st.update_item(s, it, str(data.get("field", "")), data.get("value")))
 
 
+@router.post("/api/studio/items/{iid}/free")
+async def api_free(iid: int, request: Request, s: Session = Depends(get_session)):
+    """자유 편집 켜기/끄기 (결정 ⑦ 15-2). 처음 켤 때만 지금 형태대로 개체 초안을 만든다."""
+    it, data = _item(s, iid), await request.json()
+    mt = _meeting(s, it.meeting_id)
+    from app.services import freeform as ff
+    return _run(s, mt, lambda: ff.set_on(it, st.item_json(s, it, mt), bool(data.get("on"))),
+                lambda _objs: {"free": ff.json_for(it)})
+
+
+@router.post("/api/studio/items/{iid}/objects")
+async def api_objects(iid: int, request: Request, s: Session = Depends(get_session)):
+    """개체 자동 저장. 판 번호(rev)가 다르면 거절한다 — 다른 창의 작업을 덮지 않는다.
+
+    화면은 응답의 rev 를 받은 뒤에만 「저장됨」을 띄운다(시안 버그 #4: 가짜 「저장됨」 금지).
+    """
+    it, data = _item(s, iid), await request.json()
+    mt = _meeting(s, it.meeting_id)
+    from app.services import freeform as ff
+    base = data.get("rev")
+    return _run(s, mt, lambda: ff.save(it, data.get("objects"), None if base is None else int(base)),
+                lambda _rev: {"free": ff.json_for(it)})
+
+
+@router.post("/api/studio/items/{iid}/undo-form")
+def api_undo_form(iid: int, s: Session = Depends(get_session)):
+    """형태 바꾸기 되돌리기 (케이스 B1) — 한 단계."""
+    it = _item(s, iid)
+    mt = _meeting(s, it.meeting_id)
+    from app.services import freeform as ff
+    return _run(s, mt, lambda: ff.undo_form(it), lambda _objs: {"free": ff.json_for(it)})
+
+
 @router.post("/api/studio/{mid}/reorder")
 async def api_reorder(mid: int, request: Request, s: Session = Depends(get_session)):
     mt, data = _meeting(s, mid), await request.json()

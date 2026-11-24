@@ -346,7 +346,17 @@ def update_item(s: Session, it: m.ReportItem, field: str, value) -> None:
     elif field == "form":
         if value not in FORMS:
             raise StudioError("형태는 상세 한 장·카드·사진 강조·한 줄 중에서 골라주세요.")
-        it.form = value
+        if it.free_on and value != it.form:
+            # 결정 ⑦ 케이스 B1 — 자유 편집 중 형태를 바꾸면 새로 그리고 「되돌리기」를 남긴다.
+            # 초안은 **새 형태**로 그리고, prev_json 에는 **옛 형태**가 남아야 한다.
+            from app.services import freeform as ff
+            old_form = it.form
+            it.form = value
+            item_json = _item_json(s, it, mt.week_id, _dept_names(s))
+            it.form = old_form
+            ff.change_form(it, item_json, value)
+        else:
+            it.form = value
     elif field == "tag_on":
         it.tag_on = bool(value)
     else:
@@ -630,12 +640,19 @@ def table_json(s: Session, t: m.MetricTable, week_id: str, names: dict) -> dict:
 def _item_json(s: Session, it: m.ReportItem, week_id: str, names: dict) -> dict:
     blocks = [_block_json(s, b, week_id, names) for b in (s.get(m.Block, x) for x in item_ids(s, it)) if b is not None]
     out = {"id": it.id, "kind": it.kind, "line": it.line, "form": it.form, "tag_on": it.tag_on, "src": it.src, "blocks": blocks, "ref": None}
+    from app.services import freeform as ff          # 결정 ⑦ 15-2 자유 편집(표현만)
+    out["free"] = ff.json_for(it)
     if it.kind == "metric" and it.dept_id:
         out["metric"] = metric_json(s, it.dept_id, week_id, names)
     if it.kind == "table":
         t = s.get(m.MetricTable, it.table_id) if it.table_id else None
         out["table"] = table_json(s, t, week_id, names) if t else None
     return out
+
+
+def item_json(s: Session, it: m.ReportItem, mt: m.Meeting) -> dict:
+    """장 하나의 JSON(자유 편집 초안을 만들 때 쓴다)."""
+    return _item_json(s, it, mt.week_id, _dept_names(s))
 
 
 def _ref_items(s: Session, dm: m.Meeting, v: m.MeetingVersion, week_id: str, names: dict) -> list[dict]:

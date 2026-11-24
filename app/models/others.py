@@ -130,6 +130,11 @@ class ReportItem(Base):
     dept_id: Mapped[str | None] = mapped_column(ForeignKey("department.id"))   # M11 공유회 안에서 어느 부서 칸인지(종결 요청·원장 채움)
     table_id: Mapped[int | None] = mapped_column(ForeignKey("metric_table.id"))  # F16 기간 표 장(kind=table)이 그리는 표
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_now)
+    # 결정 ⑦ 15-2 자유 편집(2026-11-24) — 표현만 담는다. 사실은 이슈(block)에 있다.
+    free_on: Mapped[bool] = mapped_column(Boolean, default=False)       # 이 장을 개체로 자유 편집하나
+    objects_json: Mapped[str] = mapped_column(Text, default="")          # 개체 목록 {v, objects:[…]} — 1920×1080 좌표
+    prev_json: Mapped[str] = mapped_column(Text, default="")             # 형태 바꾸기 직전 판(되돌리기 1단계)
+    free_rev: Mapped[int] = mapped_column(Integer, default=0)            # 저장 판 번호(동시 저장 감지)
 
 
 class ReportItemBlock(Base):
