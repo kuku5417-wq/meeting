@@ -4,3 +4,7 @@ import _smoke as sm
 
 def test_free(client, run):
     run(sm.t_free, client)
+
+
+def test_free_link(client, run):
+    run(sm.t_free_link, client)

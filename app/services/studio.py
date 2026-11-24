@@ -640,8 +640,8 @@ def table_json(s: Session, t: m.MetricTable, week_id: str, names: dict) -> dict:
 def _item_json(s: Session, it: m.ReportItem, week_id: str, names: dict) -> dict:
     blocks = [_block_json(s, b, week_id, names) for b in (s.get(m.Block, x) for x in item_ids(s, it)) if b is not None]
     out = {"id": it.id, "kind": it.kind, "line": it.line, "form": it.form, "tag_on": it.tag_on, "src": it.src, "blocks": blocks, "ref": None}
-    from app.services import freeform as ff          # 결정 ⑦ 15-2 자유 편집(표현만)
-    out["free"] = ff.json_for(it)
+    from app.services import freeform as ff          # 결정 ⑦ 15-2·15-3 자유 편집(표현만)
+    out["free"] = ff.json_with(it, out)              # 연결 상태(같음·이슈와 다름·이슈가 바뀜)까지
     if it.kind == "metric" and it.dept_id:
         out["metric"] = metric_json(s, it.dept_id, week_id, names)
     if it.kind == "table":

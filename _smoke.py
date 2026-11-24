@@ -373,6 +373,110 @@ def t_free(c) -> None:
     check("15-2 — 꺼진 장에는 저장하지 않는다", r.status_code == 400 and "꺼져" in r.json()["err"], r.text[:120])
 
 
+def t_free_link(c) -> None:
+    """결정 ⑦ 15-3 연결 개체 — 칸 칩·「이슈와 다름」·「이슈에도 반영」·「다시 가져오기」·끊기/다시 연결·장에 없는 칸."""
+    from sqlalchemy import select
+
+    from app import models as m
+    from app.db import SessionLocal
+    from app.services import issues as iss
+
+    wk = "2026-W43"
+    with SessionLocal() as s:
+        dmt = s.scalars(select(m.Meeting).where(m.Meeting.week_id == wk, m.Meeting.kind == "dept")).first()
+        mid = dmt.id if dmt else 0
+    st0 = c.get(f"/api/studio/{mid}").json().get("state", {}) if mid else {}
+    items = [it for it in st0.get("items", []) if it["kind"] == "single" and not it["ro"]]
+    if not items:
+        check("15-3 — 시험할 장이 있다", False, "이슈 장이 없다")
+        return
+    iid, bid = items[0]["id"], items[0]["blocks"][0]["id"]
+    c.post(f"/api/studio/items/{iid}", json={"field": "form", "value": "detail"})
+    c.post(f"/api/studio/items/{iid}/free", json={"on": True})
+    with SessionLocal() as s:                       # 원인 칸을 또렷한 값으로 맞춰 둔다
+        iss.save_field(s, s.get(m.Block, bid), "cause_text", "분사밸브 노즐 마모로 추정 — 자매선 SN2510 동일 사례")
+        s.commit()
+    free = c.post(f"/api/studio/items/{iid}/link", json={"op": "pull", "oid": _cause_oid(c, mid, iid)}).json()["free"]
+    o = next(x for x in free["objects"] if (x.get("link") or {}).get("field") == "cause")
+    check("15-3 — 연결 개체는 어느 이슈 어느 칸인지 들고 있다(칩)",
+          o["field_label"] == "원인" and o["state"] == "same" and o["fact"], repr([o.get("field_label"), o.get("state")]))
+
+    objs = [dict(x) for x in free["objects"]]
+    for x in objs:
+        if (x.get("link") or {}).get("field") == "cause":
+            x["text"] = "노즐 마모 추정"            # 회의용으로 줄여 쓰기(케이스 A2)
+    j = c.post(f"/api/studio/items/{iid}/objects", json={"objects": objs, "rev": free["rev"]}).json()
+    o = next(x for x in j["free"]["objects"] if (x.get("link") or {}).get("field") == "cause")
+    with SessionLocal() as s:
+        b = s.get(m.Block, bid)
+        ev = s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == bid).order_by(m.BlockEvent.id.desc())).first()
+    check("15-3 — 캔버스에서 줄여 쓰면 「이슈와 다름」, 이슈 사실은 그대로(케이스 A2)",
+          o["state"] == "diff" and b.cause_text.startswith("분사밸브"), f'{o["state"]} / {b.cause_text[:12]}')
+    check("15-3 — 자료만 고친 것은 「자료수정」으로 기록에 남는다(사실변경 아님)",
+          ev is not None and ev.kind == "자료수정" and ev.after == "노즐 마모 추정", repr(ev and (ev.kind, ev.after)))
+
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "apply", "oid": o["id"]}).json()
+    o2 = next(x for x in j["free"]["objects"] if (x.get("link") or {}).get("field") == "cause")
+    with SessionLocal() as s:
+        b = s.get(m.Block, bid)
+        ev = s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == bid).order_by(m.BlockEvent.id.desc())).first()
+    check("15-3 — 「이슈에도 반영」을 한 번 더 눌러야 사실이 바뀐다(케이스 A3)",
+          b.cause_text == "노즐 마모 추정" and o2["state"] == "same" and ev.kind == "사실변경",
+          f'{b.cause_text} / {o2["state"]} / {ev.kind}')
+
+    with SessionLocal() as s:                       # 그 사이 이슈가 또 바뀌면
+        iss.save_field(s, s.get(m.Block, bid), "cause_text", "노즐 마모 확인 — 교체 완료")
+        s.commit()
+    stt = c.get(f"/api/studio/{mid}").json()["state"]
+    it_now = next(x for x in stt["items"] if x["id"] == iid)
+    o3 = next(x for x in it_now["free"]["objects"] if (x.get("link") or {}).get("field") == "cause")
+    check("15-3 — 내가 가져온 뒤 이슈가 바뀌면 「이슈가 바뀜」으로 알린다(케이스 C2)", o3["state"] == "stale", o3["state"])
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "pull", "oid": o3["id"]}).json()
+    o4 = next(x for x in j["free"]["objects"] if (x.get("link") or {}).get("field") == "cause")
+    check("15-3 — 「다시 가져오기」로 이슈 값을 받아 온다",
+          o4["text"] == "노즐 마모 확인 — 교체 완료" and o4["state"] == "same", repr(o4["text"]))
+
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "unlink", "oid": o4["id"]}).json()
+    o5 = next(x for x in j["free"]["objects"] if x["id"] == o4["id"])
+    check("15-3 — 연결 끊기(글은 그대로, 연결만)", o5.get("link") is None and o5["text"], repr(o5.get("link")))
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "relink", "oid": o4["id"], "field": "cause"}).json()
+    o6 = next(x for x in j["free"]["objects"] if x["id"] == o4["id"])
+    check("15-3 — 다시 연결하면 그때 값을 기준으로 삼는다", (o6.get("link") or {}).get("field") == "cause" and o6["state"] == "same")
+
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "relink", "oid": o6["id"], "field": "status"}).json()
+    r = c.post(f"/api/studio/items/{iid}/link", json={"op": "apply", "oid": o6["id"]})
+    check("15-3 — 「상태」는 고르는 칸이라 캔버스 글로 덮지 않는다(이슈 화면에서 고른다)",
+          r.status_code == 400 and "고르는 칸" in r.json()["err"], r.text[:140])
+    c.post(f"/api/studio/items/{iid}/link", json={"op": "relink", "oid": o6["id"], "field": "cause"})
+    r = c.post(f"/api/studio/items/{iid}/link", json={"op": "apply", "oid": _line_oid(c, mid, iid)})
+    check("15-3 — 표현 칸(회의용 한 줄)은 이슈에 반영하지 않는다",
+          r.status_code == 400 and "표현" in r.json()["err"], r.text[:120])
+
+    stt = c.get(f"/api/studio/{mid}").json()["state"]
+    it_now = next(x for x in stt["items"] if x["id"] == iid)
+    miss = it_now["free"]["missing"]
+    if miss:
+        j = c.post(f"/api/studio/items/{iid}/link", json={"op": "add", "field": miss[0]["field"]}).json()
+        check("15-3 — 장에 없는 칸을 알려 주고, 누를 때만 넣는다(케이스 C4)",
+              j["ok"] and any((x.get("link") or {}).get("field") == miss[0]["field"] for x in j["free"]["objects"])
+              and all(x["field"] != miss[0]["field"] for x in j["free"]["missing"]), repr([m2["field"] for m2 in miss]))
+    else:
+        check("15-3 — 장에 없는 칸을 알려 준다(케이스 C4)", True, "빠진 칸 없음")
+
+
+def _cause_oid(c, mid, iid) -> str:
+    st = c.get(f"/api/studio/{mid}").json()["state"]
+    it = next(x for x in st["items"] if x["id"] == iid)
+    return next(x["id"] for x in it["free"]["objects"] if (x.get("link") or {}).get("field") == "cause")
+
+
+def _line_oid(c, mid, iid) -> str:
+    st = c.get(f"/api/studio/{mid}").json()["state"]
+    it = next(x for x in st["items"] if x["id"] == iid)
+    return next((x["id"] for x in it["free"]["objects"] if (x.get("link") or {}).get("field") == "line"),
+                it["free"]["objects"][0]["id"])
+
+
 def t_base(c) -> None:
     """앱 공통 — 표 생성·화면 탭·기준정보 시드·글꼴. 뒤 묶음들이 이 데이터를 쓴다(tests/test_01_base.py)."""
     from sqlalchemy import inspect
@@ -2724,7 +2828,7 @@ def t_llm_c(c) -> None:
 # 묶음 순서 = 실행 순서. 앞 묶음이 만든 데이터를 뒤 묶음이 쓴다. tests/test_NN_*.py 도 이 순서를 따른다
 GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
           t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free)
+          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link)
 
 
 def main() -> int:

@@ -173,6 +173,15 @@ export function mount(frame, it, opts) {
       });
     },
     remove() { const o = find(selId); if (!o) return; change(() => { list = list.filter((x) => x !== o); selId = list[0]?.id || ''; }); },
+    copy() {
+      // 케이스 A5 — 복사본은 **연결 없는 자유 글**. 한 칸에 개체 둘이 연결되면 어느 쪽이 정답인지 모호해진다.
+      const o = find(selId); if (!o) return;
+      change(() => {
+        const id = 'o' + (Date.now() % 100000);
+        list.push({...o, id, link: null, x: Math.min(o.x + 40, 1920 - o.w), y: Math.min(o.y + 40, 1080 - o.h), style: {...o.style}});
+        selId = id;
+      });
+    },
     undo: () => undo(false),
     redo: () => undo(true),
     canUndo: () => past.length > 0,

@@ -100,7 +100,7 @@ async def api_free(iid: int, request: Request, s: Session = Depends(get_session)
     mt = _meeting(s, it.meeting_id)
     from app.services import freeform as ff
     return _run(s, mt, lambda: ff.set_on(it, st.item_json(s, it, mt), bool(data.get("on"))),
-                lambda _objs: {"free": ff.json_for(it)})
+                lambda _objs: {"free": ff.json_with(it, st.item_json(s, it, mt))})
 
 
 @router.post("/api/studio/items/{iid}/objects")
@@ -113,8 +113,47 @@ async def api_objects(iid: int, request: Request, s: Session = Depends(get_sessi
     mt = _meeting(s, it.meeting_id)
     from app.services import freeform as ff
     base = data.get("rev")
-    return _run(s, mt, lambda: ff.save(it, data.get("objects"), None if base is None else int(base)),
-                lambda _rev: {"free": ff.json_for(it)})
+    before = ff.load(it)
+
+    def go():
+        rev = ff.save(it, data.get("objects"), None if base is None else int(base))
+        from app.services import events
+        for ch in ff.changed_links(before, ff.load(it)):          # 연결 개체의 **글**이 바뀌면 자료수정으로 남긴다
+            if s.get(m.Block, ch["block"]) is not None:
+                events.record(s, ch["block"], "자료수정", field=ch["field"],
+                              before=ch["before"], after=ch["after"], meeting_id=mt.id)
+        return rev
+
+    return _run(s, mt, go, lambda _rev: {"free": ff.json_with(it, st.item_json(s, it, mt))})
+
+
+@router.post("/api/studio/items/{iid}/link")
+async def api_link(iid: int, request: Request, s: Session = Depends(get_session)):
+    """연결 다루기 (결정 ⑦ 15-3) — op: apply(이슈에도 반영) · pull(다시 가져오기) · unlink · relink · add.
+
+    **기본은 이 자료만 바뀐다.** 이슈의 사실을 바꾸는 것은 `apply` 하나뿐이고, 그때만 이슈 변경 기록에
+    「사실변경」이 남는다(케이스 A3 — 줄여 쓰기와 오타 고치기는 손동작이 같아서 한 번 더 누르게 한다).
+    """
+    it, data = _item(s, iid), await request.json()
+    mt = _meeting(s, it.meeting_id)
+    from app.services import freeform as ff
+    op, oid, field = str(data.get("op", "")), str(data.get("oid", "")), str(data.get("field", ""))
+
+    def go():
+        item = st.item_json(s, it, mt)
+        if op == "pull":
+            return ff.pull(it, item, oid)
+        if op == "unlink":
+            return ff.unlink(it, oid)
+        if op == "relink":
+            return ff.relink(it, item, oid, field)
+        if op == "add":
+            return ff.add_field(it, item, field)
+        if op == "apply":
+            return ff.apply_to_issue(s, it, item, oid, mt)
+        raise ff.FreeError("모르는 동작입니다. 화면을 새로 고쳐주세요.")
+
+    return _run(s, mt, go, lambda _o: {"free": ff.json_with(it, st.item_json(s, it, mt))})
 
 
 @router.post("/api/studio/items/{iid}/undo-form")
@@ -123,7 +162,7 @@ def api_undo_form(iid: int, s: Session = Depends(get_session)):
     it = _item(s, iid)
     mt = _meeting(s, it.meeting_id)
     from app.services import freeform as ff
-    return _run(s, mt, lambda: ff.undo_form(it), lambda _objs: {"free": ff.json_for(it)})
+    return _run(s, mt, lambda: ff.undo_form(it), lambda _objs: {"free": ff.json_with(it, st.item_json(s, it, mt))})
 
 
 @router.post("/api/studio/{mid}/reorder")

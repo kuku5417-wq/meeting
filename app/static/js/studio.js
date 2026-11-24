@@ -78,7 +78,8 @@ async function saveObjects(objs, rev) {
     body: JSON.stringify({objects: objs, rev})});
   const j = await r.json();
   if (!j.ok) { toast(j.err); return null; }
-  if (j.state) S = j.state;                 // 화면은 다시 그리지 않는다 — 편집 중이다
+  if (j.state) S = j.state;                 // 캔버스는 다시 그리지 않는다 — 편집 중이다
+  renderFreeProps();                        // 연결 상태(이슈와 다름·이슈가 바뀜)는 바로 갱신한다
   return j.free?.rev ?? null;
 }
 function attachFree() {
@@ -92,19 +93,43 @@ function attachFree() {
 }
 const SIZES = [20, 24, 28, 30, 34, 40, 48, 56];
 const TONES = {fg: '본문', muted: '흐리게', decide: '결정', problem: '문제', ok: '완료'};
+const LINK_STATE = {same: '', diff: '이슈와 다름', stale: '이슈가 바뀜'};
+function linkBox(o, it) {
+  // 연결 칩(케이스 A8) — 어느 이슈 어느 칸인지, 지금 이슈 값과 같은지
+  if (o.type === 'photo') return '';
+  if (!o.link) {
+    const fields = it.free?.fields || [];
+    return `<p class="v-sec">연결 없음 — 이 자료에만 있는 글</p>
+      <div class="row"><select id="foField" aria-label="다시 연결할 칸"><option value="">칸 고르기</option>${fields.map((f) => `<option value="${f.field}">${esc(f.label)}</option>`).join('')}</select>
+        <button class="btn sm" type="button" id="foRelink">다시 연결</button></div>`;
+  }
+  const st = LINK_STATE[o.state] || '';
+  const warn = o.state === 'diff' ? `<p class="small">이슈 값: ${esc(o.issue_text || '(비어 있음)')} — 이 자료에만 다르게 적혀 있습니다.</p>`
+    : o.state === 'stale' ? `<p class="small">이슈가 그 사이 바뀌었습니다 → <b>${esc(o.issue_text || '(비어 있음)')}</b></p>` : '';
+  return `<p class="v-sec">연결 — 이슈 ${esc(o.field_label || o.link.field)} · ${esc(o.link.block)}${st ? ` <b class="v-late">${st}</b>` : ''}</p>${warn}
+    <div class="row">${o.fact && !o.choice ? '<button class="btn sm primary" type="button" id="foApply">이슈에도 반영</button>' : ''}
+      <button class="btn sm" type="button" id="foPull">다시 가져오기</button>
+      <button class="btn sm" type="button" id="foUnlink">연결 끊기</button></div>
+    ${o.choice ? '<span class="small muted">「상태」는 고르는 칸입니다 — 이슈 화면에서 고릅니다. 여기 글은 이 자료의 표현으로 남습니다.</span>'
+      : o.fact ? '' : '<span class="small muted">이 칸은 자료의 표현입니다 — 이슈 사실은 바뀌지 않습니다.</span>'}`;
+}
 function renderFreeProps() {
   const box = document.querySelector('#freeProps');
   if (!box || !FE) return;
-  const o = FE.sel;
-  if (!o) { box.innerHTML = '<span class="small muted">개체를 고르면 여기서 글자·색·소제목을 고칩니다. 두 번 누르면 글을 바로 고칠 수 있습니다.</span>'; return; }
-  box.innerHTML = `<p class="v-sec">고른 개체 — ${esc(o.label || (o.type === 'photo' ? '사진' : '글'))}${o.link ? ` · 이슈 ${esc(o.link.field)} 연결` : ''}</p>
+  const it = S.items[sel] || {};
+  const live = (it.free?.objects || []).find((x) => x.id === FE.sel?.id);   // 연결 상태는 서버가 판정한 값
+  const o = FE.sel ? {...FE.sel, ...(live ? {state: live.state, issue_text: live.issue_text, field_label: live.field_label, fact: live.fact} : {})} : null;
+  const miss = (it.free?.missing || []);
+  const missHtml = miss.length ? `<p class="v-sec">장에 없는 칸 ${miss.length}</p><div class="row">${miss.map((f) => `<button class="btn sm" type="button" data-addfield="${f.field}">＋ ${esc(f.label)}</button>`).join('')}</div>` : '';
+  if (!o) { box.innerHTML = '<span class="small muted">개체를 고르면 여기서 글자·색·소제목·연결을 고칩니다. 두 번 누르면 글을 바로 고칠 수 있습니다.</span>' + missHtml; return; }
+  box.innerHTML = linkBox(o, it) + missHtml + `<p class="v-sec">고른 개체 — ${esc(o.label || (o.type === 'photo' ? '사진' : '글'))}</p>
     <label class="f">소제목<input type="text" id="foLabel" value="${esc(o.label || '')}" placeholder="예: 원인"></label>
     ${o.type === 'photo' ? '' : `<label class="f">글<textarea id="foText" rows="3">${esc(o.text)}</textarea></label>
     <div class="row"><select id="foSize" aria-label="글자 크기">${SIZES.map((s) => `<option value="${s}"${s === (o.style?.size || 30) ? ' selected' : ''}>${s}px</option>`).join('')}</select>
       <button class="btn sm" type="button" id="foBold" aria-pressed="${!!o.style?.bold}">굵게</button>
       ${['left', 'center', 'right'].map((a) => `<button class="btn sm" type="button" data-align="${a}" aria-pressed="${(o.style?.align || 'left') === a}">${a === 'left' ? '왼쪽' : a === 'center' ? '가운데' : '오른쪽'}</button>`).join('')}</div>
     <div class="row">${Object.entries(TONES).map(([k, v]) => `<button class="btn sm" type="button" data-tone="${k}" aria-pressed="${(o.style?.tone || 'fg') === k}">${v}</button>`).join('')}</div>`}
-    <div class="row"><button class="btn sm" type="button" id="foAdd">＋ 글 상자</button><button class="btn sm" type="button" id="foDel">개체 지우기</button>
+    <div class="row"><button class="btn sm" type="button" id="foAdd">＋ 글 상자</button><button class="btn sm" type="button" id="foCopy">복사</button><button class="btn sm" type="button" id="foDel">개체 지우기</button>
       <button class="btn sm" type="button" id="foUndo">되돌리기</button></div>
     <p class="small muted">바꾼 것은 모두 되돌릴 수 있습니다(Ctrl+Z). 저장은 자동입니다 — 틀 위 「저장됨」이 서버가 받은 표시입니다.</p>`;
 }
@@ -195,7 +220,11 @@ function renderBar() {
   if (note.hidden) { note.innerHTML = ''; return; }
   note.innerHTML = `${m.version}판(${esc(m.published_at)}) 뒤에 ${m.changes ? `이슈 사실이 바뀐 장 <b>${m.changes}</b>` : ''}${m.changes && m.status === '수정됨' ? ' · ' : ''}${m.status === '수정됨' ? '자료를 고쳤습니다' : ''} — 이미 나간 판은 그대로이고, ${m.publishes ? '다시 발행' : '다시 제출'}하면 ${m.version + 1}판이 됩니다.`;
 }
-function all() { if (sel >= S.items.length) sel = Math.max(0, S.items.length - 1); renderLeft(); renderCanvas(); renderProps(); renderBar(); }
+function all() {
+  if (sel >= S.items.length) sel = Math.max(0, S.items.length - 1);
+  renderLeft(); renderCanvas(); renderProps(); renderBar();
+  renderFreeProps();     // 속성 패널은 캔버스보다 나중에 그려진다 — 개체 칸을 그때 채운다
+}
 function pick(i, scroll = true) { multi.clear(); sel = Math.max(0, Math.min(S.items.length - 1, i)); all(); if (scroll) document.querySelector(`[data-row="${sel}"]`)?.scrollIntoView({block: 'center', behavior: 'smooth'}); }
 
 // ── 동작 ────────────────────────────────────────────
@@ -258,6 +287,23 @@ document.addEventListener('click', async (e) => {
   }
   if (e.target.id === 'freeUndoForm') { if (await api(`/api/studio/items/${S.items[sel].id}/undo-form`)) { all(); toast('형태 바꾸기를 되돌렸습니다'); } return; }
   if (e.target.id === 'foAdd') { FE?.add(); return; }
+  if (e.target.id === 'foCopy') { FE?.copy(); toast('복사한 개체는 연결 없는 자유 글입니다 — 필요하면 칸에 다시 연결하세요'); return; }
+  if (['foApply', 'foPull', 'foUnlink', 'foRelink'].includes(e.target.id) || e.target.closest('[data-addfield]')) {
+    const it = S.items[sel], oid = FE?.sel?.id;
+    const af = e.target.closest('[data-addfield]');
+    const op = af ? 'add' : {foApply: 'apply', foPull: 'pull', foUnlink: 'unlink', foRelink: 'relink'}[e.target.id];
+    const field = af ? af.dataset.addfield : (document.querySelector('#foField')?.value || '');
+    if (op === 'relink' && !field) { toast('어느 칸에 연결할지 먼저 골라주세요'); return; }
+    await FE?.flush();                                   // 편집 중이던 것을 먼저 저장하고
+    const j = await api(`/api/studio/items/${it.id}/link`, {op, oid, field});
+    if (!j) return;
+    all();
+    toast(op === 'apply' ? '이슈 사실에 반영했습니다 — 이슈 변경 기록에 남습니다'
+      : op === 'pull' ? '이슈의 지금 값을 가져왔습니다'
+      : op === 'unlink' ? '연결을 끊었습니다 — 글은 그대로입니다'
+      : op === 'add' ? '칸을 개체로 넣었습니다' : '다시 연결했습니다');
+    return;
+  }
   if (e.target.id === 'foDel') { FE?.remove(); return; }
   if (e.target.id === 'foUndo') { FE?.undo(); return; }
   if (e.target.id === 'foBold') { FE?.style('bold', !FE.sel?.style?.bold); return; }

@@ -32,7 +32,13 @@ MIN_W, MIN_H = 40, 24
 TYPES = ("text", "photo", "box")
 TONES = ("fg", "muted", "decide", "problem", "issue", "ok")
 ALIGNS = ("left", "center", "right")
-FIELDS = ("title", "line", "body", "cause", "act", "dec", "status", "dept")   # 연결할 수 있는 이슈 칸(15-3 에서 쓴다)
+FIELDS = ("title", "line", "body", "cause", "act", "dec", "status", "dept")   # 개체가 가리킬 수 있는 칸
+# 이슈의 **사실** 칸 ↔ 모델 칸 이름 (15-3). line·dept 는 사실이 아니라 표현·기준정보라 여기 없다.
+FACT_BY_FIELD = {"title": "title", "body": "body", "cause": "cause_text", "act": "action_text",
+                 "dec": "decision_needed", "status": "status"}
+CHOICE_FIELDS = ("status",)      # 고르는 칸 — 캔버스 글로 덮지 않는다(이슈 화면에서 고른다)
+FIELD_LABEL = {"title": "제목", "line": "회의용 한 줄", "body": "현상", "cause": "원인",
+               "act": "조치 · 계획", "dec": "결정 필요", "status": "상태", "dept": "담당"}
 
 
 class FreeError(w.WriteError):
@@ -59,13 +65,17 @@ def _clean_style(raw: Any) -> dict:
 
 
 def _clean_link(raw: Any) -> dict | None:
+    """연결 = {어느 이슈, 어느 칸, 가져올 때의 값(snap)}.
+
+    `snap` 은 「이슈가 그 사이 바뀌었나」를 보는 기준이다(케이스 C2) — 값이지 사실의 정본이 아니다.
+    """
     if not isinstance(raw, dict):
         return None
     block = str(raw.get("block") or "").strip()
     field = str(raw.get("field") or "").strip()
     if not block or field not in FIELDS:
         return None
-    return {"block": block, "field": field}
+    return {"block": block, "field": field, "snap": str(raw.get("snap") or "")[:2000]}
 
 
 def clean_object(raw: Any, n: int) -> dict:
@@ -140,7 +150,7 @@ def draft(item: dict) -> list[dict]:
     out: list[dict] = []
     title = f"{b.get('title') or item.get('line') or '제목'}"
     out.append(_text("o1", 96, 96, 1728, 96, title, label="제목", size=44, bold=True,
-                     link={"block": bid, "field": "title"} if bid else None))
+                     link={"block": bid, "field": "title", "snap": title} if bid else None))
 
     if item.get("kind") == "summary":
         out.append(_text("o2", 96, 220, 1728, 90, line, label="요약", size=34))
@@ -149,9 +159,9 @@ def draft(item: dict) -> list[dict]:
                              f"{x.get('title', '')} · {x.get('ptag') or x.get('status') or ''}", label="이슈", size=28))
         return out
 
+    line_link = {"block": bid, "field": "line", "snap": line} if bid else None
     if form == "line":
-        out.append(_text("o2", 96, 420, 1728, 200, line, label="한 줄", size=40,
-                         link={"block": bid, "field": "line"} if bid else None))
+        out.append(_text("o2", 96, 420, 1728, 200, line, label="한 줄", size=40, link=line_link))
         return out
 
     if form == "photo":
@@ -159,37 +169,37 @@ def draft(item: dict) -> list[dict]:
             out.append({"id": "o2", "type": "photo", "x": 96, "y": 230, "w": 1000, "h": 700,
                         "text": "", "label": "사진", "link": None, "photo": str(b.get("photo")), "block": bid,
                         "style": _clean_style({})})
-        out.append(_text("o3", 1140, 230, 684, 300, line, label="한 줄", size=30))
+        out.append(_text("o3", 1140, 230, 684, 300, line, label="한 줄", size=30, link=line_link))
         if b.get("dec"):
-            out.append(_text("o4", 1140, 560, 684, 200, f"결정 필요 — {b['dec']}", label="결정 필요", size=28, tone="decide",
-                             link={"block": bid, "field": "dec"} if bid else None))
+            out.append(_text("o4", 1140, 560, 684, 200, str(b["dec"]), label="결정 필요", size=28, tone="decide",
+                             link={"block": bid, "field": "dec", "snap": issue_value(item, "dec")} if bid else None))
         return out
 
     if form == "detail":
-        out.append(_text("o2", 96, 210, 1728, 90, line, label="한 줄", size=30))
+        out.append(_text("o2", 96, 210, 1728, 90, line, label="한 줄", size=30, link=line_link))
         out.append(_text("o3", 96, 320, 840, 220, str(b.get("body") or "—"), label="현상", size=28,
-                         link={"block": bid, "field": "body"} if bid else None))
+                         link={"block": bid, "field": "body", "snap": issue_value(item, "body")} if bid else None))
         out.append(_text("o4", 984, 320, 840, 220, str(b.get("cause") or "조사 중"), label="원인", size=28,
-                         link={"block": bid, "field": "cause"} if bid else None))
+                         link={"block": bid, "field": "cause", "snap": issue_value(item, "cause")} if bid else None))
         out.append(_text("o5", 96, 570, 1728, 220, str(b.get("act") or "—"), label="조치 · 계획", size=28,
-                         link={"block": bid, "field": "act"} if bid else None))
+                         link={"block": bid, "field": "act", "snap": issue_value(item, "act")} if bid else None))
         if b.get("dec"):
-            out.append(_text("o6", 96, 820, 1728, 120, f"결정 필요 — {b['dec']}", label="결정 필요", size=28, tone="decide",
-                             link={"block": bid, "field": "dec"} if bid else None))
+            out.append(_text("o6", 96, 820, 1728, 120, str(b["dec"]), label="결정 필요", size=28, tone="decide",
+                             link={"block": bid, "field": "dec", "snap": issue_value(item, "dec")} if bid else None))
         return out
 
     # card (기본)
-    out.append(_text("o2", 96, 230, 1180, 240, line, label="한 줄", size=30))
-    out.append(_text("o3", 96, 500, 560, 90, f"담당 {b.get('dept') or ''}", label="담당", size=28, tone="muted"))
-    out.append(_text("o4", 716, 500, 560, 90, f"상태 {b.get('status') or ''}", label="상태", size=28, tone="muted",
-                     link={"block": bid, "field": "status"} if bid else None))
+    out.append(_text("o2", 96, 230, 1180, 240, line, label="한 줄", size=30, link=line_link))
+    out.append(_text("o3", 96, 500, 560, 90, str(b.get("dept") or ""), label="담당", size=28, tone="muted"))
+    out.append(_text("o4", 716, 500, 560, 90, str(b.get("status") or ""), label="상태", size=28, tone="muted",
+                     link={"block": bid, "field": "status", "snap": str(b.get("status") or "")} if bid else None))
     if b.get("photo"):
         out.append({"id": "o5", "type": "photo", "x": 1320, "y": 230, "w": 504, "h": 360,
                     "text": "", "label": "사진", "link": None, "photo": str(b.get("photo")), "block": bid,
                     "style": _clean_style({})})
     if b.get("dec"):
-        out.append(_text("o6", 96, 640, 1728, 140, f"결정 필요 — {b['dec']}", label="결정 필요", size=28, tone="decide",
-                         link={"block": bid, "field": "dec"} if bid else None))
+        out.append(_text("o6", 96, 640, 1728, 140, str(b["dec"]), label="결정 필요", size=28, tone="decide",
+                         link={"block": bid, "field": "dec", "snap": issue_value(item, "dec")} if bid else None))
     return out
 
 
@@ -242,7 +252,183 @@ def undo_form(it) -> list[dict]:
     return load(it)
 
 
+# ── 연결(15-3) ──────────────────────────────────────────
+def issue_value(item: dict, field: str) -> str:
+    """장이 들고 있는 이슈의 지금 값(표현 칸은 장 값)."""
+    b = (item.get("blocks") or [{}])[0]
+    if field == "line":
+        return str(item.get("line") or "")
+    key = {"title": "title", "body": "body", "cause": "cause", "act": "act", "dec": "dec",
+           "status": "status", "dept": "dept"}.get(field, "")
+    return str(b.get(key) or "") if key else ""
+
+
+def _norm(v: str) -> str:
+    return " ".join(str(v or "").split())
+
+
+def annotate(objects: list[dict], item: dict) -> list[dict]:
+    """개체마다 연결 상태를 붙인다 — 화면이 칩으로 보여 준다.
+
+    same   이슈 값과 같다
+    diff   이 자료에서 고쳐 **이슈와 다르다**(케이스 A2 — 사실을 덮지 않았다는 표시)
+    stale  내가 가져온 뒤 **이슈가 바뀌었다**(케이스 C2 — 「다시 가져오기」)
+    """
+    out = []
+    for o in objects:
+        o = dict(o)
+        link = o.get("link")
+        if link and o.get("type") != "photo":
+            cur = issue_value(item, link["field"])
+            o["issue_text"] = cur
+            o["field_label"] = FIELD_LABEL.get(link["field"], link["field"])
+            o["fact"] = link["field"] in FACT_BY_FIELD
+            o["choice"] = link["field"] in CHOICE_FIELDS
+            if _norm(o.get("text")) == _norm(cur):
+                o["state"] = "same"
+            elif link.get("snap") and _norm(link["snap"]) != _norm(cur):
+                o["state"] = "stale"
+            else:
+                o["state"] = "diff"
+        out.append(o)
+    return out
+
+
+def missing_fields(item: dict, objects: list[dict]) -> list[dict]:
+    """장에 올라오지 않은 이슈 칸(케이스 C4). 자동으로 넣지 않고 목록으로만 보여 준다."""
+    if item.get("kind") != "single" or not (item.get("blocks") or []):
+        return []
+    have = {(o.get("link") or {}).get("field") for o in objects}
+    out = []
+    for f in ("body", "cause", "act", "dec"):
+        if f in have:
+            continue
+        v = issue_value(item, f)
+        if v:
+            out.append({"field": f, "label": FIELD_LABEL[f], "text": v})
+    return out
+
+
+def _find(objects: list[dict], oid: str) -> dict:
+    for o in objects:
+        if o.get("id") == oid:
+            return o
+    raise FreeError("없는 개체입니다. 화면을 새로 고쳐주세요.")
+
+
+def pull(it, item: dict, oid: str) -> list[dict]:
+    """「다시 가져오기」 — 이슈의 지금 값을 개체로(케이스 C2)."""
+    objs = load(it)
+    o = _find(objs, oid)
+    link = o.get("link")
+    if not link:
+        raise FreeError("연결이 없는 개체입니다. 먼저 칸에 연결해 주세요.")
+    cur = issue_value(item, link["field"])
+    o["text"] = cur
+    link["snap"] = cur
+    it.objects_json = dump(clean(objs))
+    it.free_rev = (it.free_rev or 0) + 1
+    return load(it)
+
+
+def unlink(it, oid: str) -> list[dict]:
+    """연결 끊기 — 글은 그대로 두고 연결만 뗀다(케이스 F1, 되돌리기는 화면 이력)."""
+    objs = load(it)
+    _find(objs, oid)["link"] = None
+    it.objects_json = dump(clean(objs))
+    it.free_rev = (it.free_rev or 0) + 1
+    return load(it)
+
+
+def relink(it, item: dict, oid: str, field: str) -> list[dict]:
+    """다시 연결 — 어느 칸에 붙일지 사람이 고른다."""
+    if item.get("kind") != "single":
+        raise FreeError("요약 장의 개체는 이슈 칸에 연결하지 않습니다 — 출처는 장 아래 이슈 목록에 있습니다.")
+    if field not in FIELDS:
+        raise FreeError("연결할 수 있는 칸이 아닙니다.")
+    b = (item.get("blocks") or [{}])[0]
+    if not b.get("id"):
+        raise FreeError("이 장에는 이슈가 없습니다.")
+    objs = load(it)
+    o = _find(objs, oid)
+    o["link"] = {"block": str(b["id"]), "field": field, "snap": issue_value(item, field)}
+    o["label"] = o.get("label") or FIELD_LABEL.get(field, "")
+    it.objects_json = dump(clean(objs))
+    it.free_rev = (it.free_rev or 0) + 1
+    return load(it)
+
+
+def add_field(it, item: dict, field: str) -> list[dict]:
+    """장에 없는 칸을 개체로 넣기(케이스 C4) — 사람이 누를 때만, 빈 아래쪽에 놓는다."""
+    objs = load(it)
+    if len(objs) >= MAX_OBJECTS:
+        raise FreeError(f"한 장에 개체는 {MAX_OBJECTS}개까지입니다.")
+    y = min(H - 160, max([int(o.get("y", 0)) + int(o.get("h", 0)) for o in objs] or [200]) + 24)
+    b = (item.get("blocks") or [{}])[0]
+    o = _text(f"o{len(objs) + 1}_{field}", 96, y, 1728, 140, issue_value(item, field),
+              label=FIELD_LABEL.get(field, field), size=28,
+              link={"block": str(b.get("id") or ""), "field": field, "snap": issue_value(item, field)} if b.get("id") else None)
+    objs.append(o)
+    it.objects_json = dump(clean(objs))
+    it.free_rev = (it.free_rev or 0) + 1
+    return load(it)
+
+
+def apply_to_issue(s, it, item: dict, oid: str, mt) -> list[dict]:
+    """「이슈에도 반영」(케이스 A3) — 이 개체의 글을 이슈 **사실 칸**에 쓴다.
+
+    이 한 번만 사실이 바뀌고, 이슈 변경 기록에 「사실변경 · 어디서」가 남는다(`issues.save_field`).
+    표현 칸(회의용 한 줄·담당)과 요약 장은 반영 대상이 아니다.
+    """
+    from app import models as m
+    from app.services import issues as iss
+
+    objs = load(it)
+    o = _find(objs, oid)
+    link = o.get("link")
+    if not link:
+        raise FreeError("연결이 없는 개체입니다 — 먼저 어느 칸인지 골라 주세요.")
+    field = link["field"]
+    if field in CHOICE_FIELDS:
+        raise FreeError(f"「{FIELD_LABEL.get(field, field)}」은(는) 고르는 칸입니다 — 이슈 화면에서 골라 주세요. "
+                        "캔버스 글은 이 자료의 표현으로 남습니다.")
+    if field not in FACT_BY_FIELD:
+        raise FreeError(f"「{FIELD_LABEL.get(field, field)}」은(는) 이 자료의 표현입니다 — 이슈에 반영하지 않습니다.")
+    b = s.get(m.Block, link["block"])
+    if b is None:
+        raise FreeError("이슈를 찾을 수 없습니다. 화면을 새로 고쳐주세요.")
+    text = str(o.get("text") or "").strip()
+    iss.save_field(s, b, FACT_BY_FIELD[field], text, meeting_id=getattr(mt, "id", None))
+    link["snap"] = text
+    it.objects_json = dump(clean(objs))
+    it.free_rev = (it.free_rev or 0) + 1
+    return load(it)
+
+
+def changed_links(before: list[dict], after: list[dict]) -> list[dict]:
+    """저장 전후로 **글이 바뀐 연결 개체** — 「자료수정」으로 기록할 것(옮기기·크기는 기록하지 않는다)."""
+    old = {o.get("id"): o for o in before}
+    out = []
+    for o in after:
+        p = old.get(o.get("id"))
+        link = o.get("link")
+        if not link or p is None or p.get("link") is None:
+            continue
+        if _norm(p.get("text")) != _norm(o.get("text")):
+            out.append({"block": link["block"], "field": link["field"],
+                        "before": str(p.get("text") or ""), "after": str(o.get("text") or "")})
+    return out
+
+
 def json_for(it) -> dict:
     """장 JSON 에 붙이는 자유 편집 정보."""
     return {"on": bool(it.free_on), "rev": int(it.free_rev or 0),
             "objects": load(it), "can_undo": can_undo(it), "max": MAX_OBJECTS}
+
+
+def json_with(it, item: dict) -> dict:
+    """장 JSON 에 붙이는 자유 편집 정보 + 연결 상태·장에 없는 칸(15-3)."""
+    objs = annotate(load(it), item)
+    return {"on": bool(it.free_on), "rev": int(it.free_rev or 0), "objects": objs,
+            "can_undo": can_undo(it), "max": MAX_OBJECTS, "missing": missing_fields(item, objs),
+            "fields": [{"field": f, "label": FIELD_LABEL[f]} for f in FACT_BY_FIELD]}
