@@ -788,6 +788,76 @@ def t_free_adopt(c) -> None:
     check("15-6 — 기획 홈에 묶음이 보인다", "이번 주 바뀐 이슈" in home and bid in home)
 
 
+def t_free_ppt(c) -> None:
+    """결정 ⑦ 15-8 — PPT 는 자유 편집 장을 개체 좌표 그대로 그린다 · 넘침 어림(맑은 고딕)."""
+    import io as _io
+
+    from pptx import Presentation
+    from sqlalchemy import select
+
+    from app import models as m
+    from app.db import SessionLocal
+    from app.services import freeform as ff
+
+    # ── 넘침 어림 ──
+    big = {"id": "x1", "type": "text", "x": 96, "y": 96, "w": 600, "h": 80,
+           "text": "분사밸브 노즐 마모로 추정되며 자매선 SN2510 에서도 같은 증상이 있었습니다. 다음 주 부하시험에서 다시 확인합니다.",
+           "style": {"size": 40}}
+    small = dict(big, id="x2", text="노즐 마모 추정")
+    over = ff.overflowing([big, small])
+    check("15-8 — 상자를 넘칠 글을 서버도 어림해 알린다(PPT 는 넘친 글을 잘라 버린다 — 케이스 E3)",
+          over == ["x1"], repr(over))
+    three = "가" + chr(10) + "나" + chr(10) + "다"
+    check("15-8 — 줄바꿈도 줄로 센다",
+          ff.est_lines(three, 600, 40) == 3 and ff.est_lines("가나다", 600, 40) == 1,
+          f"{ff.est_lines(three, 600, 40)}")
+
+    wk = "2026-W43"
+    with SessionLocal() as s:
+        dmt = s.scalars(select(m.Meeting).where(m.Meeting.week_id == wk, m.Meeting.kind == "dept")).first()
+        mid = dmt.id if dmt else 0
+    st0 = c.get(f"/api/studio/{mid}").json().get("state", {}) if mid else {}
+    items = [it for it in st0.get("items", []) if it["kind"] == "single" and not it["ro"]]
+    if not items:
+        check("15-8 — 시험할 장이 있다", False, "이슈 장이 없다")
+        return
+    iid = items[0]["id"]
+    c.post(f"/api/studio/items/{iid}/free", json={"on": True})
+    stt = c.get(f"/api/studio/{mid}").json()["state"]
+    it = next(x for x in stt["items"] if x["id"] == iid)
+    objs = [dict(o) for o in it["free"]["objects"]]
+    objs[0] = dict(objs[0], x=240, y=600, w=1200, h=160, text="자유 편집 자리 확인용", style={"size": 44, "bold": True, "tone": "decide", "align": "center"})
+    j = c.post(f"/api/studio/items/{iid}/objects", json={"objects": objs, "rev": it["free"]["rev"]}).json()
+    check("15-8 — 개체를 옮겨 두었다", j["ok"] and j["free"]["objects"][0]["x"] == 240, r_text(j))
+
+    # PPT 는 **제출·발행판**을 그린다(회의에서 본 그대로) — 꾸민 자리가 판에도 담기는지 함께 본다
+    c.post(f"/api/studio/{mid}/submit")
+    r = c.get(f"/export/meeting/{mid}/pptx")
+    prs = Presentation(_io.BytesIO(r.content))
+    hit = None
+    for sl in prs.slides:
+        for sh in sl.shapes:
+            if sh.has_text_frame and "자유 편집 자리 확인용" in sh.text_frame.text:
+                hit = sh
+    check("15-8 — PPT 에 자유 편집 장이 그대로 나온다(제출판에도 꾸민 자리가 담긴다)",
+          hit is not None, "개체 글을 찾지 못했다")
+    if hit is not None:
+        from pptx.util import Inches
+        left_in, top_in = hit.left / Inches(1), hit.top / Inches(1)
+        want_l, want_t = 240 / 1920 * 13.333, 600 / 1080 * 7.5
+        run = hit.text_frame.paragraphs[0].runs[0]
+        check("15-8 — 개체 자리가 캔버스와 같다(1920×1080 → 13.333in × 7.5in)",
+              abs(left_in - want_l) < 0.05 and abs(top_in - want_t) < 0.05, f"{left_in:.2f}/{want_l:.2f} · {top_in:.2f}/{want_t:.2f}")
+        check("15-8 — 글자 크기는 px ÷ 2 = pt, 굵게·색도 따라간다",
+              abs(run.font.size.pt - 22) < 0.6 and run.font.bold and run.font.name == "맑은 고딕",
+              f"{run.font.size.pt} / {run.font.bold} / {run.font.name}")
+    c.post(f"/api/studio/items/{iid}/free", json={"on": False})
+
+
+def r_text(j) -> str:
+    return str(j)[:160]
+
+
 def t_edit_lock(c) -> None:
     """결정 ⑦ 15-7 — 자료 하나는 한 명씩 편집(브라우저 표·10분 무입력 해제·놓기)."""
     from datetime import datetime, timedelta
@@ -3239,7 +3309,7 @@ def t_llm_c(c) -> None:
 # 묶음 순서 = 실행 순서. 앞 묶음이 만든 데이터를 뒤 묶음이 쓴다. tests/test_NN_*.py 도 이 순서를 따른다
 GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
           t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link, t_free_scope, t_free_merge, t_free_adopt, t_edit_lock)
+          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link, t_free_scope, t_free_merge, t_free_adopt, t_edit_lock, t_free_ppt)
 
 
 def main() -> int:

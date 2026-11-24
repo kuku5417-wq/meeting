@@ -296,6 +296,14 @@ function renderBar() {
   const btn = $('#submitBtn');
   if (m.publishes) btn.textContent = m.status === '발행' && !m.changes ? `발행함 ✓ ${m.version}판` : m.version ? `다시 발행(${m.version + 1}판)` : '발행';
   else btn.textContent = m.status === '제출' ? '제출함 ✓' : m.status === '수정됨' ? '다시 제출' : '제출';
+  // 넘친 개체(15-8) — PPT·회의 화면은 상자를 넘은 글을 잘라 버린다. 내려받기 전에 알린다
+  const over = S.items.reduce((a, it) => a + ((it.free?.over || []).length), 0);
+  const ppt = $('#pptBtn');
+  if (ppt) {
+    ppt.textContent = over ? `PPT ⚠ 넘침 ${over}` : 'PPT';
+    ppt.classList.toggle('warn', !!over);
+    ppt.title = over ? '상자를 넘친 글이 있습니다 — PPT 에서는 잘립니다. 글을 줄이거나 상자를 키워주세요.' : 'PPT 로 내려받기';
+  }
   const note = $('#stNote');
   const un = m.unchosen || 0;
   note.hidden = !(un || (m.version && (m.status === '수정됨' || m.changes)));

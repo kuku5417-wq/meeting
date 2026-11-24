@@ -8,7 +8,7 @@
   <div class="st-ttl"><b id="stTitle">{{ mt.title }}</b><span class="small muted" id="stSub"></span></div>
   <div class="st-zoom" aria-label="확대"><button type="button" id="zOut" aria-label="작게">−</button><output id="zv">100%</output><button type="button" id="zIn" aria-label="크게">＋</button></div>
   <a class="btn sm" href="/meetings/{{ mt.id }}">보기</a>
-  <a class="btn sm" href="/export/meeting/{{ mt.id }}/pptx">PPT</a>
+  <a class="btn sm" id="pptBtn" href="/export/meeting/{{ mt.id }}/pptx">PPT</a>
   <button class="btn primary" type="button" id="submitBtn">{{ '제출' if mt.kind == 'dept' else '발행' }}</button>
 </div>
 <p class="v-trial-note">오른쪽 <b>● 사실 칸(원인·조치·결정 필요)에서 고치면 이슈에 반영</b>되고 이슈 변경 기록에 남습니다. 회의용 한 줄·형태·순서는 이 자료에만 남습니다.

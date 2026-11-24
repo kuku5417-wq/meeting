@@ -605,6 +605,41 @@ def derived_of(s, item: dict) -> list[dict]:
     return out
 
 
+# ── 넘침 어림(15-8) ─────────────────────────────────────
+# PPT·회의 화면은 상자를 넘은 글을 **그냥 잘라 버린다**(케이스 E3). 화면에서는 브라우저가 재어 주지만
+# 서버도 어림해 두어야 한다 — PPT 를 내려받는 사람은 캔버스를 보지 않는다.
+# 맑은 고딕 기준 어림: 한글·전각 한 자 ≈ 글자 크기 1.0, 그 밖 ≈ 0.55. 줄 간격 1.35.
+LINE_H = 1.35
+
+
+def _w_units(text: str) -> float:
+    n = 0.0
+    for ch in text:
+        n += 1.0 if ("가" <= ch <= "힣" or "ㄱ" <= ch <= "ㆎ" or "一" <= ch <= "鿿"
+                     or "！" <= ch <= "｠") else 0.55
+    return n
+
+
+def est_lines(text: str, w: int, size: int) -> int:
+    """상자 폭 w(px)에 글자 크기 size 로 몇 줄이 되나 — 줄바꿈은 그대로 센다."""
+    per = max(1.0, float(w) / max(1, size))
+    return sum(max(1, int(_w_units(line) / per) + (1 if _w_units(line) % per else 0))
+               for line in (text or "").splitlines() or [""]) or 1
+
+
+def overflowing(objects: list[dict]) -> list[str]:
+    """상자를 넘칠 것 같은 개체 id — 막지 않고 알리기만 한다(사람이 줄이거나 상자를 키운다)."""
+    out = []
+    for o in objects:
+        if o.get("type") == "photo" or not str(o.get("text") or "").strip():
+            continue
+        size = int((o.get("style") or {}).get("size") or 30)
+        need = est_lines(str(o["text"]), int(o.get("w") or 600), size) * size * LINE_H
+        if need > int(o.get("h") or 80) + size * 0.3:          # 반 줄쯤은 봐 준다(어림이라 딱 맞지 않는다)
+            out.append(str(o.get("id")))
+    return out
+
+
 def json_for(it) -> dict:
     """장 JSON 에 붙이는 자유 편집 정보."""
     return {"on": bool(it.free_on), "rev": int(it.free_rev or 0),
@@ -623,6 +658,7 @@ def json_with(s, it, item: dict) -> dict:
     return {"on": bool(it.free_on), "rev": int(it.free_rev or 0), "objects": objs,
             "can_undo": can_undo(it), "max": MAX_OBJECTS, "missing": missing_fields(item, objs),
             "fields": [{"field": f, "label": FIELD_LABEL[f]} for f in FACT_BY_FIELD],
+            "over": overflowing(objs),                                         # 15-8 넘칠 것 같은 개체(어림)
             "unchosen": len(unchosen(objs)),                                   # 15-4 갈래 안 고른 개체 수
             "pick_fields": [{"field": f, "label": FIELD_LABEL[f]} for f in PICK_FIELDS],
             "derived": kids}                                                  # 15-5 이 장에서 떼어낸 이슈

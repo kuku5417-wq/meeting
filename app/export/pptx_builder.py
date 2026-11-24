@@ -298,6 +298,38 @@ def _m_table(slide, d: dict, it: dict, n: int, total: int) -> None:
         _text(slide, x, H - Inches(1.2), cw, Inches(0.4), f"외 {len(T['rows']) - 10}행 — 앱 지표 화면에서 봅니다", 11, color="muted")
 
 
+# ── 자유 편집 장(결정 ⑦ 15-8) ───────────────────────────
+# 캔버스와 **같은 좌표계**(1920×1080)를 쓴다. 슬라이드 폭 13.333in = 960pt 이므로 px ÷ 2 = pt 로 떨어진다 —
+# 화면에서 꾸민 자리가 PPT 에서 그대로 나온다. 넘친 글은 **줄이지 않는다**(사람이 화면에서 고치게 알린다).
+FREE_W, FREE_H = 1920, 1080
+
+
+def _fx(px) -> int:
+    return int(W * (float(px) / FREE_W))
+
+
+def _fy(px) -> int:
+    return int(H * (float(px) / FREE_H))
+
+
+def _m_free(slide, s: Session, it: dict) -> None:
+    """개체를 자리 그대로 그린다. 글자 크기는 px ÷ 2 = pt."""
+    for o in it["free"]["objects"]:
+        x, y, w, h = _fx(o.get("x", 0)), _fy(o.get("y", 0)), _fx(o.get("w", 600)), _fy(o.get("h", 80))
+        if o.get("label"):                                   # 소제목은 상자 위(화면의 .fol 과 같은 자리)
+            _text(slide, x, max(0, y - _fy(30)), w, _fy(30), str(o["label"]), 11, color="muted")
+        if o.get("type") == "photo":
+            if not _photo_box(slide, s, str(o.get("block") or ""), str(o.get("photo") or ""), x, y, w, h):
+                _rect(slide, x, y, w, h, "soft")
+            continue
+        st = o.get("style") or {}
+        size = max(6, int(st.get("size") or 30) / 2)
+        align = {"center": PP_ALIGN.CENTER, "right": PP_ALIGN.RIGHT}.get(st.get("align"), PP_ALIGN.LEFT)
+        tone = st.get("tone") if st.get("tone") in C else "fg"
+        _text(slide, x, y, w, h, [[(line, size, bool(st.get("bold")), tone)] for line in str(o.get("text") or "").splitlines() or [""]],
+              align=align)
+
+
 def _m_item(prs, s: Session, d: dict, it: dict, n: int, total: int, state: str) -> None:
     slide = _blank(prs)
     if it.get("kind") == "table":
@@ -311,6 +343,11 @@ def _m_item(prs, s: Session, d: dict, it: dict, n: int, total: int, state: str) 
     b = it["blocks"][0] if it["blocks"] else {}
     summary = it["kind"] == "summary"
     _m_band(slide, d["meeting"]["title"], f"요약 · {len(it['blocks'])}건" if summary else b.get("dept", ""), state)
+    free = it.get("free") or {}
+    if free.get("on") and free.get("objects"):               # 15-8 — 자유 편집 장은 개체 좌표 그대로
+        _m_foot(slide, f"{n} / {total}", "자유 편집")
+        _m_free(slide, s, it)
+        return
     top, x, cw = BAND_H + Inches(0.3), MARGIN, W - 2 * MARGIN
     if summary:
         where = [h for h in dict.fromkeys(z.get("hull") for z in it["blocks"]) if h]

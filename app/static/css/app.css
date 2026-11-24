@@ -444,6 +444,8 @@ td input.cm{min-width:120px}
 .v-tl.problem{color:var(--danger);box-shadow:inset 0 0 0 1.5px var(--danger)} .v-tl.dashboard{color:var(--accent-ink);box-shadow:inset 0 0 0 1.5px var(--accent)}
 .v-map{font-family:var(--mono)} .v-map.gap{color:var(--signal);font-weight:var(--fw-strong)}
 .v-late{color:var(--danger);font-weight:600} .v-ok{color:var(--ok);font-weight:600}
+.btn.warn{color:var(--danger);box-shadow:inset 0 0 0 1.5px var(--danger)}   /* 넘침 알림(15-8) */
+
 /* 흐름 · 사실로 채택 (결정 ⑦ 15-6) */
 .v-fw{margin-top:8px;font-weight:var(--fw-strong)}
 .v-fs{display:grid;grid-template-columns:52px minmax(0,1fr);gap:6px;align-items:start}
