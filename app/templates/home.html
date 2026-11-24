@@ -33,7 +33,7 @@
           <a class="btn sm" href="{{ t.href }}">이슈 열기</a>
         </form>
         {% else %}
-        <span class="row"><a class="btn sm{% if loop.first %} primary{% endif %}" href="{{ t.href }}">{{ {'draft': '초안 열기', 'deck': '부서 자료 열기', 'directive': '완료 보고하러', 'alert': '일정 보기', 'metrics': '지표 넣기', 'nudge': '이슈 열기', 'share': '공유회 자료 열기', 'exec': '정보회의 자료 열기'}[t.kind] }}</a></span>
+        <span class="row"><a class="btn sm{% if loop.first %} primary{% endif %}" href="{{ t.href }}">{{ {'draft': '초안 열기', 'deck': '부서 자료 열기', 'directive': '완료 보고하러', 'alert': '일정 보기', 'metrics': '지표 넣기', 'nudge': '이슈 열기', 'changed': '흐름 보기', 'share': '공유회 자료 열기', 'exec': '정보회의 자료 열기'}[t.kind] }}</a></span>
         {% endif %}
       </div>
       {% if loop.last %}</div>{% endif %}

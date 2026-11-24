@@ -194,6 +194,13 @@ def home_tasks(s: Session, role: str, dept: str, week_id: str) -> list[Task]:
         if b is not None:
             out.append(Task("close", "종결 요청 — 기획 주관자 승인", b.title, f"{b.id} · 조치: {c.action_text[:40]}", b, f"/issues?id={b.id}",
                             extra={"closure_id": c.id, "cause": b.cause_text or ""}))
+    from app.services import events as ev           # 15-6 — 이번 주 바뀐 이슈(기획)
+    for ch in ev.changed_this_week(s, week_id):
+        bits = [f"사실 변경 {ch['fact']}" if ch["fact"] else "", f"자료에서만 {ch['deck']}" if ch["deck"] else "",
+                f"떼어낸 이슈 {ch['split']}" if ch["split"] else "", f"합친 이슈 {ch['merge']}" if ch["merge"] else "",
+                f"채택 대기 {ch['wait']}" if ch["wait"] else ""]
+        out.append(Task("changed", "이번 주 바뀐 이슈", ch["title"], f"{ch['id']} · " + " · ".join(x for x in bits if x),
+                        s.get(m.Block, ch["id"]), f"/issues?id={ch['id']}#events"))
     from app.services import studio as st            # 순환 import 회피(studio 가 이 모듈을 쓰지 않지만 issues.bulk 가 studio 를 쓴다)
     for kind, label in (("share", "공유회 자료"), ("exec", "팀장 정보회의 자료")):
         mt = st.week_meeting(s, week_id, kind)

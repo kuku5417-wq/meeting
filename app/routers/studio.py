@@ -120,7 +120,9 @@ async def api_objects(iid: int, request: Request, s: Session = Depends(get_sessi
         from app.services import events
         for ch in ff.changed_links(before, ff.load(it)):          # 연결 개체의 **글**이 바뀌면 자료수정으로 남긴다
             if s.get(m.Block, ch["block"]) is not None:
-                events.record(s, ch["block"], "자료수정", field=ch["field"],
+                # 칸 이름은 **이슈 사실 칸 이름**으로 적는다(cause → cause_text) —
+                # 기록 라벨과 「사실로 채택」(15-6)이 같은 이름을 쓴다.
+                events.record(s, ch["block"], "자료수정", field=ff.FACT_BY_FIELD.get(ch["field"], ch["field"]),
                               before=ch["before"], after=ch["after"], meeting_id=mt.id)
         return rev
 

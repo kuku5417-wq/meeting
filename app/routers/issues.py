@@ -103,6 +103,23 @@ def post_close(block_id: str, action_text: str = Form(""), s: Session = Depends(
     return _to(block_id, msg=f"{block_id} 종결 요청 — 부서 현안 공유회에서 승인됩니다")
 
 
+@router.post("/issues/{block_id}/adopt")
+def post_adopt(block_id: str, event_id: str = Form(""), s: Session = Depends(get_session)):
+    """「사실로 채택」 (결정 ⑦ 15-6) — 자료에서만 고쳐 둔 값을 이슈 사실로 올린다.
+
+    이때 「사실변경」이 기록에 남는다. 1단계에는 로그인이 없어 누가 눌렀는지는 적지 못한다.
+    """
+    from app.services import events
+    _block(s, block_id)
+    try:
+        did = events.adopt(s, block_id, int(event_id or 0))
+        s.commit()
+    except (w.WriteError, ValueError) as e:
+        s.rollback()
+        return _to(block_id, err=f"{block_id}: {e}")
+    return _to(block_id, msg=f"{block_id} 「{did['label']}」을(를) 사실로 채택했습니다 — 이슈 변경 기록에 남습니다")
+
+
 @router.post("/issues/{block_id}/merge")
 def post_merge(block_id: str, into: str = Form(""), s: Session = Depends(get_session)):
     """합치기 (결정 ⑦ 15-5) — 잘못 떼어낸 이슈를 원래 이슈로 되돌린다.

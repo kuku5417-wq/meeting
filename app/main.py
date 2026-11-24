@@ -289,7 +289,8 @@ def issues_page(request: Request, id: str = "", dept: str = "", f: str = "", q: 
         view = {"r": r, "maps": issues_svc.map_cells(s, cur), "history": co_svc.history(s, cur.id)[-6:],
                 "human": write_svc.human_fields(s, cur.id), "section": write_svc.block_section(s, cur.id),
                 "dept_name": next((d.name for d in depts if d.id == cur.owner_department_id), cur.owner_department_id),
-                "attach": write_router.attach_view(s, cur), "records": _meeting_records(s, cur.id), "events": events_svc.recent(s, cur.id),
+                "attach": write_router.attach_view(s, cur), "records": events_svc.meeting_records(s, cur.id),
+                "flow": events_svc.flow(s, cur.id), "pending": events_svc.pending(s, cur.id),           # 15-6 흐름·「사실로 채택」
                 "links": derive_svc.chips(s, cur.id), "merged_into": derive_svc.merged_into(s, cur.id),      # 15-5 파생·합치기
                 "due_options": alerts_svc.options(), "due_suggest": alerts_svc.suggest(s, cur) if not cur.due_event else "",
                 "similar": knowledge_svc.similar_cases(s, cur.id) if cur.block_type in write_svc.TRACKED and cur.status != "종결" else None}
@@ -301,21 +302,6 @@ def issues_page(request: Request, id: str = "", dept: str = "", f: str = "", q: 
                  chips=[(k, l, n) for (k, l), n in zip(issues_svc.CHIPS, issues_svc.chip_counts(s, wk.id, dkey).values())],
                  draft_label=issues_svc.DRAFT_LABEL, type_label=write_svc.TYPE_LABEL, photo_roles=photos_svc.ROLES, photo_sel=q_.get("photo", ""),
                  msg=q_.get("msg", ""), err=q_.get("err", ""), all_done=q_.get("done") == "1")
-
-
-def _meeting_records(s: Session, block_id: str) -> list[dict]:
-    """이슈에 쌓인 회의 기록(M12) — 코멘트·결정·지시. 주간 한 줄과 섞지 않고 따로 보인다."""
-    from app import models as _m
-    out = []
-    for c, mt in s.execute(select(_m.MeetingComment, _m.Meeting).join(_m.Meeting, _m.Meeting.id == _m.MeetingComment.meeting_id)
-                           .where(_m.MeetingComment.block_id == block_id).order_by(_m.MeetingComment.id)):
-        out.append({"week": mt.week_id, "label": f"{mt.title or '회의'} {'결정' if c.kind == 'decision' else '코멘트'}", "text": c.text})
-    for d, mt in s.execute(select(_m.Directive, _m.Meeting).join(_m.Meeting, _m.Meeting.id == _m.Directive.meeting_id)
-                           .where(_m.Directive.block_id == block_id).order_by(_m.Directive.id)):
-        out.append({"week": mt.week_id, "label": f"{mt.title or '회의'} 지시({d.status})", "text": d.text + (f" — {d.done_note}" if d.done_note else "")})
-    from app.services import importer as _im
-    out += _im.records_for(s, block_id)
-    return sorted(out, key=lambda x: x["week"])[-8:]
 
 
 @app.get("/meetings", response_class=HTMLResponse)

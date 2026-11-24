@@ -703,6 +703,97 @@ def t_free_merge(c) -> None:
           (o.get("link") or {}).get("block") == bid and not o.get("other_block"), repr(o.get("link")))
 
 
+def t_free_adopt(c) -> None:
+    """결정 ⑦ 15-6 — 「사실로 채택」·이슈 「흐름」(주차 × 단계)·기획 홈 「이번 주 바뀐 이슈」."""
+    from sqlalchemy import select
+
+    from app import models as m
+    from app.db import SessionLocal
+    from app.services import events as ev
+    from app.services import issues as iss
+
+    wk = "2026-W43"
+    with SessionLocal() as s:
+        dmt = s.scalars(select(m.Meeting).where(m.Meeting.week_id == wk, m.Meeting.kind == "dept")).first()
+        mid = dmt.id if dmt else 0
+    st0 = c.get(f"/api/studio/{mid}").json().get("state", {}) if mid else {}
+    items = [it for it in st0.get("items", []) if it["kind"] == "single" and not it["ro"]]
+    if not items:
+        check("15-6 — 시험할 장이 있다", False, "이슈 장이 없다")
+        return
+    iid, bid = items[0]["id"], items[0]["blocks"][0]["id"]
+    c.post(f"/api/studio/items/{iid}", json={"field": "form", "value": "detail"})
+    c.post(f"/api/studio/items/{iid}/free", json={"on": True})
+    with SessionLocal() as s:
+        iss.save_field(s, s.get(m.Block, bid), "action_text", "분사밸브 발주 — 다음 주 입고 예정")
+        s.commit()
+    c.post(f"/api/studio/items/{iid}/link", json={"op": "pull", "oid": _field_oid(c, mid, iid, "act")})
+
+    stt = c.get(f"/api/studio/{mid}").json()["state"]
+    it_now = next(x for x in stt["items"] if x["id"] == iid)
+    objs = [dict(x) for x in it_now["free"]["objects"]]
+    for x in objs:                                  # 회의용으로 줄여 쓰기 — 자료에만 남는다(케이스 A2)
+        if (x.get("link") or {}).get("field") == "act":
+            x["text"] = "분사밸브 발주 완료"
+    c.post(f"/api/studio/items/{iid}/objects", json={"objects": objs, "rev": it_now["free"]["rev"]})
+
+    with SessionLocal() as s:
+        wait = ev.pending(s, bid)
+        b = s.get(m.Block, bid)
+    check("15-6 — 자료에서만 고친 것이 「사실로 채택」 대기로 잡힌다(사실은 아직 그대로)",
+          any(x["field"] == "action_text" and x["deck_text"] == "분사밸브 발주 완료" for x in wait)
+          and b.action_text.startswith("분사밸브 발주 —"), f'{[(x["field"], x["deck_text"]) for x in wait]} / {b.action_text}')
+    check("15-6 — 대기 줄은 이슈 값과 자료 값을 나란히 보여 준다",
+          all({"issue_text", "deck_text", "label", "where"} <= set(x) for x in wait), repr(wait[:1]))
+
+    page = c.get(f"/issues?id={bid}").text
+    check("15-6 — 이슈 화면에 「사실로 채택」 버튼이 보인다", "사실로 채택" in page and "채택 기다림" in page)
+
+    one = next(x for x in wait if x["field"] == "action_text")
+    r = c.post(f"/issues/{bid}/adopt", data={"event_id": one["id"]}, follow_redirects=False)
+    with SessionLocal() as s:
+        b = s.get(m.Block, bid)
+        last = s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == bid).order_by(m.BlockEvent.id.desc())).first()
+        wait2 = ev.pending(s, bid)
+    check("15-6 — 채택하면 이슈 사실이 바뀌고 「사실변경」으로 남는다",
+          r.status_code == 303 and b.action_text == "분사밸브 발주 완료" and last.kind == "사실변경",
+          f'{r.status_code} / {b.action_text} / {last.kind}')
+    check("15-6 — 채택한 것은 대기에서 빠진다(표에 표시를 쓰지 않고 값으로 본다)",
+          not any(x["field"] == "action_text" for x in wait2), repr([x["field"] for x in wait2]))
+    r2 = c.post(f"/issues/{bid}/adopt", data={"event_id": one["id"]}, follow_redirects=False)
+    check("15-6 — 같은 것을 두 번 채택하지 않는다",
+          "err=" in (r2.headers.get("location") or ""), repr(r2.headers.get("location"))[:120])
+    r3 = c.post(f"/issues/{bid}/adopt", data={"event_id": 999999}, follow_redirects=False)
+    check("15-6 — 없는 기록은 거절한다", "err=" in (r3.headers.get("location") or ""))
+
+    with SessionLocal() as s:
+        fl = ev.flow(s, bid)
+    weeks_seen = [x["week"] for x in fl]
+    stages = {st["stage"] for x in fl for st in x["stages"]}
+    kinds = {row["kind"] for x in fl for st in x["stages"] for row in st["rows"]}
+    check("15-6 — 흐름은 주차 × 단계로 묶인다", bool(weeks_seen) and weeks_seen == sorted(weeks_seen)
+          and stages <= set(ev.STAGE_ORDER), f'{weeks_seen} / {stages}')
+    check("15-6 — 흐름에 한 줄·회의 기록·사실 변경이 함께 들어간다",
+          {"사실변경"} <= kinds and ("한 줄" in kinds or "회의" in kinds), repr(kinds))
+    check("15-6 — 사실이 바뀐 줄만 굵게 표시한다(fact)",
+          all(row["fact"] == (row["kind"] == "사실변경") for x in fl for st in x["stages"] for row in st["rows"]))
+
+    with SessionLocal() as s:
+        rows = ev.changed_this_week(s, wk)
+    mine = next((x for x in rows if x["id"] == bid), None)
+    check("15-6 — 기획 홈 「이번 주 바뀐 이슈」 — 이슈마다 무엇이 몇 건인지",
+          mine is not None and mine["fact"] >= 1 and mine["deck"] >= 1 and {"split", "wait", "title"} <= set(mine),
+          repr(mine))
+    home = c.get("/home", params={"role": "p"}).text
+    check("15-6 — 기획 홈에 묶음이 보인다", "이번 주 바뀐 이슈" in home and bid in home)
+
+
+def _field_oid(c, mid, iid, field) -> str:
+    st = c.get(f"/api/studio/{mid}").json()["state"]
+    it = next(x for x in st["items"] if x["id"] == iid)
+    return next(x["id"] for x in it["free"]["objects"] if (x.get("link") or {}).get("field") == field)
+
+
 def _cause_oid(c, mid, iid) -> str:
     st = c.get(f"/api/studio/{mid}").json()["state"]
     it = next(x for x in st["items"] if x["id"] == iid)
@@ -2948,7 +3039,8 @@ def t_events(c) -> None:
         check("결정⑦ — 모르는 기록 종류는 거부", ok)
         s.rollback()
     page = c.get(f"/issues?id={bid}").text
-    check("결정⑦ — 이슈 화면 「변경 기록」에 보임", "변경 기록" in page and "결정7 원인 B" in page)
+    check("결정⑦ — 이슈 화면 「흐름」에 보임(15-6 에서 주차 × 단계로 묶었다)",
+          "흐름 — 주차 × 단계" in page and "결정7 원인 B" in page)
 
 
 def t_storage(c) -> None:
@@ -3067,7 +3159,7 @@ def t_llm_c(c) -> None:
 # 묶음 순서 = 실행 순서. 앞 묶음이 만든 데이터를 뒤 묶음이 쓴다. tests/test_NN_*.py 도 이 순서를 따른다
 GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
           t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link, t_free_scope, t_free_merge)
+          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link, t_free_scope, t_free_merge, t_free_adopt)
 
 
 def main() -> int:

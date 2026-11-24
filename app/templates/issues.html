@@ -120,14 +120,46 @@
         </div>
         <div class="sf"><span>{{ r.hull or '' }}</span><span>1차 초안 · {{ view.dept_name }}</span></div>
       </div></div>
-      <div class="v-hist"><b class="small">주차별 진행</b>
-        {% for h in view.history | reverse %}<div class="small"><span class="mono">{{ h.week_id }}</span> {{ h.note or h.status }}</div>{% else %}<span class="small muted">아직 기록이 없습니다</span>{% endfor %}
-        {% for r in view.records %}<div class="small"><span class="mono">{{ r.week }}</span> {{ r.label }} — {{ r.text }}</div>{% endfor %}
+      <div class="v-hist"><b class="small">주차별 상태</b>
+        {% for h in view.history | reverse %}<div class="small"><span class="mono">{{ h.week_id }}</span> {{ h.status }}</div>{% else %}<span class="small muted">아직 기록이 없습니다</span>{% endfor %}
         <a class="small" href="#attach">사진·표 붙이기 ↓</a>
       </div>
-      <div class="v-hist" id="events"><b class="small">변경 기록</b>
-        {# 칸이 바뀐 것(사실변경·자료수정)은 이전 → 이후, 칸이 없는 것(개체추가·파생·합치기)은 종류와 내용만 #}
-        {% for e in view.events %}<div class="small"><span class="mono">{{ e.when }}</span> {{ e.stage }} · {{ e.field or e.kind }} — {% if e.field %}<span class="muted">{{ e.before or '(빈 칸)' }}</span> → {% endif %}{{ e.after or '(빈 칸)' }}</div>{% else %}<span class="small muted">아직 바뀐 사실이 없습니다</span>{% endfor %}
+      {# 흐름(결정 ⑦ 15-6) — 주차 × 단계로 한 줄·회의·사실 변경을 한자리에. 사실이 바뀐 줄만 굵게 #}
+      <div class="v-hist" id="events"><b class="small">흐름 — 주차 × 단계</b>
+        {% if view.pending %}
+        <div class="v-adopt">
+          <b class="small">사실로 채택 기다림 {{ view.pending | length }} <span class="muted">— 자료에서만 고쳐 둔 글입니다</span></b>
+          {% for p in view.pending %}
+          <form method="post" action="/issues/{{ cur.id }}/adopt" class="small v-adopt-row">
+            <input type="hidden" name="event_id" value="{{ p.id }}">
+            <span><b>{{ p.label }}</b> <span class="muted">{{ p.issue_text or '(빈 칸)' }}</span> → {{ p.deck_text }} <span class="muted">· {{ p.where }}</span></span>
+            <button class="btn sm" type="submit">사실로 채택</button>
+          </form>
+          {% endfor %}
+        </div>
+        {% endif %}
+        {% for wk in view.flow | reverse %}
+          <div class="small v-fw"><span class="mono">{{ wk.week }}</span></div>
+          {% for st in wk.stages %}
+          <div class="v-fs"><span class="stg">{{ st.stage }}</span>
+            <div>
+            {% for row in st.rows %}
+              <div class="small{{ ' v-fact' if row.fact else '' }}">
+                {%- if row.kind in ('사실변경', '자료수정') -%}
+                  {{ row.label }} {{ row.kind }} — <span class="muted">{{ row.before or '(빈 칸)' }}</span> → {{ row.after or '(빈 칸)' }}
+                {%- elif row.kind == '한 줄' -%}
+                  한 줄 — {{ row.text }}
+                {%- elif row.kind == '회의' -%}
+                  {{ row.label }} — {{ row.text }}
+                {%- else -%}
+                  {{ row.kind }} — {{ row.after or row.text }}
+                {%- endif -%}
+              </div>
+            {% endfor %}
+            </div>
+          </div>
+          {% endfor %}
+        {% else %}<span class="small muted">아직 기록이 없습니다</span>{% endfor %}
       </div>
     </div>
     {% with b = cur, v = view.attach %}{% include "_attach.html" %}{% endwith %}

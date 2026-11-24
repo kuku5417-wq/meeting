@@ -444,6 +444,14 @@ td input.cm{min-width:120px}
 .v-tl.problem{color:var(--danger);box-shadow:inset 0 0 0 1.5px var(--danger)} .v-tl.dashboard{color:var(--accent-ink);box-shadow:inset 0 0 0 1.5px var(--accent)}
 .v-map{font-family:var(--mono)} .v-map.gap{color:var(--signal);font-weight:var(--fw-strong)}
 .v-late{color:var(--danger);font-weight:600} .v-ok{color:var(--ok);font-weight:600}
+/* 흐름 · 사실로 채택 (결정 ⑦ 15-6) */
+.v-fw{margin-top:8px;font-weight:var(--fw-strong)}
+.v-fs{display:grid;grid-template-columns:52px minmax(0,1fr);gap:6px;align-items:start}
+.v-fs .stg{font-size:var(--fs-1);color:var(--muted);text-align:right}
+.v-fact{font-weight:var(--fw-strong)}
+.v-adopt{margin:4px 0 8px;padding:6px 8px;border-radius:8px;background:var(--fill)}
+.v-adopt-row{display:flex;gap:6px;align-items:center;justify-content:space-between;margin-top:4px}
+
 /* 파생·합치기 칩 (결정 ⑦ 15-5) — 어디서 나왔고 어디로 갈라졌는지 */
 .v-links{flex-wrap:wrap;gap:6px;margin-top:4px}
 .v-link{display:inline-flex;align-items:center;gap:5px;font-size:var(--fs-1);padding:2px 10px;border-radius:999px;background:var(--fill);color:var(--fg)}
