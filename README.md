@@ -32,6 +32,7 @@ run.bat              # 이후: 운영 PC 에서 서버 실행
 - 개발 안내: `CLAUDE.md` (code_N 공통지침 위에 얹힌다)
 - 기획서 `docs/01_기획서.md` · 화면 설계 `docs/02_화면설계.md` · 데이터 모델 `docs/03_데이터모델.md`
 - AI 처리 `docs/04_AI처리.md` · 개발 로드맵 `docs/05_개발로드맵.md`
+- **배포·사내 반입 `docs/09_배포와_사내반입.md`** — 패키지 구성 · 사내 PC 에서 할 일 · LLM 키를 어느 PC 에
 
 ## Claude Code로 작업할 때
 

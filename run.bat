@@ -3,7 +3,7 @@ title meeting
 REM meeting - APP LAUNCHER. Starts the server on THIS PC only (127.0.0.1).
 REM Each department PC runs its own copy - no one connects to this one (shi rule, site policy).
 REM venv must exist (run setup_env.bat first).
-set "PYEXE=%LOCALAPPDATA%envs\meeting\Scripts\python.exe"
+set "PYEXE=%LOCALAPPDATA%\venvs\meeting\Scripts\python.exe"
 if not exist "%PYEXE%" (
     echo [ERROR] local venv not found: %PYEXE%
     echo Run setup_env.bat first ^(creates venv + installs deps^).

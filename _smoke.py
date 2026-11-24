@@ -232,6 +232,12 @@ def t_nas(c) -> None:
     bats = {p.name: p.read_bytes() for p in root11.glob("*.bat")}
     nonascii = [n for n, b in bats.items() if any(x > 127 for x in b)]
     check("단계11 — .bat 은 ASCII 전용(CP949 충돌 방지)", not nonascii, repr(nonascii))
+    # 제어문자(0x0B 등)가 섞이면 cmd 가 경로를 다른 것으로 읽는다 — 실제로 run.bat 의 envs 가
+    # 세로탭+envs 로 들어가 「venv 없음」만 띄우고 앱이 뜨지 않았다(2026-11-24).
+    ctrl = [n for n, b in bats.items() if any(x < 32 and x not in (9, 10, 13) for x in b)]
+    check("단계11 — .bat 에 제어문자가 없다(경로가 조용히 깨진다)", not ctrl, repr(ctrl))
+    bad_venv = [n for n, b in bats.items() if b"LOCALAPPDATA%" in b and b"LOCALAPPDATA%" + bytes([92]) + b"venvs" not in b]
+    check(r"단계11 — venv 경로가 %LOCALAPPDATA%\venvs\<앱> 그대로다", not bad_venv, repr(bad_venv))
     texts = {n: b.decode("ascii", "replace") for n, b in bats.items()}
     check("단계11 — .bat 에 0.0.0.0 이 없다(127.0.0.1 만 연다)",
           not [n for n, x in texts.items() if "0.0.0.0" in x],
