@@ -84,6 +84,11 @@
       <ol class="timeline">
         {% for h in detail.history %}<li><span class="w">{{ h.week_id }}</span><span class="dot"></span><span>{{ h.status }}{% if h.note %} · {{ h.note }}{% endif %}</span></li>{% endfor %}
       </ol>
+      {% if detail.derived %}
+      <p class="eyebrow">파생 이슈 — 이 이슈에서 떼어낸 것. 종결은 따로 갑니다</p>
+      {% for x in detail.derived %}<p class="small"><a href="/issues?id={{ x.id }}">{{ x.id }}</a> {{ x.title }}
+        <span class="muted">· {% if x.merged %}{{ x.merged }} 로 합쳐짐{% else %}{{ x.status }}{% endif %}</span></p>{% endfor %}
+      {% endif %}
       {% if detail.similar %}
       <p class="eyebrow">비슷한 사례</p>
       {% for x in detail.similar %}<p class="small"><a href="{{ qs(case=x.c.id) }}#detail">{{ x.c.id }}</a> {{ x.c.symptom_text }} · {{ x.c.cause_text }}{% if x.why %} <span class="muted">({{ x.why | join(", ") }})</span>{% endif %}</p>{% endfor %}

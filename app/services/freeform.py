@@ -287,23 +287,67 @@ def _norm(v: str) -> str:
     return " ".join(str(v or "").split())
 
 
-def annotate(objects: list[dict], item: dict) -> list[dict]:
+# ── 다른 이슈에 건 연결(15-5) ───────────────────────────
+# 「새 이슈로」 떼어낸 개체는 **이 장의 이슈가 아닌** 이슈를 가리킨다. 값은 그 이슈에서 직접 읽어야 하고,
+# 읽지 못하면(이슈가 없어졌다면) 연결 상태를 재지 않는다 — 엉뚱한 값으로 「다시 가져오기」를 하면 사실이 깨진다.
+BLOCK_ATTR = {"title": "title", "body": "body", "cause": "cause_text", "act": "action_text",
+              "dec": "decision_needed", "status": "status"}
+
+
+def item_block_id(item: dict) -> str:
+    return str(((item.get("blocks") or [{}])[0]).get("id") or "")
+
+
+def other_values(s, item: dict, objects: list[dict]) -> dict:
+    """{(이슈, 칸): 지금 값} — 이 장의 이슈가 아닌 곳에 건 연결만."""
+    from app import models as m
+    mine, out = item_block_id(item), {}
+    for o in objects:
+        link = o.get("link") or {}
+        bid, field = str(link.get("block") or ""), str(link.get("field") or "")
+        if not bid or bid == mine or (bid, field) in out:
+            continue
+        b = s.get(m.Block, bid)
+        out[(bid, field)] = str(getattr(b, BLOCK_ATTR[field], "") or "") if b is not None and field in BLOCK_ATTR else None
+    return out
+
+
+def value_at(s, item: dict, block: str, field: str) -> str | None:
+    """어느 이슈든 그 칸의 지금 값(이 장의 이슈면 장 값, 아니면 그 이슈에서 읽는다)."""
+    link = {"block": block, "field": field}
+    return link_value(item, link, other_values(s, item, [{"link": link}]))
+
+
+def link_value(item: dict, link: dict, other: dict | None) -> str | None:
+    """연결이 가리키는 지금 값. 읽을 수 없으면 None(상태를 재지 않는다)."""
+    if link["block"] == item_block_id(item):
+        return issue_value(item, link["field"])
+    return (other or {}).get((link["block"], link["field"]))
+
+
+def annotate(objects: list[dict], item: dict, other: dict | None = None) -> list[dict]:
     """개체마다 연결 상태를 붙인다 — 화면이 칩으로 보여 준다.
 
     same   이슈 값과 같다
     diff   이 자료에서 고쳐 **이슈와 다르다**(케이스 A2 — 사실을 덮지 않았다는 표시)
     stale  내가 가져온 뒤 **이슈가 바뀌었다**(케이스 C2 — 「다시 가져오기」)
+    gone   가리키던 이슈를 읽을 수 없다(15-5) — 손대지 않고 알리기만 한다
     """
     out = []
     for o in objects:
         o = dict(o)
         link = o.get("link")
         if link and o.get("type") != "photo":
-            cur = issue_value(item, link["field"])
-            o["issue_text"] = cur
+            cur = link_value(item, link, other)
+            o["other_block"] = "" if link["block"] == item_block_id(item) else link["block"]
+            o["issue_text"] = cur or ""
             o["field_label"] = FIELD_LABEL.get(link["field"], link["field"])
             o["fact"] = link["field"] in FACT_BY_FIELD
             o["choice"] = link["field"] in CHOICE_FIELDS
+            if cur is None:
+                o["state"] = "gone"
+                out.append(o)
+                continue
             if _norm(o.get("text")) == _norm(cur):
                 o["state"] = "same"
             elif link.get("snap") and _norm(link["snap"]) != _norm(cur):
@@ -318,7 +362,8 @@ def missing_fields(item: dict, objects: list[dict]) -> list[dict]:
     """장에 올라오지 않은 이슈 칸(케이스 C4). 자동으로 넣지 않고 목록으로만 보여 준다."""
     if item.get("kind") != "single" or not (item.get("blocks") or []):
         return []
-    have = {(o.get("link") or {}).get("field") for o in objects}
+    mine = item_block_id(item)
+    have = {(o.get("link") or {}).get("field") for o in objects if (o.get("link") or {}).get("block") == mine}
     out = []
     for f in ("body", "cause", "act", "dec"):
         if f in have:
@@ -336,14 +381,16 @@ def _find(objects: list[dict], oid: str) -> dict:
     raise FreeError("없는 개체입니다. 화면을 새로 고쳐주세요.")
 
 
-def pull(it, item: dict, oid: str) -> list[dict]:
-    """「다시 가져오기」 — 이슈의 지금 값을 개체로(케이스 C2)."""
+def pull(s, it, item: dict, oid: str) -> list[dict]:
+    """「다시 가져오기」 — 연결한 이슈의 지금 값을 개체로(케이스 C2. 다른 이슈여도 그 이슈에서 읽는다)."""
     objs = load(it)
     o = _find(objs, oid)
     link = o.get("link")
     if not link:
         raise FreeError("연결이 없는 개체입니다. 먼저 칸에 연결해 주세요.")
-    cur = issue_value(item, link["field"])
+    cur = link_value(item, link, other_values(s, item, [o]))
+    if cur is None:
+        raise FreeError(f"연결한 이슈({link['block']})를 찾을 수 없습니다 — 연결을 끊고 이 자료의 글로 두세요.")
     o["text"] = cur
     link["snap"] = cur
     it.objects_json = dump(clean(objs))
@@ -360,8 +407,13 @@ def unlink(it, oid: str) -> list[dict]:
     return load(it)
 
 
-def relink(it, item: dict, oid: str, field: str) -> list[dict]:
-    """다시 연결 — 어느 칸에 붙일지 사람이 고른다."""
+def relink(s, it, item: dict, oid: str, field: str, block: str = "") -> list[dict]:
+    """다시 연결 — 어느 칸에 붙일지 사람이 고른다.
+
+    `block` 을 주면 **이 장에서 떼어낸 이슈**(15-4 「새 이슈로」)에도 붙일 수 있다. 아무 이슈나 되지는 않는다 —
+    장과 상관없는 이슈에 붙으면 회의 화면이 어느 이슈 얘기인지 알 수 없다.
+    """
+    from app.services import derive
     if item.get("kind") != "single":
         raise FreeError("요약 장의 개체는 이슈 칸에 연결하지 않습니다 — 출처는 장 아래 이슈 목록에 있습니다.")
     if field not in FIELDS:
@@ -369,9 +421,15 @@ def relink(it, item: dict, oid: str, field: str) -> list[dict]:
     b = (item.get("blocks") or [{}])[0]
     if not b.get("id"):
         raise FreeError("이 장에는 이슈가 없습니다.")
+    mine = str(b["id"])
+    target = block or mine
+    if target != mine and target not in derive.children(s, mine):
+        raise FreeError("이 장의 이슈이거나, 이 장에서 떼어낸 이슈에만 연결합니다.")
+    if target != mine and field not in BLOCK_ATTR:
+        raise FreeError(f"다른 이슈에는 사실 칸만 연결합니다 — 「{FIELD_LABEL.get(field, field)}」은(는) 이 자료의 표현입니다.")
     objs = load(it)
     o = _find(objs, oid)
-    o["link"] = {"block": str(b["id"]), "field": field, "snap": issue_value(item, field)}
+    o["link"] = {"block": target, "field": field, "snap": value_at(s, item, target, field) or ""}
     o["label"] = o.get("label") or FIELD_LABEL.get(field, "")
     it.objects_json = dump(clean(objs))
     it.free_rev = (it.free_rev or 0) + 1
@@ -417,6 +475,10 @@ def apply_to_issue(s, it, item: dict, oid: str, mt) -> list[dict]:
     b = s.get(m.Block, link["block"])
     if b is None:
         raise FreeError("이슈를 찾을 수 없습니다. 화면을 새로 고쳐주세요.")
+    from app.services import derive
+    into = derive.merged_into(s, b.id)
+    if into:
+        raise FreeError(f"{b.id} 는 {into} 로 합쳐진 이슈입니다 — 연결을 {into} 로 옮긴 뒤 반영해 주세요.")
     text = str(o.get("text") or "").strip()
     iss.save_field(s, b, FACT_BY_FIELD[field], text, meeting_id=getattr(mt, "id", None))
     link["snap"] = text
@@ -512,13 +574,14 @@ def pick(s, it, item: dict, oid: str, scope: str, field: str, mt) -> str:
             s.add(m.BlockTag(block_id=nb.id, kind=t.kind, target_id=t.target_id, raw_text=t.raw_text,
                              confidence=t.confidence, confirmed=t.confirmed))
         s.add(m.BlockLink(from_block_id=b.id, to_block_id=nb.id, relation="파생"))
-        co.add_history(s, nb, week_id, note=f"{b.id} 에서 떼어냄")
+        # 주차 행만 만들고 **한 줄은 비워 둔다** — 「…에서 떼어냄」은 진행이 아니라 표시라서,
+        # 합칠 때(15-5) 원래 이슈의 이번 주 한 줄로 넘어가면 회의자료에 그대로 실린다.
+        co.add_history(s, nb, week_id)
         events.record(s, b.id, "파생", after=f"{nb.id} 로 떼어냄 — {title}", meeting_id=mt.id)
         events.record(s, nb.id, "파생", before=b.id, after=f"{b.id} 에서 떼어냄", meeting_id=mt.id)
-        # 개체는 **연결하지 않고** 새 이슈 ID 만 들고 있는다 — 연결 칩(15-3)은 이 장의 이슈를 기준으로
-        # 같음·다름을 재므로, 다른 이슈에 건 연결은 「다시 가져오기」가 엉뚱한 값을 덮는다.
-        # 두 이슈를 잇는 양쪽 칩은 15-5(합치기와 함께)에서 제대로 붙인다.
         o["scope_block"] = nb.id
+        o["link"] = {"block": nb.id, "field": "body", "snap": text}   # 개체는 **새 이슈**와 연결된다(15-5)
+        o["label"] = o.get("label") or FIELD_LABEL["body"]
         new_id = nb.id
 
     o["scope"] = scope
@@ -527,17 +590,39 @@ def pick(s, it, item: dict, oid: str, scope: str, field: str, mt) -> str:
     return new_id
 
 
+def derived_of(s, item: dict) -> list[dict]:
+    """이 장의 이슈에서 떼어낸 이슈들 — 개체를 그쪽에 연결하거나 되돌려 합칠 때 고른다(15-5)."""
+    from app import models as m
+    from app.services import derive
+    mine = item_block_id(item)
+    if not mine:
+        return []
+    out = []
+    for bid in derive.children(s, mine):
+        b = s.get(m.Block, bid)
+        out.append({"id": bid, "title": (b.title if b else "") or bid, "status": b.status if b else "",
+                    "merged": derive.merged_into(s, bid)})
+    return out
+
+
 def json_for(it) -> dict:
     """장 JSON 에 붙이는 자유 편집 정보."""
     return {"on": bool(it.free_on), "rev": int(it.free_rev or 0),
             "objects": load(it), "can_undo": can_undo(it), "max": MAX_OBJECTS}
 
 
-def json_with(it, item: dict) -> dict:
-    """장 JSON 에 붙이는 자유 편집 정보 + 연결 상태·장에 없는 칸(15-3)."""
-    objs = annotate(load(it), item)
+def json_with(s, it, item: dict) -> dict:
+    """장 JSON 에 붙이는 자유 편집 정보 + 연결 상태·장에 없는 칸(15-3)·다른 이슈 연결(15-5)."""
+    raw = load(it)
+    objs = annotate(raw, item, other_values(s, item, raw))
+    kids = derived_of(s, item)
+    gone = {k["id"]: k["merged"] for k in kids if k["merged"]}      # 떼어냈다가 다시 합친 이슈(15-5)
+    for o in objs:
+        if o.get("other_block") in gone:
+            o["merged_block"] = gone[o["other_block"]]
     return {"on": bool(it.free_on), "rev": int(it.free_rev or 0), "objects": objs,
             "can_undo": can_undo(it), "max": MAX_OBJECTS, "missing": missing_fields(item, objs),
             "fields": [{"field": f, "label": FIELD_LABEL[f]} for f in FACT_BY_FIELD],
             "unchosen": len(unchosen(objs)),                                   # 15-4 갈래 안 고른 개체 수
-            "pick_fields": [{"field": f, "label": FIELD_LABEL[f]} for f in PICK_FIELDS]}
+            "pick_fields": [{"field": f, "label": FIELD_LABEL[f]} for f in PICK_FIELDS],
+            "derived": kids}                                                  # 15-5 이 장에서 떼어낸 이슈

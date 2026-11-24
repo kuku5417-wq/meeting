@@ -100,7 +100,7 @@ async def api_free(iid: int, request: Request, s: Session = Depends(get_session)
     mt = _meeting(s, it.meeting_id)
     from app.services import freeform as ff
     return _run(s, mt, lambda: ff.set_on(it, st.item_json(s, it, mt), bool(data.get("on"))),
-                lambda _objs: {"free": ff.json_with(it, st.item_json(s, it, mt))})
+                lambda _objs: {"free": ff.json_with(s, it, st.item_json(s, it, mt))})
 
 
 @router.post("/api/studio/items/{iid}/objects")
@@ -124,7 +124,7 @@ async def api_objects(iid: int, request: Request, s: Session = Depends(get_sessi
                               before=ch["before"], after=ch["after"], meeting_id=mt.id)
         return rev
 
-    return _run(s, mt, go, lambda _rev: {"free": ff.json_with(it, st.item_json(s, it, mt))})
+    return _run(s, mt, go, lambda _rev: {"free": ff.json_with(s, it, st.item_json(s, it, mt))})
 
 
 @router.post("/api/studio/items/{iid}/link")
@@ -145,11 +145,11 @@ async def api_link(iid: int, request: Request, s: Session = Depends(get_session)
     def go():
         item = st.item_json(s, it, mt)
         if op == "pull":
-            return ff.pull(it, item, oid)
+            return ff.pull(s, it, item, oid)
         if op == "unlink":
             return ff.unlink(it, oid)
         if op == "relink":
-            return ff.relink(it, item, oid, field)
+            return ff.relink(s, it, item, oid, field, str(data.get("block", "")))
         if op == "add":
             return ff.add_field(it, item, field)
         if op == "apply":
@@ -158,7 +158,7 @@ async def api_link(iid: int, request: Request, s: Session = Depends(get_session)
             return ff.pick(s, it, item, oid, scope, field, mt)
         raise ff.FreeError("모르는 동작입니다. 화면을 새로 고쳐주세요.")
 
-    return _run(s, mt, go, lambda out: {"free": ff.json_with(it, st.item_json(s, it, mt)),
+    return _run(s, mt, go, lambda out: {"free": ff.json_with(s, it, st.item_json(s, it, mt)),
                                         "new_block": out if isinstance(out, str) else ""})
 
 
@@ -168,7 +168,7 @@ def api_undo_form(iid: int, s: Session = Depends(get_session)):
     it = _item(s, iid)
     mt = _meeting(s, it.meeting_id)
     from app.services import freeform as ff
-    return _run(s, mt, lambda: ff.undo_form(it), lambda _objs: {"free": ff.json_with(it, st.item_json(s, it, mt))})
+    return _run(s, mt, lambda: ff.undo_form(it), lambda _objs: {"free": ff.json_with(s, it, st.item_json(s, it, mt))})
 
 
 @router.post("/api/studio/{mid}/reorder")

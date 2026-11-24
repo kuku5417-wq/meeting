@@ -46,9 +46,14 @@ def candidates(s: Session, week_id: str, dept_id: str) -> list[m.Block]:
     already = select(m.SectionBlock.block_id).join(m.Section, m.Section.id == m.SectionBlock.section_id) \
         .where(m.Section.week_id == week_id)
     from_meeting = (m.Block.origin == "meeting") & (m.Block.created_week_id < week_id)   # 회의 중 등록 → 다음 주부터
-    return list(s.scalars(select(m.Block).where(
+    from app.services import derive
+    gone = derive.merged_ids(s)                # 합쳐진 이슈는 다음 주로 이어가지 않는다(15-5)
+    stmt = select(m.Block).where(
         m.Block.owner_department_id == dept_id, m.Block.block_type.in_(w.TRACKED), m.Block.status.in_(OPEN),
-        m.Block.id.in_(earlier) | from_meeting, m.Block.id.not_in(already)).order_by(m.Block.id)))
+        m.Block.id.in_(earlier) | from_meeting, m.Block.id.not_in(already))
+    if gone:
+        stmt = stmt.where(m.Block.id.not_in(gone))
+    return list(s.scalars(stmt.order_by(m.Block.id)))
 
 
 def carry_over(s: Session, week_id: str, dept_id: str) -> list[str]:

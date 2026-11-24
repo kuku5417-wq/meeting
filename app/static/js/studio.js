@@ -95,23 +95,37 @@ function attachFree() {
 }
 const SIZES = [20, 24, 28, 30, 34, 40, 48, 56];
 const TONES = {fg: '본문', muted: '흐리게', decide: '결정', problem: '문제', ok: '완료'};
-const LINK_STATE = {same: '', diff: '이슈와 다름', stale: '이슈가 바뀜'};
+const LINK_STATE = {same: '', diff: '이슈와 다름', stale: '이슈가 바뀜', gone: '이슈를 찾을 수 없음'};
 function linkBox(o, it) {
   // 연결 칩(케이스 A8) — 어느 이슈 어느 칸인지, 지금 이슈 값과 같은지
   if (o.type === 'photo') return '';
+  const kin = it.free?.derived || [];                                     // 이 장에서 떼어낸 이슈(15-5)
+  const kids = kin.filter((d) => !d.merged);                             // 아직 살아 있는 것만 — 연결·합치기 대상
+  const whose = (id) => { const d = kin.find((x) => x.id === id); return !d ? `이슈 ${id}` : d.merged ? `합쳐진 이슈 ${id}` : `떼어낸 이슈 ${id}`; };
   if (!o.link) {
     const fields = it.free?.fields || [];
+    const where = kids.length ? `<select id="foBlock" aria-label="연결할 이슈"><option value="">이 장의 이슈</option>${kids.map((d) => `<option value="${esc(d.id)}">${esc(d.id)} · ${esc(d.title)}</option>`).join('')}</select>` : '';
     return `<p class="v-sec">연결 없음 — 이 자료에만 있는 글</p>
-      <div class="row"><select id="foField" aria-label="다시 연결할 칸"><option value="">칸 고르기</option>${fields.map((f) => `<option value="${f.field}">${esc(f.label)}</option>`).join('')}</select>
+      <div class="row">${where}<select id="foField" aria-label="다시 연결할 칸"><option value="">칸 고르기</option>${fields.map((f) => `<option value="${f.field}">${esc(f.label)}</option>`).join('')}</select>
         <button class="btn sm" type="button" id="foRelink">다시 연결</button></div>`;
   }
   const st = LINK_STATE[o.state] || '';
   const warn = o.state === 'diff' ? `<p class="small">이슈 값: ${esc(o.issue_text || '(비어 있음)')} — 이 자료에만 다르게 적혀 있습니다.</p>`
-    : o.state === 'stale' ? `<p class="small">이슈가 그 사이 바뀌었습니다 → <b>${esc(o.issue_text || '(비어 있음)')}</b></p>` : '';
-  return `<p class="v-sec">연결 — 이슈 ${esc(o.field_label || o.link.field)} · ${esc(o.link.block)}${st ? ` <b class="v-late">${st}</b>` : ''}</p>${warn}
-    <div class="row">${o.fact && !o.choice ? '<button class="btn sm primary" type="button" id="foApply">이슈에도 반영</button>' : ''}
-      <button class="btn sm" type="button" id="foPull">다시 가져오기</button>
-      <button class="btn sm" type="button" id="foUnlink">연결 끊기</button></div>
+    : o.state === 'stale' ? `<p class="small">이슈가 그 사이 바뀌었습니다 → <b>${esc(o.issue_text || '(비어 있음)')}</b></p>`
+      : o.state === 'gone' ? '<p class="small">연결한 이슈를 찾을 수 없습니다 — 연결을 끊고 이 자료의 글로 두세요.</p>' : '';
+  const merge = o.other_block && kids.some((d) => d.id === o.other_block)
+    ? `<button class="btn sm" type="button" data-merge="${esc(o.other_block)}">${esc(o.other_block)} 를 이 이슈로 합치기</button>` : '';
+  // 합쳐진 이슈를 가리키는 연결은 사실을 반영하지 않는다 — 남는 이슈로 연결을 옮기게 한다
+  const moved = o.merged_block
+    ? `<p class="small">이 이슈는 <b>${esc(o.merged_block)}</b> 로 합쳐졌습니다 — 사실은 그쪽에 남깁니다.</p>`
+      + (o.merged_block === it.blocks?.[0]?.id            // 남는 쪽이 이 장의 이슈일 때만 한 번에 옮긴다
+        ? `<div class="row"><select id="foField" hidden><option value="${esc(o.link.field)}" selected></option></select>
+         <button class="btn sm primary" type="button" id="foRelink">${esc(o.merged_block)} 로 연결 옮기기</button></div>` : '')
+    : '';
+  return `<p class="v-sec">연결 — ${esc(whose(o.link.block))} ${esc(o.field_label || o.link.field)}${st ? ` <b class="v-late">${st}</b>` : ''}</p>${warn}${moved}
+    <div class="row">${o.fact && !o.choice && o.state !== 'gone' && !o.merged_block ? '<button class="btn sm primary" type="button" id="foApply">이슈에도 반영</button>' : ''}
+      ${o.state === 'gone' ? '' : '<button class="btn sm" type="button" id="foPull">다시 가져오기</button>'}
+      <button class="btn sm" type="button" id="foUnlink">연결 끊기</button>${merge}</div>
     ${o.choice ? '<span class="small muted">「상태」는 고르는 칸입니다 — 이슈 화면에서 고릅니다. 여기 글은 이 자료의 표현으로 남습니다.</span>'
       : o.fact ? '' : '<span class="small muted">이 칸은 자료의 표현입니다 — 이슈 사실은 바뀌지 않습니다.</span>'}`;
 }
@@ -144,7 +158,8 @@ function renderFreeProps() {
   const it = S.items[sel] || {};
   const live = (it.free?.objects || []).find((x) => x.id === FE.sel?.id);   // 연결 상태는 서버가 판정한 값
   const o = FE.sel ? {...FE.sel, ...(live ? {state: live.state, issue_text: live.issue_text, field_label: live.field_label,
-    fact: live.fact, scope: live.scope, scope_field: live.scope_field, scope_block: live.scope_block} : {})} : null;
+    fact: live.fact, scope: live.scope, scope_field: live.scope_field, scope_block: live.scope_block,
+    other_block: live.other_block, merged_block: live.merged_block, link: live.link} : {})} : null;
   const miss = (it.free?.missing || []);
   const missHtml = miss.length ? `<p class="v-sec">장에 없는 칸 ${miss.length}</p><div class="row">${miss.map((f) => `<button class="btn sm" type="button" data-addfield="${f.field}">＋ ${esc(f.label)}</button>`).join('')}</div>` : '';
   if (!o) { box.innerHTML = '<span class="small muted">개체를 고르면 여기서 글자·색·소제목·연결을 고칩니다. 두 번 누르면 글을 바로 고칠 수 있습니다.</span>' + missHtml; return; }
@@ -326,15 +341,28 @@ document.addEventListener('click', async (e) => {
     const af = e.target.closest('[data-addfield]');
     const op = af ? 'add' : {foApply: 'apply', foPull: 'pull', foUnlink: 'unlink', foRelink: 'relink'}[e.target.id];
     const field = af ? af.dataset.addfield : (document.querySelector('#foField')?.value || '');
+    const block = op === 'relink' ? (document.querySelector('#foBlock')?.value || '') : '';
     if (op === 'relink' && !field) { toast('어느 칸에 연결할지 먼저 골라주세요'); return; }
     await FE?.flush();                                   // 편집 중이던 것을 먼저 저장하고
-    const j = await api(`/api/studio/items/${it.id}/link`, {op, oid, field});
+    const j = await api(`/api/studio/items/${it.id}/link`, {op, oid, field, block});
     if (!j) return;
     all();
     toast(op === 'apply' ? '이슈 사실에 반영했습니다 — 이슈 변경 기록에 남습니다'
       : op === 'pull' ? '이슈의 지금 값을 가져왔습니다'
       : op === 'unlink' ? '연결을 끊었습니다 — 글은 그대로입니다'
       : op === 'add' ? '칸을 개체로 넣었습니다' : '다시 연결했습니다');
+    return;
+  }
+  if (e.target.closest('[data-merge]')) {               // 떼어낸 이슈 되돌려 합치기(15-5)
+    const it = S.items[sel], src = e.target.closest('[data-merge]').dataset.merge, dst = it.blocks[0]?.id;
+    if (!window.confirm(`${src} 를 ${dst} 로 합칩니다. ${src} 는 목록에서 빠지고 기록으로 남습니다.`)) return;
+    const r = await fetch(`/issues/${src}/merge`, {method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+      body: new URLSearchParams({into: dst}), redirect: 'follow'});
+    const bad = new URL(r.url).searchParams.get('err');
+    const s2 = await (await fetch(`/api/studio/${mid}`)).json();
+    if (s2.ok) S = s2.state;
+    all();
+    toast(bad || `${src} 를 ${dst} 로 합쳤습니다 — ${src} 는 기록으로 남습니다`);
     return;
   }
   if (e.target.closest('[data-scope]')) {               // 개체 추가 칩(15-4)

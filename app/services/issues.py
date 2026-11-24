@@ -73,7 +73,11 @@ def _row(s: Session, b: m.Block, week_id: str) -> Row:
 
 def ledger(s: Session, week_id: str, dept: str = "", chip: str = "", q: str = "", include_closed: bool = False) -> list[Row]:
     """원장 목록 — 담당 부서·걸러 보기·찾기. 대시보드는 지표 화면 몫이라 뺀다."""
+    from app.services import derive
     stmt = select(m.Block).where(m.Block.block_type != "dashboard")
+    gone = derive.merged_ids(s)                  # 합쳐진 이슈는 목록에서 뺀다(ID 는 남는다 — 원칙 8)
+    if gone:
+        stmt = stmt.where(m.Block.id.not_in(gone))
     if dept:
         stmt = stmt.where(m.Block.owner_department_id == dept)
     if not include_closed:

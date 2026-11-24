@@ -222,8 +222,8 @@ def fill_from_ledger(s: Session, mt: m.Meeting, dept_id: str) -> int:
 
 
 # ── 후보 ────────────────────────────────────────────────
-def _open(b: m.Block) -> bool:
-    return b.block_type in w.TRACKED and b.status not in ("종결",)
+def _open(b: m.Block, gone: set[str] | None = None) -> bool:
+    return b.block_type in w.TRACKED and b.status not in ("종결",) and b.id not in (gone or ())
 
 
 def _used(s: Session, mt: m.Meeting) -> set[str]:
@@ -246,21 +246,23 @@ def candidates(s: Session, mt: m.Meeting) -> list[tuple[str, list[m.Block]]]:
 
 
 def _candidates(s: Session, mt: m.Meeting, used: set[str]) -> list[tuple[str, list[m.Block]]]:
+    from app.services import derive
+    gone = derive.merged_ids(s)             # 합쳐진 이슈는 후보에 올리지 않는다(15-5)
     if mt.kind == "dept":
-        pool = [b for b in s.scalars(select(m.Block).where(m.Block.owner_department_id == mt.owner_dept_id).order_by(m.Block.id)) if _open(b) and b.id not in used]
+        pool = [b for b in s.scalars(select(m.Block).where(m.Block.owner_department_id == mt.owner_dept_id).order_by(m.Block.id)) if _open(b, gone) and b.id not in used]
         prev = prev_dept_meeting(s, mt)
         last = {bid for it in items(s, prev) for bid in item_ids(s, it)} if prev else set()
         return [("새 초안 — 초안 완료", [b for b in pool if b.draft_state == "ok" and b.id not in last]),
                 ("지난주 자료에 있던 것", [b for b in pool if b.id in last]),
                 ("초안 작성 중 — 넣으면 경고만", [b for b in pool if b.draft_state != "ok" and b.id not in last])]
     if mt.kind == "hull":
-        pool = [b for b in s.scalars(select(m.Block).order_by(m.Block.id)) if _open(b) and b.id not in used and w.block_hull(s, b.id) == mt.hull_id]
+        pool = [b for b in s.scalars(select(m.Block).order_by(m.Block.id)) if _open(b, gone) and b.id not in used and w.block_hull(s, b.id) == mt.hull_id]
         return [(f"{mt.hull_id} 열린 이슈", pool)]
     if mt.kind == "review":
-        pool = [b for b in s.scalars(select(m.Block).where(m.Block.block_type == "problem").order_by(m.Block.id)) if _open(b) and b.id not in used]
+        pool = [b for b in s.scalars(select(m.Block).where(m.Block.block_type == "problem").order_by(m.Block.id)) if _open(b, gone) and b.id not in used]
         return [("열린 문제점", pool)]
     if mt.kind == "share":
-        pool = [b for b in s.scalars(select(m.Block).where(m.Block.block_type.in_(w.TRACKED)).order_by(m.Block.id)) if _open(b) and b.id not in used]
+        pool = [b for b in s.scalars(select(m.Block).where(m.Block.block_type.in_(w.TRACKED)).order_by(m.Block.id)) if _open(b, gone) and b.id not in used]
         return [("원장 직접 — 부서 자료에 없는 열린 이슈", pool)]
     if mt.kind == "exec":
         return exec_candidates(s, mt, used)
@@ -274,11 +276,13 @@ def exec_candidates(s: Session, mt: m.Meeting, used: set[str]) -> list[tuple[str
         out = [b for b in bs if b is not None and b.id not in seen]
         seen.update(b.id for b in out)
         return out
+    from app.services import derive
+    gone = derive.merged_ids(s)             # 합쳐진 이슈는 후보에 올리지 않는다(15-5)
     sh = week_meeting(s, mt.week_id, "share")
     v = latest_version(s, sh)
     share_ids = deck_block_ids(version_deck(v)) if v else (deck_block_ids(deck(s, sh)) if sh else [])
     label = f"공유회 자료(발행 {v.version}판)" if v else "공유회 자료(발행 전)"
-    open_ = [b for b in s.scalars(select(m.Block).where(m.Block.block_type.in_(w.TRACKED)).order_by(m.Block.id)) if _open(b)]
+    open_ = [b for b in s.scalars(select(m.Block).where(m.Block.block_type.in_(w.TRACKED)).order_by(m.Block.id)) if _open(b, gone)]
     closed = [s.get(m.Block, c.block_id) for c in s.scalars(select(m.Closure).where(
         m.Closure.decision == "승인", m.Closure.decided_week_id == mt.week_id).order_by(m.Closure.id))]
     return [(label, take(s.get(m.Block, x) for x in dict.fromkeys(share_ids))),
@@ -641,7 +645,7 @@ def _item_json(s: Session, it: m.ReportItem, week_id: str, names: dict) -> dict:
     blocks = [_block_json(s, b, week_id, names) for b in (s.get(m.Block, x) for x in item_ids(s, it)) if b is not None]
     out = {"id": it.id, "kind": it.kind, "line": it.line, "form": it.form, "tag_on": it.tag_on, "src": it.src, "blocks": blocks, "ref": None}
     from app.services import freeform as ff          # 결정 ⑦ 15-2·15-3 자유 편집(표현만)
-    out["free"] = ff.json_with(it, out)              # 연결 상태(같음·이슈와 다름·이슈가 바뀜)까지
+    out["free"] = ff.json_with(s, it, out)              # 연결 상태(같음·이슈와 다름·이슈가 바뀜)까지
     if it.kind == "metric" and it.dept_id:
         out["metric"] = metric_json(s, it.dept_id, week_id, names)
     if it.kind == "table":

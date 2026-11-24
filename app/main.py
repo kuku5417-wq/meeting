@@ -34,6 +34,7 @@ from app.services import masters as masters_svc
 from app.services import answer as answer_svc
 from app.services import carry_over as co_svc
 from app.services import events as events_svc
+from app.services import derive as derive_svc
 from app.services import knowledge as knowledge_svc
 from app.services import central
 from app.services import settings_svc
@@ -289,6 +290,7 @@ def issues_page(request: Request, id: str = "", dept: str = "", f: str = "", q: 
                 "human": write_svc.human_fields(s, cur.id), "section": write_svc.block_section(s, cur.id),
                 "dept_name": next((d.name for d in depts if d.id == cur.owner_department_id), cur.owner_department_id),
                 "attach": write_router.attach_view(s, cur), "records": _meeting_records(s, cur.id), "events": events_svc.recent(s, cur.id),
+                "links": derive_svc.chips(s, cur.id), "merged_into": derive_svc.merged_into(s, cur.id),      # 15-5 파생·합치기
                 "due_options": alerts_svc.options(), "due_suggest": alerts_svc.suggest(s, cur) if not cur.due_event else "",
                 "similar": knowledge_svc.similar_cases(s, cur.id) if cur.block_type in write_svc.TRACKED and cur.status != "종결" else None}
     q_ = request.query_params

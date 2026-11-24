@@ -51,6 +51,21 @@
       <div class="row"><span class="v-tl {{ cur.block_type }}">{{ type_label[cur.block_type] }}</span><span class="mono small">{{ cur.id }}</span><span class="small">{{ cur.status }}</span><span class="small muted" id="draftState">{{ draft_label[cur.draft_state] }}</span><span class="small muted">· {{ view.dept_name }}</span>
         {% if r.hull %}{{ ms.ms_chip(r.hull) }}{% endif %}</div>
       <span id="rowVer" data-ver="{{ cur.row_version or 0 }}" hidden></span><label class="sr" for="dTitleLbl">제목</label><input id="dTitleLbl" class="v-title" type="text" value="{{ cur.title }}" data-field="title" data-id="{{ cur.id }}"{% if locked %} disabled{% endif %}>
+      {# 파생·합치기 칩(결정 ⑦ 15-5) — 어디서 나왔고 어디로 갈라졌는지 양쪽에 보인다 #}
+      {% if view.links %}
+      <div class="row v-links">
+        {% for x in view.links %}
+          <span class="v-link{{ ' gone' if x.rel == 'into' else '' }}">{% if x.rel in ('from', 'took') %}←{% else %}→{% endif %}
+            <a href="{{ x.href }}">{{ x.id }}</a> {{ x.text }} · <span class="muted">{{ x.title }}{% if x.rel == 'to' %} · {% if x.merged %}{{ x.merged }} 로 합쳐짐{% else %}{{ x.status }}{% endif %}{% elif x.rel == 'from' and x.status %} · {{ x.status }}{% endif %}</span>
+            {% if x.rel == 'to' and not x.merged and not view.merged_into %}
+            <form method="post" action="/issues/{{ x.id }}/merge" class="inline" onsubmit="return confirm('{{ x.id }} 를 {{ cur.id }} 로 합칩니다. {{ x.id }} 는 목록에서 빠지고 기록으로 남습니다.')">
+              <input type="hidden" name="into" value="{{ cur.id }}"><button class="btn sm" type="submit">합치기</button></form>
+            {% endif %}
+          </span>
+        {% endfor %}
+      </div>
+      {% endif %}
+      {% if view.merged_into %}<p class="flash bad small">이 이슈는 <a href="/issues?id={{ view.merged_into }}">{{ view.merged_into }}</a> 로 합쳐졌습니다 — 목록에는 나오지 않고 기록으로만 남습니다.</p>{% endif %}
     </div>
 
     <h2 class="v-sec">기본</h2>

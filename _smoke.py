@@ -557,9 +557,10 @@ def t_free_scope(c) -> None:
           and parent.status != "종결" and bid not in (nid,), repr(nid))
     check("15-4 — 「새 이슈로」: 「파생」으로 이어 두고 기준정보 태그를 물려받는다(원칙 5)",
           link is not None and tags_p <= tags_n, f'{link is not None} / {sorted(tags_p)} ⊄ {sorted(tags_n)}')
-    check("15-4 — 「새 이슈로」: 개체는 새 이슈 ID 를 들고 있고, 이 장의 이슈에는 연결하지 않는다",
-          o4.get("scope_block") == nid and o4["scope"] == "새이슈" and not o4.get("link"),
-          f'{o4.get("scope_block")} / {o4.get("link")}')
+    check("15-4 — 「새 이슈로」: 개체는 새 이슈와 연결된다(값은 그 이슈에서 읽는다 — 15-5)",
+          o4.get("scope_block") == nid and o4["scope"] == "새이슈"
+          and (o4.get("link") or {}).get("block") == nid and o4["state"] == "same",
+          f'{o4.get("scope_block")} / {o4.get("link")} / {o4.get("state")}')
     with SessionLocal() as s:
         evp = [e.kind for e in s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == bid).order_by(m.BlockEvent.id.desc()).limit(1))]
         evn = [e.kind for e in s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == nid).order_by(m.BlockEvent.id))] if nid else []
@@ -570,6 +571,136 @@ def t_free_scope(c) -> None:
           all(not x.get("scope") for it2 in stt["items"] if not it2["ro"]
               for x in it2["free"]["objects"] if (x.get("link") or {}).get("field") in ("title", "line")),
           "초안 개체에 scope 가 붙었다")
+
+
+def t_free_merge(c) -> None:
+    """결정 ⑦ 15-5 파생·합치기 — 다른 이슈 값 읽기·양쪽 칩·사례 카드 파생 목록·합치기(ID 는 남는다)."""
+    from sqlalchemy import select
+
+    from app import models as m
+    from app.db import SessionLocal
+    from app.services import carry_over as co
+    from app.services import derive
+    from app.services import issues as iss
+    from app.services import knowledge as kn
+
+    wk = "2026-W43"
+    with SessionLocal() as s:
+        dmt = s.scalars(select(m.Meeting).where(m.Meeting.week_id == wk, m.Meeting.kind == "dept")).first()
+        mid = dmt.id if dmt else 0
+    st0 = c.get(f"/api/studio/{mid}").json().get("state", {}) if mid else {}
+    items = [it for it in st0.get("items", []) if it["kind"] == "single" and not it["ro"]]
+    if not items:
+        check("15-5 — 시험할 장이 있다", False, "이슈 장이 없다")
+        return
+    iid, bid = items[0]["id"], items[0]["blocks"][0]["id"]
+    c.post(f"/api/studio/items/{iid}/free", json={"on": True})
+
+    def add_one(text: str, oid: str) -> dict:
+        stt = c.get(f"/api/studio/{mid}").json()["state"]
+        it = next(x for x in stt["items"] if x["id"] == iid)
+        objs = [dict(o) for o in it["free"]["objects"]]
+        objs.append({"id": oid, "type": "text", "x": 96, "y": 900, "w": 1700, "h": 100, "text": text,
+                     "label": "", "link": None, "style": {"size": 28}})
+        j = c.post(f"/api/studio/items/{iid}/objects", json={"objects": objs, "rev": it["free"]["rev"]}).json()
+        return next(x for x in j["free"]["objects"] if x["id"] == oid)
+
+    add_one("윤활유 차압 상승 — 다른 계통", "m1")
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "pick", "oid": "m1", "scope": "새이슈"}).json()
+    nid = j.get("new_block") or ""
+    check("15-5 — 떼어낸 이슈가 생기고 개체가 그 이슈를 가리킨다", bool(nid) and nid != bid, repr(nid))
+
+    with SessionLocal() as s:                      # **떼어낸 이슈**의 사실만 고친다
+        iss.save_field(s, s.get(m.Block, nid), "body", "윤활유 차압 0.8bar — 필터 막힘 의심")
+        s.commit()
+    stt = c.get(f"/api/studio/{mid}").json()["state"]
+    it_now = next(x for x in stt["items"] if x["id"] == iid)
+    o = next(x for x in it_now["free"]["objects"] if x["id"] == "m1")
+    check("15-5 — 다른 이슈에 건 연결은 **그 이슈** 값으로 잰다(이 장의 이슈가 아니다)",
+          o["other_block"] == nid and o["state"] == "stale" and o["issue_text"].startswith("윤활유 차압 0.8"),
+          f'{o.get("other_block")} / {o["state"]} / {o["issue_text"][:16]}')
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "pull", "oid": "m1"}).json()
+    o = next(x for x in j["free"]["objects"] if x["id"] == "m1")
+    check("15-5 — 「다시 가져오기」는 떼어낸 이슈에서 읽어 온다",
+          o["text"].startswith("윤활유 차압 0.8") and o["state"] == "same", repr(o["text"][:20]))
+
+    objs = [dict(x) for x in j["free"]["objects"]]
+    for x in objs:
+        if x["id"] == "m1":
+            x["text"] = "윤활유 차압 상승 — 필터 교체 예정"
+    rev = j["free"]["rev"]
+    c.post(f"/api/studio/items/{iid}/objects", json={"objects": objs, "rev": rev})
+    c.post(f"/api/studio/items/{iid}/link", json={"op": "apply", "oid": "m1"})
+    with SessionLocal() as s:
+        nb, pb = s.get(m.Block, nid), s.get(m.Block, bid)
+        ev = s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == nid).order_by(m.BlockEvent.id.desc())).first()
+    check("15-5 — 「이슈에도 반영」은 **떼어낸 이슈**의 사실을 바꾼다(원래 이슈는 그대로)",
+          nb.body == "윤활유 차압 상승 — 필터 교체 예정" and ev.kind == "사실변경"
+          and not (pb.body or "").endswith("필터 교체 예정"), f'{nb.body} / {ev.kind}')
+
+    with SessionLocal() as s:
+        cp, cn = derive.chips(s, bid), derive.chips(s, nid)
+    check("15-5 — 양쪽에 칩이 걸린다(원래 → 파생 / 파생 ← 나온 곳)",
+          any(x["id"] == nid and x["rel"] == "to" for x in cp) and any(x["id"] == bid and x["rel"] == "from" for x in cn),
+          f'{[(x["id"], x["rel"]) for x in cp]} / {[(x["id"], x["rel"]) for x in cn]}')
+    page = c.get(f"/issues?id={nid}").text
+    check("15-5 — 이슈 화면에 「…에서 나옴」 칩이 보인다", bid in page and "에서 나옴" in page, "칩 없음")
+
+    with SessionLocal() as s:                      # 사례 카드 — 파생 목록
+        card = s.scalars(select(m.CaseCard)).first()
+        if card is not None:
+            s.add(m.BlockLink(from_block_id=card.block_id, to_block_id=nid, relation=derive.DERIVED))
+            s.commit()
+            kids = kn.case_view(s, card)["derived"]
+            check("15-5 — 사례 카드에 파생 이슈 목록이 실린다(종결은 따로 간다)",
+                  any(x["id"] == nid for x in kids), repr(kids))
+        else:
+            check("15-5 — 사례 카드에 파생 이슈 목록이 실린다", False, "사례 카드가 없어 확인하지 못했다")
+
+    with SessionLocal() as s:                      # 관계 없는 두 이슈는 합치지 않는다
+        other = s.scalars(select(m.Block).where(m.Block.id.not_in([bid, nid]), m.Block.block_type.in_(("issue", "problem")))).first()
+        why = derive.can_merge(s, nid, other.id) if other is not None else "파생"
+    check("15-5 — 「파생」으로 이어진 이슈끼리만 합친다", "파생" in why, repr(why))
+
+    with SessionLocal() as s:
+        line0 = (co.week_row(s, bid, wk).note if co.week_row(s, bid, wk) else "") or ""
+        co.update_line(s, s.get(m.Block, nid), wk, "필터 발주 완료")
+        check("15-5 — 떼어낸 이슈의 이번 주 한 줄은 비어 있다(「…에서 떼어냄」 표시를 넣지 않는다)",
+              "떼어냄" not in line0, repr(line0[:30]))
+        s.commit()
+    r = c.post(f"/issues/{nid}/merge", data={"into": bid}, follow_redirects=False)
+    with SessionLocal() as s:
+        pb = s.get(m.Block, bid)
+        into = derive.merged_into(s, nid)
+        line = (co.week_row(s, bid, wk).note or "")
+        evp = s.scalars(select(m.BlockEvent).where(m.BlockEvent.block_id == bid).order_by(m.BlockEvent.id.desc())).first()
+    check("15-5 — 합치기: 「합쳐짐」으로 남기고 현상을 덧붙인다(덮지 않는다)",
+          r.status_code == 303 and into == bid and "필터 교체 예정" in (pb.body or "") and evp.kind == "합치기",
+          f'{r.status_code} / {into} / {evp and evp.kind}')
+    check("15-5 — 합치기: 이번 주 한 줄도 이어 붙인다(앞 글을 지우지 않는다)",
+          "필터 발주 완료" in line and (not line0.strip() or line0.strip() in line), repr(line[:40]))
+    rows = c.get("/issues").text
+    stt = c.get(f"/api/studio/{mid}").json()["state"]
+    cands = {b["id"] for g in stt["candidates"] for b in g["blocks"]}
+    check("15-5 — 합쳐진 이슈는 원장·후보에서 빠진다",
+          nid not in cands and f'id={nid}"' not in rows, f'후보에 {nid in cands}')
+    check("15-5 — ID 는 지우지 않는다 — 이슈 화면은 그대로 열리고 어디로 합쳐졌는지 알려 준다",
+          c.get(f"/issues?id={nid}").status_code == 200 and "로 합쳐졌습니다" in c.get(f"/issues?id={nid}").text)
+    r2 = c.post(f"/issues/{nid}/merge", data={"into": bid}, follow_redirects=False)
+    check("15-5 — 이미 합쳐진 이슈는 다시 합치지 않는다",
+          "err=" in (r2.headers.get("location") or ""), repr(r2.headers.get("location"))[:120])
+
+    stt = c.get(f"/api/studio/{mid}").json()["state"]
+    it_now = next(x for x in stt["items"] if x["id"] == iid)
+    o = next(x for x in it_now["free"]["objects"] if x["id"] == "m1")
+    r3 = c.post(f"/api/studio/items/{iid}/link", json={"op": "apply", "oid": "m1"})
+    check("15-5 — 합쳐진 이슈를 가리키는 개체는 사실을 반영하지 않고, 남는 이슈를 알려 준다",
+          o.get("merged_block") == bid and r3.status_code == 400 and bid in r3.json()["err"],
+          f'{o.get("merged_block")} / {r3.text[:90]}')
+    j = c.post(f"/api/studio/items/{iid}/link", json={"op": "relink", "oid": "m1", "field": "body"}).json()
+    o = next(x for x in j["free"]["objects"] if x["id"] == "m1")
+    check("15-5 — 연결을 남는 이슈로 옮길 수 있다",
+          (o.get("link") or {}).get("block") == bid and not o.get("other_block"), repr(o.get("link")))
 
 
 def _cause_oid(c, mid, iid) -> str:
@@ -2936,7 +3067,7 @@ def t_llm_c(c) -> None:
 # 묶음 순서 = 실행 순서. 앞 묶음이 만든 데이터를 뒤 묶음이 쓴다. tests/test_NN_*.py 도 이 순서를 따른다
 GROUPS = (t_masters_api, t_hub, t_llm_c, t_write_flow, t_carry, t_photos, t_metrics, t_meeting, t_export,
           t_knowledge, t_save_and_extract,          # 블록 ID 를 새로 쓰므로 뒤쪽에
-          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link, t_free_scope)
+          t_unregistered, t_dashboard_report, t_settings, t_central, t_m9, t_m10, t_m11, t_m12, t_m13, t_f16_f21, t_events, t_storage, t_nas, t_free, t_free_link, t_free_scope, t_free_merge)
 
 
 def main() -> int:

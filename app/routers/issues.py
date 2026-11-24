@@ -103,6 +103,25 @@ def post_close(block_id: str, action_text: str = Form(""), s: Session = Depends(
     return _to(block_id, msg=f"{block_id} 종결 요청 — 부서 현안 공유회에서 승인됩니다")
 
 
+@router.post("/issues/{block_id}/merge")
+def post_merge(block_id: str, into: str = Form(""), s: Session = Depends(get_session)):
+    """합치기 (결정 ⑦ 15-5) — 잘못 떼어낸 이슈를 원래 이슈로 되돌린다.
+
+    `block_id` 가 **합쳐지는 쪽**(목록에서 빠진다), `into` 가 남는 쪽이다. ID 는 지우지 않는다(원칙 8).
+    """
+    from app.services import derive
+    src, dst = _block(s, block_id), _block(s, into.strip())
+    try:
+        did = derive.merge(s, src, dst, weeks.current().id)
+        s.commit()
+    except w.WriteError as e:
+        s.rollback()
+        return _to(block_id, err=f"{block_id}: {e}")
+    more = " · ".join([x for x in ("현상을 덧붙였습니다" if did["body"] else "",
+                                   "이번 주 한 줄을 이어 붙였습니다" if did["line"] else "") if x])
+    return _to(dst.id, msg=f"{src.id} 를 {dst.id} 로 합쳤습니다 — {src.id} 는 기록으로 남습니다" + (f" · {more}" if more else ""))
+
+
 @router.post("/issues/bulk")
 async def post_bulk(request: Request, s: Session = Depends(get_session)):
     form = await request.form()

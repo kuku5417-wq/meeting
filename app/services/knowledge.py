@@ -195,8 +195,12 @@ def case_view(s: Session, c: m.CaseCard) -> dict:
                            .where(m.BlockHistory.block_id == c.block_id).order_by(m.BlockHistory.id)))
     path = [d for i, d in enumerate(depts) if i == 0 or d != depts[i - 1]]        # 부서 이동 경로
     photos = s.scalar(select(func.count()).select_from(m.PhotoLink).where(m.PhotoLink.block_id == c.block_id))
+    from app.services import derive                 # 15-5 — 사례 카드에 파생 이슈 목록(종결은 따로 간다)
+    kids = [{"id": x, "title": (s.get(m.Block, x).title if s.get(m.Block, x) else x),
+             "status": (s.get(m.Block, x).status if s.get(m.Block, x) else ""),
+             "merged": derive.merged_into(s, x)} for x in derive.children(s, c.block_id)]
     return {"c": c, "b": b, "eq": eq, "dept_path": path, "first_week": b.created_week_id if b else c.approved_week_id,
-            "photos": photos}
+            "photos": photos, "derived": kids}
 
 
 def case_cards(s: Session) -> list[dict]:
